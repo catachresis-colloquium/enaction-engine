@@ -1,0 +1,6 @@
+0000000000095650 T enaction_accel_abi_version
+0000000000095540 T enaction_accel_capability_at
+0000000000095640 T enaction_accel_capability_count
+0000000000094c40 T enaction_accel_execute
+0000000000094830 T enaction_accel_execute_f32
+0000000000044e50 T enaction_accel_execute_f32_binary

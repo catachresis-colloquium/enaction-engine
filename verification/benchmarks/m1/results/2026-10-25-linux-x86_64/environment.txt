@@ -1,0 +1,143 @@
+2026-10-25T12:51:14Z
+e0933726fe0bb7eb6c1a740f142ee780551daaba
+ M .github/workflows/rust-ci.yml
+ M Justfile
+ M crates/enaction-accelerator-native/build.rs
+ M src/interface/Abi/Accelerator.idr
+ M src/interface/generated/abi/SOURCE.sha256
+ M verification/benchmarks/README.adoc
+?? crates/enaction-accelerator-native/examples/
+?? crates/enaction-accelerator/examples/
+?? scripts/bench-accelerator-m1.sh
+?? verification/benchmarks/m1/
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+binary: rustc
+commit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67
+commit-date: 2026-10-13
+host: x86_64-unknown-linux-gnu
+release: 1.99.1
+LLVM version: 23.1.1
+debug_assertions
+panic="unwind"
+target_abi=""
+target_arch="x86_64"
+target_endian="little"
+target_env="gnu"
+target_family="unix"
+target_feature="fxsr"
+target_feature="sse"
+target_feature="sse2"
+target_has_atomic="16"
+target_has_atomic="32"
+target_has_atomic="64"
+target_has_atomic="8"
+target_has_atomic="ptr"
+target_has_atomic_primitive_alignment="16"
+target_has_atomic_primitive_alignment="32"
+target_has_atomic_primitive_alignment="64"
+target_has_atomic_primitive_alignment="8"
+target_has_atomic_primitive_alignment="ptr"
+target_os="linux"
+target_pointer_width="64"
+target_vendor="unknown"
+unix
+cargo 1.99.1 (5f94df478 2026-08-27)
+Linux 6.18.55 x86_64
+mode=compare samples=31 rounds=3
+RUSTFLAGS=
+CARGO_ENCODED_RUSTFLAGS=
+CARGO_BUILD_TARGET=
+model name	: AMD EPYC 9V74 80-Core Processor
+Cpus_allowed_list:	0-8
+0.16.0
+    .native = .{
+        .triple = "x86_64-linux.6.18.55...6.18.55-gnu.2.39",
+        .cpu = .{
+            .arch = "x86_64",
+            .name = "znver4",
+            .features = .{
+                "64bit",
+                "adx",
+                "aes",
+                "allow_light_256_bit",
+                "avx",
+                "avx2",
+                "avx512bf16",
+                "avx512bitalg",
+                "avx512bw",
+                "avx512cd",
+                "avx512dq",
+                "avx512f",
+                "avx512ifma",
+                "avx512vbmi",
+                "avx512vbmi2",
+                "avx512vl",
+                "avx512vnni",
+                "avx512vpopcntdq",
+                "bmi",
+                "bmi2",
+                "branchfusion",
+                "clflushopt",
+                "clwb",
+                "clzero",
+                "cmov",
+                "crc32",
+                "cx16",
+                "cx8",
+                "evex512",
+                "f16c",
+                "fast_15bytenop",
+                "fast_bextr",
+                "fast_dpwssd",
+                "fast_imm16",
+                "fast_lzcnt",
+                "fast_movbe",
+                "fast_scalar_fsqrt",
+                "fast_scalar_shift_masks",
+                "fast_variable_perlane_shuffle",
+                "fast_vector_fsqrt",
+                "fma",
+                "fsgsbase",
+                "fsrm",
+                "fxsr",
+                "gfni",
+                "idivq_to_divl",
+                "invpcid",
+                "lzcnt",
+                "macrofusion",
+                "mmx",
+                "movbe",
+                "nopl",
+                "pclmul",
+                "popcnt",
+                "prfchw",
+                "rdpid",
+                "rdrnd",
+                "rdseed",
+                "sahf",
+                "sbb_dep_breaking",
+                "sha",
+                "shstk",
+                "smap",
+                "smep",
+                "sse",
+                "sse2",
+                "sse3",
+                "sse4_1",
+                "sse4_2",
+                "sse4a",
+                "ssse3",
+                "vaes",
+                "vpclmulqdq",
+                "vzeroupper",
+                "x87",
+                "xsave",
+                "xsavec",
+                "xsaveopt",
+                "xsaves",
+            },
+        },
+        .os = "linux",
+        .abi = "gnu",
+    },
+}

@@ -4,6 +4,10 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// Build and statically link the Zig accelerator, honoring `ZIG` as the compiler
+/// path override and tracking native sources and generated ABI inputs for Cargo.
+/// Panics if the required Cargo environment or crate location is unavailable,
+/// Zig cannot be launched, or compilation fails.
 fn main() {
     let manifest_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").expect("manifest dir"));
     let repository = manifest_dir
@@ -16,6 +20,14 @@ fn main() {
     let library = output.join("libenaction_accelerator.a");
 
     println!("cargo:rerun-if-changed={}", zig_source.display());
+    // Imported kernels are compilation inputs too; otherwise a warm Cargo
+    // build can benchmark stale Zig code after either implementation changes.
+    for imported in ["axiom_matmul.zig", "axiom_pointwise.zig"] {
+        println!(
+            "cargo:rerun-if-changed={}",
+            zig_source.with_file_name(imported).display()
+        );
+    }
     println!("cargo:rerun-if-changed={}", zig_abi.display());
     println!(
         "cargo:rerun-if-changed={}",

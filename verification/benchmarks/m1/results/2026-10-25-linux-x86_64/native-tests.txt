@@ -1,0 +1,33 @@
+   Compiling enaction-accelerator-native v0.1.0 (/workspace/scratch/2b208cd7a904/enaction-engine/crates/enaction-accelerator-native)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+     Running unittests src/lib.rs (target/debug/deps/enaction_accelerator_native-b4b3453e11cfd5b9)
+
+running 6 tests
+test tests::axiom_derived_binary_kernels_cross_the_generated_abi ... ok
+test tests::axiom_derived_f32_kernels_execute_through_safe_registry ... ok
+test tests::native_capability_evidence_is_self_consistent ... ok
+test tests::zig_backend_executes_through_the_safe_registry ... ok
+test tests::generated_layouts_match_idris2_proofs ... ok
+test tests::zig_overflow_is_failure_atomic ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/conformance.rs (target/debug/deps/conformance-e21b2d4c57fadbd3)
+
+running 3 tests
+test fresh_process_worker_emits_canonical_bytes ... ok
+test rust_and_zig_match_v1_canonical_fixtures_byte_for_byte ... ok
+test zig_canonical_bytes_repeat_across_fresh_processes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests examples/m1_matmul_native.rs (target/debug/examples/m1_matmul_native-dc16697ddc33b107)
+
+running 4 tests
+test experiment::tests::rectangular_packing_has_known_orientation ... ok
+test experiment::tests::generator_repeats_and_percentiles_are_nearest_rank ... ok
+test experiment::tests::validator_rejects_corruption_and_wrong_backend ... ok
+test benchmark_native_contract_checks ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
