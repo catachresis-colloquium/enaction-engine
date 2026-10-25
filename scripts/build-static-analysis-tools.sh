@@ -11,6 +11,7 @@ readonly PONS_COMMIT="51b8920f541782ceb9465ea3f0d33c96104fc1fb"
 readonly IJSON_JCS_REPO="hyperpolymath/ijson-jcs"
 readonly IJSON_JCS_COMMIT="2c880594c8b1f823a7ab2a8a830c894975a1792e"
 
+# Print command usage to stderr and exit with status 2.
 usage() {
   echo "Usage: $0 OUTPUT_DIRECTORY" >&2
   exit 2
@@ -30,6 +31,9 @@ rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal --no-self-update
 build_root="$(mktemp -d)"
 trap "rm -rf -- '$build_root'" EXIT
 
+# Fetch GitHub OWNER/REPO ($1) at COMMIT ($2) into DESTINATION ($3) and check
+# out a detached HEAD. COMMIT must be a lowercase, 40-character hexadecimal SHA.
+# Exit 1 for an invalid or mismatched pin; Git command failures propagate.
 clone_commit() {
   local slug="$1" commit="$2" destination="$3"
   [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid source pin: $slug@$commit" >&2; exit 1; }

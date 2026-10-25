@@ -5,6 +5,7 @@
 # findings set.
 set -euo pipefail
 
+# Print command usage to stderr and exit with status 2.
 usage() {
   cat >&2 <<'EOF'
 Usage:
@@ -22,27 +23,34 @@ EOF
   exit 2
 }
 
+# Print the supplied diagnostic to stderr and exit with status 1.
 fail() {
   echo "static-analysis-report: $*" >&2
   exit 1
 }
 
+# Return successfully when jq and ijson-jcs are available; otherwise exit 1.
 require_tools() {
   command -v jq >/dev/null 2>&1 || fail "jq is required"
   command -v ijson-jcs >/dev/null 2>&1 || fail "ijson-jcs is required; refusing to skip JSON/JCS validation"
 }
 
+# Require a nonempty report at $1; exit 1 if the path is missing or empty.
 require_file() {
   local file="$1"
   [[ -s "$file" ]] || fail "missing or empty report: $file"
 }
 
+# Require a nonempty, canonical I-JSON report at $1; exit 1 on failure.
 check_jcs() {
   local file="$1"
   require_file "$file"
   ijson-jcs check "$file" >/dev/null || fail "report is not valid canonical I-JSON: $file"
 }
 
+# Write INPUT ($1) as canonical I-JSON to OUTPUT ($2), creating parent directories.
+# Replace OUTPUT only after conversion and validation succeed. Wrong arity exits
+# 2; missing tools/input or invalid JSON exits 1; filesystem errors propagate.
 canonicalize() {
   [[ "$#" -eq 2 ]] || usage
   require_tools
@@ -61,6 +69,9 @@ canonicalize() {
   mv -- "$tmp" "$output"
 }
 
+# Validate the canonical Panic Attack schema 2.5 report at $1, including severity
+# labels and optional finding fields. Return 0 on success; missing tools/input,
+# canonicalization violations, or schema failures exit 1.
 validate_panic() {
   local file="$1"
   require_tools
@@ -82,6 +93,9 @@ validate_panic() {
   ' "$file" >/dev/null || fail "panic-attack report schema mismatch: $file"
 }
 
+# Validate the canonical Hypatia findings array at $1, including severity labels
+# and optional file/line fields. Return 0 on success; missing tools/input,
+# canonicalization violations, or schema failures exit 1.
 validate_hypatia() {
   local file="$1"
   require_tools
@@ -97,6 +111,10 @@ validate_hypatia() {
   ' "$file" >/dev/null || fail "Hypatia report schema mismatch: $file"
 }
 
+# Validate the canonical Patch Bridge schema 0.2.0 report at $1, requiring
+# nonnegative counts and matching vulnerable, mitigated, unmitigable, and
+# informational CVE counts. Return 0 on success; missing tools/input, JCS, or
+# schema/count failures exit 1.
 validate_bridge() {
   local file="$1"
   require_tools
@@ -122,6 +140,9 @@ validate_bridge() {
   ' "$file" >/dev/null || fail "Patch Bridge report schema/invariant mismatch: $file"
 }
 
+# Print unsuppressed findings from the validated report at $1 as a compact JSON
+# array, setting scanner to panic-attack and lowercasing severity. Preserve other
+# fields. Validation failures exit 1; jq output errors propagate.
 normalize_panic() {
   local file="$1"
   validate_panic "$file"
@@ -132,6 +153,9 @@ normalize_panic() {
   ' "$file"
 }
 
+# Print findings from the validated array at $1 as compact JSON, setting scanner
+# to hypatia and mapping warn/warning to medium. Preserve other fields and all
+# findings. Validation failures exit 1; jq output errors propagate.
 normalize_hypatia() {
   local file="$1"
   validate_hypatia "$file"
@@ -145,6 +169,12 @@ normalize_hypatia() {
   ' "$file"
 }
 
+# Write a canonical schema 1.2.0 report to $4 from Panic Attack ($1), Hypatia ($2),
+# and Patch Bridge ($3). Merge normalized findings and retain Bridge separately;
+# copy repository, SHA, ref, run ID, and timestamp ($5-$9) as unvalidated strings.
+# Create output parent directories and overwrite the destination, which may be
+# incomplete on failure. Wrong arity exits 2; report validation failures exit 1;
+# other tool and filesystem errors propagate.
 assemble() {
   [[ "$#" -eq 9 ]] || usage
   local panic_file="$1" hypatia_file="$2" bridge_file="$3" output_file="$4"
