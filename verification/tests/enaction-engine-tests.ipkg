@@ -1,0 +1,13 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+package enaction-engine-tests
+
+version = 0.1.0
+sourcedir = "."
+
+main = EnactionEngineTests.Main
+executable = "enaction-engine-tests"
+
+depends = base, abi, proven-tests
+
+modules = EnactionEngineTests.AbiTests,
+         EnactionEngineTests.Main

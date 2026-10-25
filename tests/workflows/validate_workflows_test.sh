@@ -101,6 +101,7 @@ REQUIRED_WORKFLOWS=(
     "secret-scanner.yml"
     "security-policy.yml"
     "workflow-linter.yml"
+    "proven-tests-gate.yml"
 )
 
 FOUND_COUNT=0

@@ -292,7 +292,7 @@ END {
     print "reports \"This run likely failed because of a workflow file issue.\""
     print ""
     print "Fix, in this order:"
-    print "  1. `gh actions-lock --no-migrate-local-actions`, then review the diff. It does"
+    print "  1. `gh actions-lock --no-migrate-local-actions --no-narrow`, then review the diff. It does"
     print "     NOT handle job-level reusable-workflow refs and it can de-pin bare SHAs to"
     print "     floating tags - both must be corrected by hand."
     print "  2. For any DANGLING EDGES above, add a top-level `dependencies:` record for each"

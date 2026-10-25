@@ -1,3 +1,53 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= Tests Unit
+= Enaction Engine Proven-Tests Suite
+
+This directory contains the repository's executable Idris2 conformance suite,
+built on the pinned `hyperpolymath/proven-tests-and-benches` framework. It tests
+the formal ABI authority in `src/interface/Abi/` and the generated declaration
+strings used by C, Zig, and Rust consumers.
+
+== Reproducible inputs
+
+* Framework: `hyperpolymath/proven-tests-and-benches` at
+  `eca682bcd419554f6779e72969902e6faef4fd9d`.
+* Compiler: Idris2 `v0.7.0`, bootstrapped with Chez Scheme by the pinned
+  framework checkout's `scripts/install-idris2.sh`.
+* Test package: `enaction-engine-tests.ipkg`.
+* Entrypoint: `EnactionEngineTests.Main`.
+
+The CI job fetches and verifies the exact framework commit, installs the
+pinned Idris2 compiler, installs the framework and local ABI packages, then
+builds and runs the test executable. No GitHub Actions are used by this job;
+its dependency closure therefore does not depend on `actions.lock`.
+
+== Running locally
+
+With Idris2 0.7.0 installed and the framework checked out at the pinned commit:
+
+[source,shell]
+----
+PROVEN_TESTS_ROOT=/path/to/proven-tests-and-benches scripts/run-proven-tests.sh
+----
+
+The script rejects a different framework commit or compiler version. It builds
+into ignored `verification/tests/build/` output and does not change tracked
+files.
+
+== Evidence and fixture policy
+
+Runtime tests are classified with `classifyProvisionallyProven` and each
+supplies an explicit `Fixtures` pair using the framework's
+`RuntimeConstructed` fixture source. The pair identifies the clean/silence case
+and the concrete defect/firing case tested by the action. The compile-time
+negative witness is classified with `CannotFailByDesign`: the Idris `failing`
+declaration must continue to be rejected by the typechecker. The suite does not
+use the framework's legacy `provisionalTest` helper or `FixtureDebt`. Runtime
+metadata also records typed `TestCategory` and `TestAspect` coordinates from
+the framework taxonomy.
+
+The suite covers buffer-pointer validity, ABI version negotiation, numeric
+code stability and uniqueness, structure alignment, platform/C layout
+constants, opaque-handle construction, FFI result messages, and the C/Zig/Rust
+declaration renderers. Rust integration and native execution remain covered by
+the existing Cargo conformance suites; these Idris tests do not claim to replace
+those runtime tests.
