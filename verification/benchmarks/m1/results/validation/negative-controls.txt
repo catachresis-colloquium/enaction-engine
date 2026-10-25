@@ -1,0 +1,4 @@
+scripts/bench-accelerator-m1.sh: line 18: /nonexistent: No such file or directory
+comparison requires Zig 0.16.0
+usage: scripts/bench-accelerator-m1.sh scalar|compare output-directory samples(1..10000) rounds(1..20)
+refusing to overwrite results: target/m1-pilot-2

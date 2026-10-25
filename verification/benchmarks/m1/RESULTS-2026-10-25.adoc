@@ -1,0 +1,169 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= M1 CPU matrix results — 25 October 2026
+
+The current native Zig path did not improve end-to-end latency for this
+synthetic workload on this host. No additional backend is justified by this
+baseline alone. This is not evidence about either game's performance.
+
+== Reproduction and raw evidence
+
+[source,bash]
+----
+ZIG=/path/to/zig-0.16.0 just bench compare target/m1-reproduction 31 3
+cd verification/benchmarks/m1/results/2026-10-25-linux-x86_64
+sha256sum -c SHA256SUMS
+cd ../../../../..
+sha256sum -c verification/benchmarks/m1/results/2026-10-25-linux-x86_64/SOURCE-SHA256SUMS
+----
+
+link:results/2026-10-25-linux-x86_64/[Raw run directory] contains 744 sample
+records (93 per shape/backend), each with a profiled pass and an independently
+timed total pass, plus summaries, execution capabilities, native symbols,
+build/test logs, source/binary hashes and environment facts. Ten warmups per
+shape/process are excluded. link:README.adoc[Methodology] defines every field.
+link:results/validation/[Additional validation logs] record the broader checks.
+
+Host: x86_64 Linux container, AMD EPYC 9V74, available CPU list 0–8. Rust
+1.99.1 (LLVM 23.1.1), Cargo 1.99.1, Zig 0.16.0. Native target detection reports
+`znver4`; Rust's baseline target query lists fxsr/sse/sse2. Those capabilities
+do not establish vector execution. The environment's `rustc --print cfg` is a
+standalone default compiler query, not the release build's full flag list;
+the build log records Cargo release builds. No target-cpu override was supplied
+to Rust. Native retains its existing host-default Zig build options.
+
+This is an uncontrolled shared container: no dedicated core, affinity pin,
+governor control, thermal control or hardware-counter sampling. There are
+outliers and only three process replicates. Results compare the existing build
+defaults, not language performance under identical compiler settings. Source
+and executable hashes bind this run; numbers are expected to vary on rerun.
+
+== Latency, throughput and memory
+
+Times below are the median of three process medians, in microseconds. The last
+two columns show the range of process medians, not a confidence interval.
+
+[cols="1,1,1,1,1",options="header"]
+|===
+| Shape (m,k,n) | Rust total | Zig total | Rust median range | Zig median range
+| 2,3,2 | 0.180 | 0.241 | 0.171–0.180 | 0.241–0.250
+| 1,64,1 | 0.581 | 0.641 | 0.571–0.591 | 0.621–0.651
+| 32,64,16 | 55.133 | 59.760 | 55.003–55.203 | 59.570–59.800
+| 64,64,64 | 438.923 | 471.973 | 426.535–444.382 | 456.980–524.171
+|===
+
+For the primary 32×64×16 case, native's median total is about 8.4% higher.
+Process p95 total ranges are 56.826–111.929 µs for Rust and
+81.012–101.162 µs for Zig. No statistical significance claim is made.
+Aggregate useful throughput over the 93 measured total passes is 17,124
+matrices/s for Rust and 15,493 matrices/s for Zig, or 1.122 and 1.015 semantic
+GFLOP/s. This is latency-derived throughput, not sustained streaming throughput.
+
+Primary shape phase medians (again median of process medians), in microseconds:
+
+[cols="2,1,1",options="header"]
+|===
+| Phase | Rust | Zig
+| Allocation and zero initialization | 0.741 | 0.711
+| Input generation | 4.096 | 4.116
+| f64 to f32 conversion | 0.390 | 0.430
+| B packing | 0.461 | 0.581
+| Planning | 0.040 | 0.050
+| Checked computation call | 49.504 | 53.791
+| Destination copy | 0.050 | 0.060
+| Independently timed total | 55.133 | 59.760
+|===
+
+Do not add these medians to reconstruct the independently timed total. Compute
+includes the two-pass failure-atomic algorithm and validation; native also
+includes ABI marshalling, FFI and evidence checking. These data do not isolate
+which implementation/compiler detail accounts for the difference.
+
+Live buffer capacities are 200 B, 1,800 B, 45,056 B (44 KiB), and 147,456 B
+(144 KiB) for the four shapes respectively. Linux process VmHWM was
+1,360–1,376 KiB for Rust and 1,516–1,580 KiB for native. The latter includes
+code, allocator, validation and serialization and cannot be attributed solely
+to the kernel. Kernel source inspection finds no kernel heap allocation; no
+allocator-interposition or hardware memory-traffic measurement was performed.
+
+== Numerical observations
+
+All measured outputs matched Rust result bits, including both timing passes.
+Maximum absolute error versus the independent f64 accumulation of quantized
+host inputs was `4.290185772859445e-6`; maximum input conversion error was
+`5.380559708889621e-8`. All outputs satisfied the experiment's documented
+rounding-error bound.
+
+Maximum relative error was about 0.290474, in a near-zero cancellation result
+for the 64×64×64 case at sample 10. Small absolute error does not imply small
+relative error near zero. The binary32 operation remains advisory and
+tolerance-bounded. This run establishes neither canonical cross-target
+determinism nor suitability for threshold-sensitive authoritative rules.
+
+== Contract revision and repairs required to measure it
+
+ABI and operation version remain *1.0*, with no change to layouts, operation
+codes, symbols, Rust arithmetic or Zig arithmetic. Start revision was
+`e0933726fe0bb7eb6c1a740f142ee780551daaba`.
+
+Before measurement, genuine checks found and repaired two baseline problems:
+
+* `Abi.Accelerator.operationCodeInjective` ended with a wildcard `impossible`
+  case that Idris2 0.8.0 rejected. Explicit unequal constructor pairs now let
+  the typechecker discharge all 42 impossible cases. No trust escape was added.
+* `SOURCE.sha256` did not match the committed accelerator authority even before
+  this change. It was regenerated with the Idris2 generator after successful
+  typechecking. C, Rust, Zig and Julia declarations and the symbol list are
+  byte-for-byte unchanged from the start revision.
+
+The native build script additionally tracks both imported Zig implementation
+files. Touching `axiom_matmul.zig` was confirmed to rerun Cargo's build script,
+preventing stale-code measurements on subsequent edits.
+
+Consumer pins must use the exact reviewed PR head SHA given in the PR
+description, together with these identities:
+
+[source,text]
+----
+operation: enaction.tensor.f32.matmul@1.0
+native ABI: 1.0 (64-bit pointers)
+lane: Advisory
+precision/determinism: binary32 / ToleranceBounded
+conformance/accelerator/v1/SHA256SUMS:
+  e7e8f5451da9abf2a84ffcef31d410f95ed08c19672f8193b5c244aa142af199
+src/interface/generated/abi/SOURCE.sha256:
+  27109a5e52ccefd68e13a770efb70b5c285b159c8899df462a3b291d5acbb16f
+src/interface/Abi/Accelerator.idr:
+  b0ce4756dac2bb73b2f1bd3225cdf07ca10ba27954f17ef8bc7d6f882a79a4fe
+----
+
+IDApTIK/Slavia adoption still needs game-owned requirements, consumer-side
+fixture execution and advisory event admission. This task changes neither
+consumer. It does not establish extraction acceptance or real-game service.
+
+== Verification and limits
+
+Passed: all 143 workspace all-target tests; workspace warnings-as-errors
+Clippy and rustfmt; existing SHA-256 corpus verification and Rust/Zig
+conformance; new benchmark checks for packing, independent validation,
+zero/odd shapes, overflow/length errors, atomic failure, authoritative-lane
+rejection and named-backend rejection; direct Zig unit tests/build; native
+symbol-set comparison; explicit 32-bit target rejection; Idris2 0.8.0 ABI
+typechecking and generated-artifact check; source SPDX/trust-escape checks;
+aspect, readiness and contractile-safety checks; root-shape, `just verify` and
+`just validate-rsr`.
+
+Portable smoke succeeded with `ZIG=/nonexistent`. Missing Zig in comparison
+mode, zero samples and an existing result directory failed explicitly.
+The CI workflow includes a one-sample benchmark smoke, without a timing gate.
+
+*Full local CI did not pass*: `just ci` reached the proof stages and stopped
+because Lean was not installed. Its gated legacy Idris modules passed, while
+the already-quarantined proof modules still failed as their manifest records.
+The separate Creusot gate failed because `cargo-creusot` was not installed;
+the pinned Creusot/nightly/solver suite was not run. Compiling the unchanged
+Rust proof harness is not deductive verification. Agda/Coq stages after Lean
+were not reached. No proof gate was weakened, skipped as green or removed.
+
+The available GitHub connector creates unsigned commits for this connection.
+The draft is not release-ready under the repository's signing policy and must
+be republished with verified signatures before merge. No merge is requested.

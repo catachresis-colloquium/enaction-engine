@@ -16,6 +16,14 @@ fn main() {
     let library = output.join("libenaction_accelerator.a");
 
     println!("cargo:rerun-if-changed={}", zig_source.display());
+    // Imported kernels are compilation inputs too; otherwise a warm Cargo
+    // build can benchmark stale Zig code after either implementation changes.
+    for imported in ["axiom_matmul.zig", "axiom_pointwise.zig"] {
+        println!(
+            "cargo:rerun-if-changed={}",
+            zig_source.with_file_name(imported).display()
+        );
+    }
     println!("cargo:rerun-if-changed={}", zig_abi.display());
     println!(
         "cargo:rerun-if-changed={}",

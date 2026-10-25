@@ -1,4 +1,4 @@
 cc599b56210fdd6fcf2916430efc444996aead0d4ed199e8fe4b78d815ebc128  abi.ipkg
 c852e03136fb74caa929bf6afd574b88a6f4c52d12645adf42c2ab0fe22299ef  src/interface/Abi/Layout.idr
-cf8556238b37c5a01c32daf3df2a1022cc1de3d910a61ed5d317729e183aff88  src/interface/Abi/Accelerator.idr
+b0ce4756dac2bb73b2f1bd3225cdf07ca10ba27954f17ef8bc7d6f882a79a4fe  src/interface/Abi/Accelerator.idr
 6cdf608b314a57c1dbbacefc5f27c447e857078413f3aa06b28c3b55ab0b817e  src/interface/Abi/Generate.idr

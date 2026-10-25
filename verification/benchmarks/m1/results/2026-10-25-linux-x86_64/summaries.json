@@ -1,0 +1,1694 @@
+[
+  {
+    "allocation_zero_init_ns": {
+      "max": 200,
+      "mean": 100.51612903225806,
+      "min": 80,
+      "p50": 90,
+      "p95": 181
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 110,
+      "mean": 54.29032258064516,
+      "min": 40,
+      "p50": 50,
+      "p95": 80
+    },
+    "conversion_ns": {
+      "max": 31,
+      "mean": 28.806451612903224,
+      "min": 20,
+      "p50": 30,
+      "p95": 31
+    },
+    "generation_ns": {
+      "max": 60,
+      "mean": 40.70967741935484,
+      "min": 30,
+      "p50": 40,
+      "p95": 50
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 30,
+      "mean": 27.741935483870968,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "packing_ns": {
+      "max": 40,
+      "mean": 24.870967741935484,
+      "min": 20,
+      "p50": 20,
+      "p95": 30
+    },
+    "planning_ns": {
+      "max": 50,
+      "mean": 36.516129032258064,
+      "min": 30,
+      "p50": 40,
+      "p95": 50
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.44206773618538325,
+    "semantic_gflops_total": 0.1238142785821268,
+    "shape": [
+      2,
+      3,
+      2
+    ],
+    "total_matrices_per_second": 5158928.274255284,
+    "total_ns": {
+      "max": 330,
+      "mean": 193.83870967741936,
+      "min": 160,
+      "p50": 180,
+      "p95": 321
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 481,
+      "mean": 217.70967741935485,
+      "min": 120,
+      "p50": 181,
+      "p95": 381
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 400,
+      "mean": 209.96774193548387,
+      "min": 160,
+      "p50": 181,
+      "p95": 311
+    },
+    "conversion_ns": {
+      "max": 60,
+      "mean": 41.41935483870968,
+      "min": 30,
+      "p50": 40,
+      "p95": 60
+    },
+    "generation_ns": {
+      "max": 211,
+      "mean": 188.4516129032258,
+      "min": 180,
+      "p50": 190,
+      "p95": 210
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 50,
+      "mean": 25.225806451612904,
+      "min": 20,
+      "p50": 20,
+      "p95": 40
+    },
+    "packing_ns": {
+      "max": 120,
+      "mean": 75.58064516129032,
+      "min": 50,
+      "p50": 70,
+      "p95": 111
+    },
+    "planning_ns": {
+      "max": 50,
+      "mean": 34.83870967741935,
+      "min": 30,
+      "p50": 30,
+      "p95": 40
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.6096174527577201,
+    "semantic_gflops_total": 0.1887636173350459,
+    "shape": [
+      1,
+      64,
+      1
+    ],
+    "total_matrices_per_second": 1474715.7604300461,
+    "total_ns": {
+      "max": 951,
+      "mean": 678.0967741935484,
+      "min": 540,
+      "p50": 591,
+      "p95": 922
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 3475,
+      "mean": 833.6451612903226,
+      "min": 531,
+      "p50": 741,
+      "p95": 1032
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 197098,
+      "mean": 60483.354838709674,
+      "min": 49145,
+      "p50": 49505,
+      "p95": 149626
+    },
+    "conversion_ns": {
+      "max": 771,
+      "mean": 420.64516129032256,
+      "min": 370,
+      "p50": 390,
+      "p95": 761
+    },
+    "generation_ns": {
+      "max": 39590,
+      "mean": 5231.387096774193,
+      "min": 3776,
+      "p50": 4096,
+      "p95": 4406
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 170,
+      "mean": 59.096774193548384,
+      "min": 40,
+      "p50": 50,
+      "p95": 100
+    },
+    "packing_ns": {
+      "max": 42273,
+      "mean": 1827.8064516129032,
+      "min": 450,
+      "p50": 461,
+      "p95": 711
+    },
+    "planning_ns": {
+      "max": 70,
+      "mean": 44.0,
+      "min": 30,
+      "p50": 40,
+      "p95": 70
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.0835377795223853,
+    "semantic_gflops_total": 1.0698864821255163,
+    "shape": [
+      32,
+      64,
+      16
+    ],
+    "total_matrices_per_second": 16325.17215157343,
+    "total_ns": {
+      "max": 141043,
+      "mean": 61255.096774193546,
+      "min": 54452,
+      "p50": 55133,
+      "p95": 111929
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 8733,
+      "mean": 5521.225806451613,
+      "min": 3525,
+      "p50": 5468,
+      "p95": 8103
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 591283,
+      "mean": 453701.77419354836,
+      "min": 389559,
+      "p50": 449489,
+      "p95": 585855
+    },
+    "conversion_ns": {
+      "max": 1682,
+      "mean": 1059.967741935484,
+      "min": 1021,
+      "p50": 1041,
+      "p95": 1062
+    },
+    "generation_ns": {
+      "max": 14001,
+      "mean": 11060.258064516129,
+      "min": 10385,
+      "p50": 11027,
+      "p95": 11397
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 4968,
+      "mean": 3593.1290322580644,
+      "min": 2484,
+      "p50": 3705,
+      "p95": 4907
+    },
+    "packing_ns": {
+      "max": 2464,
+      "mean": 1885.1612903225807,
+      "min": 1733,
+      "p50": 1753,
+      "p95": 2414
+    },
+    "planning_ns": {
+      "max": 380,
+      "mean": 97.54838709677419,
+      "min": 40,
+      "p50": 60,
+      "p95": 341
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.1555784654620718,
+    "semantic_gflops_total": 1.137685630721134,
+    "shape": [
+      64,
+      64,
+      64
+    ],
+    "total_matrices_per_second": 2169.9631323263816,
+    "total_ns": {
+      "max": 587878,
+      "mean": 460837.32258064515,
+      "min": 410671,
+      "p50": 444382,
+      "p95": 532885
+    }
+  },
+  {
+    "backend": "enaction.cpu.scalar.reference",
+    "kind": "memory",
+    "method": "Linux /proc/self/status VmHWM; null on other OS",
+    "process_peak_rss_kib": 1376
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 171,
+      "mean": 92.03225806451613,
+      "min": 80,
+      "p50": 90,
+      "p95": 120
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 81,
+      "mean": 51.38709677419355,
+      "min": 40,
+      "p50": 50,
+      "p95": 70
+    },
+    "conversion_ns": {
+      "max": 31,
+      "mean": 28.096774193548388,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "generation_ns": {
+      "max": 60,
+      "mean": 39.806451612903224,
+      "min": 30,
+      "p50": 40,
+      "p95": 41
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 31,
+      "mean": 27.451612903225808,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "packing_ns": {
+      "max": 40,
+      "mean": 26.451612903225808,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "planning_ns": {
+      "max": 50,
+      "mean": 35.54838709677419,
+      "min": 30,
+      "p50": 40,
+      "p95": 41
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.4670433145009416,
+    "semantic_gflops_total": 0.13059505002632965,
+    "shape": [
+      2,
+      3,
+      2
+    ],
+    "total_matrices_per_second": 5441460.417763735,
+    "total_ns": {
+      "max": 341,
+      "mean": 183.7741935483871,
+      "min": 160,
+      "p50": 171,
+      "p95": 250
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 310,
+      "mean": 177.5483870967742,
+      "min": 130,
+      "p50": 171,
+      "p95": 281
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 200,
+      "mean": 176.96774193548387,
+      "min": 160,
+      "p50": 171,
+      "p95": 191
+    },
+    "conversion_ns": {
+      "max": 50,
+      "mean": 34.25806451612903,
+      "min": 30,
+      "p50": 30,
+      "p95": 41
+    },
+    "generation_ns": {
+      "max": 191,
+      "mean": 183.19354838709677,
+      "min": 180,
+      "p50": 180,
+      "p95": 191
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 30,
+      "mean": 25.806451612903224,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "packing_ns": {
+      "max": 80,
+      "mean": 59.74193548387097,
+      "min": 50,
+      "p50": 60,
+      "p95": 70
+    },
+    "planning_ns": {
+      "max": 40,
+      "mean": 33.61290322580645,
+      "min": 30,
+      "p50": 30,
+      "p95": 40
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.7232956616842873,
+    "semantic_gflops_total": 0.21974857396023703,
+    "shape": [
+      1,
+      64,
+      1
+    ],
+    "total_matrices_per_second": 1716785.7340643518,
+    "total_ns": {
+      "max": 651,
+      "mean": 582.483870967742,
+      "min": 541,
+      "p50": 571,
+      "p95": 631
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 1492,
+      "mean": 745.0645161290323,
+      "min": 551,
+      "p50": 751,
+      "p95": 1082
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 53761,
+      "mean": 49612.0,
+      "min": 49205,
+      "p50": 49504,
+      "p95": 49675
+    },
+    "conversion_ns": {
+      "max": 641,
+      "mean": 398.48387096774195,
+      "min": 370,
+      "p50": 391,
+      "p95": 451
+    },
+    "generation_ns": {
+      "max": 11778,
+      "mean": 4347.451612903225,
+      "min": 3855,
+      "p50": 4126,
+      "p95": 4617
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 80,
+      "mean": 50.74193548387097,
+      "min": 40,
+      "p50": 50,
+      "p95": 80
+    },
+    "packing_ns": {
+      "max": 721,
+      "mean": 466.48387096774195,
+      "min": 450,
+      "p50": 460,
+      "p95": 481
+    },
+    "planning_ns": {
+      "max": 120,
+      "mean": 43.935483870967744,
+      "min": 30,
+      "p50": 40,
+      "p95": 70
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.3209707328872047,
+    "semantic_gflops_total": 1.1223312663140304,
+    "shape": [
+      32,
+      64,
+      16
+    ],
+    "total_matrices_per_second": 17125.416050934302,
+    "total_ns": {
+      "max": 114462,
+      "mean": 58392.74193548387,
+      "min": 54763,
+      "p50": 55203,
+      "p95": 72921
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 100091,
+      "mean": 10380.516129032258,
+      "min": 3395,
+      "p50": 5478,
+      "p95": 61893
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 577352,
+      "mean": 433773.3548387097,
+      "min": 389107,
+      "p50": 406724,
+      "p95": 569931
+    },
+    "conversion_ns": {
+      "max": 1703,
+      "mean": 1091.3870967741937,
+      "min": 1021,
+      "p50": 1042,
+      "p95": 1592
+    },
+    "generation_ns": {
+      "max": 150257,
+      "mean": 17096.354838709678,
+      "min": 10326,
+      "p50": 11257,
+      "p95": 32749
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 6339,
+      "mean": 3394.516129032258,
+      "min": 2283,
+      "p50": 3225,
+      "p95": 4988
+    },
+    "packing_ns": {
+      "max": 4427,
+      "mean": 2081.3225806451615,
+      "min": 1712,
+      "p50": 1923,
+      "p95": 2674
+    },
+    "planning_ns": {
+      "max": 391,
+      "mean": 117.2258064516129,
+      "min": 40,
+      "p50": 80,
+      "p95": 360
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.2086680616769245,
+    "semantic_gflops_total": 1.1713404942555559,
+    "shape": [
+      64,
+      64,
+      64
+    ],
+    "total_matrices_per_second": 2234.1546902762525,
+    "total_ns": {
+      "max": 658886,
+      "mean": 447596.5806451613,
+      "min": 410440,
+      "p50": 426535,
+      "p95": 564493
+    }
+  },
+  {
+    "backend": "enaction.cpu.scalar.reference",
+    "kind": "memory",
+    "method": "Linux /proc/self/status VmHWM; null on other OS",
+    "process_peak_rss_kib": 1364
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 180,
+      "mean": 94.6774193548387,
+      "min": 80,
+      "p50": 90,
+      "p95": 121
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 70,
+      "mean": 52.12903225806452,
+      "min": 50,
+      "p50": 50,
+      "p95": 60
+    },
+    "conversion_ns": {
+      "max": 31,
+      "mean": 27.870967741935484,
+      "min": 20,
+      "p50": 30,
+      "p95": 31
+    },
+    "generation_ns": {
+      "max": 60,
+      "mean": 40.32258064516129,
+      "min": 30,
+      "p50": 40,
+      "p95": 40
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 31,
+      "mean": 25.548387096774192,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "packing_ns": {
+      "max": 40,
+      "mean": 26.161290322580644,
+      "min": 20,
+      "p50": 30,
+      "p95": 31
+    },
+    "planning_ns": {
+      "max": 50,
+      "mean": 33.903225806451616,
+      "min": 30,
+      "p50": 30,
+      "p95": 41
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.4603960396039604,
+    "semantic_gflops_total": 0.128099173553719,
+    "shape": [
+      2,
+      3,
+      2
+    ],
+    "total_matrices_per_second": 5337465.564738292,
+    "total_ns": {
+      "max": 350,
+      "mean": 187.3548387096774,
+      "min": 160,
+      "p50": 180,
+      "p95": 271
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 310,
+      "mean": 178.06451612903226,
+      "min": 130,
+      "p50": 180,
+      "p95": 270
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 201,
+      "mean": 177.1290322580645,
+      "min": 160,
+      "p50": 171,
+      "p95": 201
+    },
+    "conversion_ns": {
+      "max": 50,
+      "mean": 33.61290322580645,
+      "min": 30,
+      "p50": 30,
+      "p95": 40
+    },
+    "generation_ns": {
+      "max": 191,
+      "mean": 185.67741935483872,
+      "min": 180,
+      "p50": 190,
+      "p95": 191
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 40,
+      "mean": 24.870967741935484,
+      "min": 20,
+      "p50": 20,
+      "p95": 31
+    },
+    "packing_ns": {
+      "max": 70,
+      "mean": 59.70967741935484,
+      "min": 50,
+      "p50": 60,
+      "p95": 70
+    },
+    "planning_ns": {
+      "max": 40,
+      "mean": 32.25806451612903,
+      "min": 30,
+      "p50": 30,
+      "p95": 40
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.7226370424330723,
+    "semantic_gflops_total": 0.21771096236146165,
+    "shape": [
+      1,
+      64,
+      1
+    ],
+    "total_matrices_per_second": 1700866.893448919,
+    "total_ns": {
+      "max": 651,
+      "mean": 587.9354838709677,
+      "min": 540,
+      "p50": 581,
+      "p95": 641
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 861,
+      "mean": 655.3548387096774,
+      "min": 520,
+      "p50": 691,
+      "p95": 831
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 76566,
+      "mean": 50688.096774193546,
+      "min": 49254,
+      "p50": 49475,
+      "p95": 60712
+    },
+    "conversion_ns": {
+      "max": 391,
+      "mean": 378.2903225806452,
+      "min": 370,
+      "p50": 380,
+      "p95": 391
+    },
+    "generation_ns": {
+      "max": 16314,
+      "mean": 4447.387096774193,
+      "min": 3856,
+      "p50": 4066,
+      "p95": 4226
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 80,
+      "mean": 50.096774193548384,
+      "min": 40,
+      "p50": 50,
+      "p95": 80
+    },
+    "packing_ns": {
+      "max": 471,
+      "mean": 459.06451612903226,
+      "min": 450,
+      "p50": 461,
+      "p95": 471
+    },
+    "planning_ns": {
+      "max": 80,
+      "mean": 42.32258064516129,
+      "min": 30,
+      "p50": 40,
+      "p95": 50
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.292926824456464,
+    "semantic_gflops_total": 1.1799413867164132,
+    "shape": [
+      32,
+      64,
+      16
+    ],
+    "total_matrices_per_second": 18004.47672601949,
+    "total_ns": {
+      "max": 69095,
+      "mean": 55541.74193548387,
+      "min": 54532,
+      "p50": 55003,
+      "p95": 56826
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 10746,
+      "mean": 5004.129032258064,
+      "min": 3104,
+      "p50": 4657,
+      "p95": 8152
+    },
+    "backend": "enaction.cpu.scalar.reference",
+    "compute_call_ns": {
+      "max": 502729,
+      "mean": 420298.1612903226,
+      "min": 389929,
+      "p50": 404932,
+      "p95": 498653
+    },
+    "conversion_ns": {
+      "max": 1222,
+      "mean": 1046.4516129032259,
+      "min": 1021,
+      "p50": 1041,
+      "p95": 1072
+    },
+    "generation_ns": {
+      "max": 24286,
+      "mean": 11332.09677419355,
+      "min": 10026,
+      "p50": 11017,
+      "p95": 11377
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 21412,
+      "mean": 3738.8064516129034,
+      "min": 2163,
+      "p50": 2865,
+      "p95": 4878
+    },
+    "packing_ns": {
+      "max": 2384,
+      "mean": 1801.1290322580646,
+      "min": 1703,
+      "p50": 1753,
+      "p95": 2344
+    },
+    "planning_ns": {
+      "max": 250,
+      "mean": 117.25806451612904,
+      "min": 40,
+      "p50": 110,
+      "p95": 240
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.2474192092357168,
+    "semantic_gflops_total": 1.1289548150730062,
+    "shape": [
+      64,
+      64,
+      64
+    ],
+    "total_matrices_per_second": 2153.310423036587,
+    "total_ns": {
+      "max": 765086,
+      "mean": 464401.22580645164,
+      "min": 409919,
+      "p50": 438923,
+      "p95": 650703
+    }
+  },
+  {
+    "backend": "enaction.cpu.scalar.reference",
+    "kind": "memory",
+    "method": "Linux /proc/self/status VmHWM; null on other OS",
+    "process_peak_rss_kib": 1360
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 180,
+      "mean": 103.2258064516129,
+      "min": 81,
+      "p50": 100,
+      "p95": 180
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 160,
+      "mean": 107.83870967741936,
+      "min": 80,
+      "p50": 110,
+      "p95": 150
+    },
+    "conversion_ns": {
+      "max": 50,
+      "mean": 28.096774193548388,
+      "min": 20,
+      "p50": 30,
+      "p95": 40
+    },
+    "generation_ns": {
+      "max": 60,
+      "mean": 40.67741935483871,
+      "min": 30,
+      "p50": 40,
+      "p95": 51
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 40,
+      "mean": 26.451612903225808,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "packing_ns": {
+      "max": 40,
+      "mean": 27.419354838709676,
+      "min": 20,
+      "p50": 30,
+      "p95": 40
+    },
+    "planning_ns": {
+      "max": 80,
+      "mean": 37.83870967741935,
+      "min": 30,
+      "p50": 40,
+      "p95": 50
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.22255459168411607,
+    "semantic_gflops_total": 0.09483747609942639,
+    "shape": [
+      2,
+      3,
+      2
+    ],
+    "total_matrices_per_second": 3951561.504142766,
+    "total_ns": {
+      "max": 471,
+      "mean": 253.06451612903226,
+      "min": 210,
+      "p50": 241,
+      "p95": 391
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 581,
+      "mean": 220.48387096774192,
+      "min": 140,
+      "p50": 190,
+      "p95": 571
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 411,
+      "mean": 240.5483870967742,
+      "min": 210,
+      "p50": 230,
+      "p95": 371
+    },
+    "conversion_ns": {
+      "max": 81,
+      "mean": 38.225806451612904,
+      "min": 30,
+      "p50": 31,
+      "p95": 70
+    },
+    "generation_ns": {
+      "max": 201,
+      "mean": 185.7741935483871,
+      "min": 180,
+      "p50": 181,
+      "p95": 200
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 40,
+      "mean": 26.483870967741936,
+      "min": 20,
+      "p50": 30,
+      "p95": 31
+    },
+    "packing_ns": {
+      "max": 100,
+      "mean": 61.38709677419355,
+      "min": 50,
+      "p50": 60,
+      "p95": 80
+    },
+    "planning_ns": {
+      "max": 120,
+      "mean": 42.03225806451613,
+      "min": 30,
+      "p50": 40,
+      "p95": 90
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.5321174735148183,
+    "semantic_gflops_total": 0.18661524714292432,
+    "shape": [
+      1,
+      64,
+      1
+    ],
+    "total_matrices_per_second": 1457931.6183040964,
+    "total_ns": {
+      "max": 1252,
+      "mean": 685.9032258064516,
+      "min": 601,
+      "p50": 651,
+      "p95": 941
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 1182,
+      "mean": 755.3548387096774,
+      "min": 540,
+      "p50": 761,
+      "p95": 1092
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 331160,
+      "mean": 80776.93548387097,
+      "min": 53721,
+      "p50": 53851,
+      "p95": 175405
+    },
+    "conversion_ns": {
+      "max": 912,
+      "mean": 445.48387096774195,
+      "min": 410,
+      "p50": 430,
+      "p95": 481
+    },
+    "generation_ns": {
+      "max": 6409,
+      "mean": 4154.677419354839,
+      "min": 3775,
+      "p50": 4116,
+      "p95": 4246
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 231,
+      "mean": 80.12903225806451,
+      "min": 50,
+      "p50": 70,
+      "p95": 170
+    },
+    "packing_ns": {
+      "max": 1071,
+      "mean": 599.3225806451613,
+      "min": 571,
+      "p50": 581,
+      "p95": 621
+    },
+    "planning_ns": {
+      "max": 150,
+      "mean": 59.41935483870968,
+      "min": 40,
+      "p50": 50,
+      "p95": 121
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.8113207019729761,
+    "semantic_gflops_total": 0.9913349149545179,
+    "shape": [
+      32,
+      64,
+      16
+    ],
+    "total_matrices_per_second": 15126.570357582365,
+    "total_ns": {
+      "max": 111319,
+      "mean": 66108.83870967742,
+      "min": 59290,
+      "p50": 59800,
+      "p95": 101162
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 12028,
+      "mean": 5848.8387096774195,
+      "min": 3255,
+      "p50": 5368,
+      "p95": 9544
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 672616,
+      "mean": 486863.7419354839,
+      "min": 419354,
+      "p50": 466255,
+      "p95": 649731
+    },
+    "conversion_ns": {
+      "max": 1993,
+      "mean": 1096.4516129032259,
+      "min": 1012,
+      "p50": 1042,
+      "p95": 1732
+    },
+    "generation_ns": {
+      "max": 29645,
+      "mean": 11538.193548387097,
+      "min": 10176,
+      "p50": 10917,
+      "p95": 13310
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 69355,
+      "mean": 5404.322580645161,
+      "min": 1923,
+      "p50": 3105,
+      "p95": 6069
+    },
+    "packing_ns": {
+      "max": 45659,
+      "mean": 3757.967741935484,
+      "min": 2273,
+      "p50": 2303,
+      "p95": 3395
+    },
+    "planning_ns": {
+      "max": 431,
+      "mean": 145.16129032258064,
+      "min": 60,
+      "p50": 140,
+      "p95": 221
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.0768680327595135,
+    "semantic_gflops_total": 0.9988592316991253,
+    "shape": [
+      64,
+      64,
+      64
+    ],
+    "total_matrices_per_second": 1905.1727899534708,
+    "total_ns": {
+      "max": 656011,
+      "mean": 524886.7741935484,
+      "min": 441897,
+      "p50": 524171,
+      "p95": 654328
+    }
+  },
+  {
+    "backend": "enaction.cpu.zig.scalar",
+    "kind": "memory",
+    "method": "Linux /proc/self/status VmHWM; null on other OS",
+    "process_peak_rss_kib": 1580
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 180,
+      "mean": 97.19354838709677,
+      "min": 80,
+      "p50": 91,
+      "p95": 120
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 150,
+      "mean": 103.61290322580645,
+      "min": 90,
+      "p50": 100,
+      "p95": 130
+    },
+    "conversion_ns": {
+      "max": 50,
+      "mean": 25.806451612903224,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "generation_ns": {
+      "max": 60,
+      "mean": 39.38709677419355,
+      "min": 30,
+      "p50": 40,
+      "p95": 41
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 40,
+      "mean": 25.516129032258064,
+      "min": 20,
+      "p50": 30,
+      "p95": 31
+    },
+    "packing_ns": {
+      "max": 40,
+      "mean": 27.451612903225808,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "planning_ns": {
+      "max": 81,
+      "mean": 36.87096774193548,
+      "min": 30,
+      "p50": 31,
+      "p95": 50
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.23163138231631383,
+    "semantic_gflops_total": 0.09494640122511486,
+    "shape": [
+      2,
+      3,
+      2
+    ],
+    "total_matrices_per_second": 3956100.0510464525,
+    "total_ns": {
+      "max": 420,
+      "mean": 252.7741935483871,
+      "min": 220,
+      "p50": 241,
+      "p95": 340
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 310,
+      "mean": 190.16129032258064,
+      "min": 150,
+      "p50": 190,
+      "p95": 270
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 261,
+      "mean": 225.83870967741936,
+      "min": 210,
+      "p50": 230,
+      "p95": 241
+    },
+    "conversion_ns": {
+      "max": 70,
+      "mean": 37.12903225806452,
+      "min": 30,
+      "p50": 40,
+      "p95": 41
+    },
+    "generation_ns": {
+      "max": 191,
+      "mean": 182.06451612903226,
+      "min": 180,
+      "p50": 181,
+      "p95": 191
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 40,
+      "mean": 27.516129032258064,
+      "min": 20,
+      "p50": 30,
+      "p95": 31
+    },
+    "packing_ns": {
+      "max": 90,
+      "mean": 60.38709677419355,
+      "min": 50,
+      "p50": 60,
+      "p95": 70
+    },
+    "planning_ns": {
+      "max": 50,
+      "mean": 38.096774193548384,
+      "min": 30,
+      "p50": 40,
+      "p95": 41
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.5667761748321668,
+    "semantic_gflops_total": 0.19880755548875195,
+    "shape": [
+      1,
+      64,
+      1
+    ],
+    "total_matrices_per_second": 1553184.0272558746,
+    "total_ns": {
+      "max": 741,
+      "mean": 643.8387096774194,
+      "min": 591,
+      "p50": 621,
+      "p95": 701
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 851,
+      "mean": 678.1290322580645,
+      "min": 541,
+      "p50": 711,
+      "p95": 842
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 64127,
+      "mean": 54501.096774193546,
+      "min": 53631,
+      "p50": 53741,
+      "p95": 64017
+    },
+    "conversion_ns": {
+      "max": 441,
+      "mean": 425.7741935483871,
+      "min": 410,
+      "p50": 430,
+      "p95": 441
+    },
+    "generation_ns": {
+      "max": 4246,
+      "mean": 4028.7419354838707,
+      "min": 3776,
+      "p50": 4046,
+      "p95": 4217
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 80,
+      "mean": 58.16129032258065,
+      "min": 50,
+      "p50": 60,
+      "p95": 70
+    },
+    "packing_ns": {
+      "max": 591,
+      "mean": 580.5806451612904,
+      "min": 570,
+      "p50": 581,
+      "p95": 591
+    },
+    "planning_ns": {
+      "max": 160,
+      "mean": 49.74193548387097,
+      "min": 40,
+      "p50": 40,
+      "p95": 70
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.2024712139560376,
+    "semantic_gflops_total": 1.0604663593238457,
+    "shape": [
+      32,
+      64,
+      16
+    ],
+    "total_matrices_per_second": 16181.432484799892,
+    "total_ns": {
+      "max": 83256,
+      "mean": 61799.22580645161,
+      "min": 59259,
+      "p50": 59570,
+      "p95": 81012
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 62895,
+      "mean": 7087.193548387097,
+      "min": 3245,
+      "p50": 4737,
+      "p95": 9655
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 1134403,
+      "mean": 471322.93548387097,
+      "min": 419174,
+      "p50": 435138,
+      "p95": 580687
+    },
+    "conversion_ns": {
+      "max": 1773,
+      "mean": 1070.0645161290322,
+      "min": 1012,
+      "p50": 1032,
+      "p95": 1352
+    },
+    "generation_ns": {
+      "max": 31858,
+      "mean": 11633.870967741936,
+      "min": 10055,
+      "p50": 11046,
+      "p95": 11387
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 5949,
+      "mean": 2980.6451612903224,
+      "min": 1822,
+      "p50": 2904,
+      "p95": 5919
+    },
+    "packing_ns": {
+      "max": 3776,
+      "mean": 2356.3870967741937,
+      "min": 2283,
+      "p50": 2313,
+      "p95": 2334
+    },
+    "planning_ns": {
+      "max": 320,
+      "mean": 116.61290322580645,
+      "min": 40,
+      "p50": 110,
+      "p95": 200
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.112375317491719,
+    "semantic_gflops_total": 1.069468234454954,
+    "shape": [
+      64,
+      64,
+      64
+    ],
+    "total_matrices_per_second": 2039.8487748240548,
+    "total_ns": {
+      "max": 638725,
+      "mean": 490232.4193548387,
+      "min": 440185,
+      "p50": 471973,
+      "p95": 624273
+    }
+  },
+  {
+    "backend": "enaction.cpu.zig.scalar",
+    "kind": "memory",
+    "method": "Linux /proc/self/status VmHWM; null on other OS",
+    "process_peak_rss_kib": 1516
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 180,
+      "mean": 99.54838709677419,
+      "min": 80,
+      "p50": 91,
+      "p95": 120
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 140,
+      "mean": 111.7741935483871,
+      "min": 90,
+      "p50": 111,
+      "p95": 131
+    },
+    "conversion_ns": {
+      "max": 50,
+      "mean": 28.387096774193548,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "generation_ns": {
+      "max": 60,
+      "mean": 40.03225806451613,
+      "min": 30,
+      "p50": 40,
+      "p95": 50
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 50,
+      "mean": 25.193548387096776,
+      "min": 20,
+      "p50": 20,
+      "p95": 31
+    },
+    "packing_ns": {
+      "max": 30,
+      "mean": 26.129032258064516,
+      "min": 20,
+      "p50": 30,
+      "p95": 30
+    },
+    "planning_ns": {
+      "max": 80,
+      "mean": 37.83870967741935,
+      "min": 30,
+      "p50": 40,
+      "p95": 50
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.21471861471861473,
+    "semantic_gflops_total": 0.09465648854961832,
+    "shape": [
+      2,
+      3,
+      2
+    ],
+    "total_matrices_per_second": 3944020.356234097,
+    "total_ns": {
+      "max": 391,
+      "mean": 253.5483870967742,
+      "min": 210,
+      "p50": 250,
+      "p95": 370
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 320,
+      "mean": 205.80645161290323,
+      "min": 141,
+      "p50": 200,
+      "p95": 310
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 451,
+      "mean": 245.6451612903226,
+      "min": 210,
+      "p50": 231,
+      "p95": 321
+    },
+    "conversion_ns": {
+      "max": 70,
+      "mean": 36.483870967741936,
+      "min": 30,
+      "p50": 30,
+      "p95": 61
+    },
+    "generation_ns": {
+      "max": 210,
+      "mean": 185.80645161290323,
+      "min": 180,
+      "p50": 181,
+      "p95": 201
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 40,
+      "mean": 27.483870967741936,
+      "min": 20,
+      "p50": 30,
+      "p95": 31
+    },
+    "packing_ns": {
+      "max": 90,
+      "mean": 63.0,
+      "min": 50,
+      "p50": 60,
+      "p95": 90
+    },
+    "planning_ns": {
+      "max": 60,
+      "mean": 38.064516129032256,
+      "min": 30,
+      "p50": 40,
+      "p95": 60
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 0.5210768220617202,
+    "semantic_gflops_total": 0.1818431785894322,
+    "shape": [
+      1,
+      64,
+      1
+    ],
+    "total_matrices_per_second": 1420649.8327299391,
+    "total_ns": {
+      "max": 1352,
+      "mean": 703.9032258064516,
+      "min": 581,
+      "p50": 641,
+      "p95": 1121
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 902,
+      "mean": 694.8387096774194,
+      "min": 541,
+      "p50": 651,
+      "p95": 901
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 54001,
+      "mean": 53788.67741935484,
+      "min": 53631,
+      "p50": 53791,
+      "p95": 53971
+    },
+    "conversion_ns": {
+      "max": 451,
+      "mean": 426.5483870967742,
+      "min": 401,
+      "p50": 430,
+      "p95": 441
+    },
+    "generation_ns": {
+      "max": 15503,
+      "mean": 4468.677419354839,
+      "min": 3776,
+      "p50": 4116,
+      "p95": 4286
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 71,
+      "mean": 55.87096774193548,
+      "min": 50,
+      "p50": 50,
+      "p95": 70
+    },
+    "packing_ns": {
+      "max": 591,
+      "mean": 582.483870967742,
+      "min": 570,
+      "p50": 581,
+      "p95": 591
+    },
+    "planning_ns": {
+      "max": 60,
+      "mean": 45.516129032258064,
+      "min": 40,
+      "p50": 50,
+      "p95": 51
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.2183976841270707,
+    "semantic_gflops_total": 0.9970862107635973,
+    "shape": [
+      32,
+      64,
+      16
+    ],
+    "total_matrices_per_second": 15214.32816716915,
+    "total_ns": {
+      "max": 118269,
+      "mean": 65727.51612903226,
+      "min": 59350,
+      "p50": 59760,
+      "p95": 94834
+    }
+  },
+  {
+    "allocation_zero_init_ns": {
+      "max": 10536,
+      "mean": 5414.967741935484,
+      "min": 3275,
+      "p50": 4877,
+      "p95": 8854
+    },
+    "backend": "enaction.cpu.zig.scalar",
+    "compute_call_ns": {
+      "max": 932709,
+      "mean": 477332.3870967742,
+      "min": 419344,
+      "p50": 437621,
+      "p95": 700729
+    },
+    "conversion_ns": {
+      "max": 1092,
+      "mean": 1044.8064516129032,
+      "min": 1012,
+      "p50": 1042,
+      "p95": 1081
+    },
+    "generation_ns": {
+      "max": 11418,
+      "mean": 10966.774193548386,
+      "min": 10036,
+      "p50": 11076,
+      "p95": 11418
+    },
+    "kind": "summary",
+    "output_copy_ns": {
+      "max": 6540,
+      "mean": 3226.3870967741937,
+      "min": 1783,
+      "p50": 2914,
+      "p95": 6119
+    },
+    "packing_ns": {
+      "max": 15654,
+      "mean": 2738.3548387096776,
+      "min": 2273,
+      "p50": 2313,
+      "p95": 2334
+    },
+    "planning_ns": {
+      "max": 490,
+      "mean": 124.0,
+      "min": 40,
+      "p50": 100,
+      "p95": 370
+    },
+    "samples": 31,
+    "semantic_gflops_compute": 1.0983708924274314,
+    "semantic_gflops_total": 1.0559848578910187,
+    "shape": [
+      64,
+      64,
+      64
+    ],
+    "total_matrices_per_second": 2014.1312749691367,
+    "total_ns": {
+      "max": 1082355,
+      "mean": 496491.96774193546,
+      "min": 439434,
+      "p50": 456980,
+      "p95": 765106
+    }
+  },
+  {
+    "backend": "enaction.cpu.zig.scalar",
+    "kind": "memory",
+    "method": "Linux /proc/self/status VmHWM; null on other OS",
+    "process_peak_rss_kib": 1516
+  }
+]

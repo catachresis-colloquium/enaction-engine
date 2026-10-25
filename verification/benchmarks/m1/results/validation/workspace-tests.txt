@@ -1,0 +1,224 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14.04s
+   Compiling enaction-accelerator-native v0.1.0 (/workspace/scratch/2b208cd7a904/enaction-engine/crates/enaction-accelerator-native)
+   Compiling enaction-accelerator v0.1.0 (/workspace/scratch/2b208cd7a904/enaction-engine/crates/enaction-accelerator)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.80s
+     Running unittests src/lib.rs (target/debug/deps/enaction_accelerator-c7064b8e7d341436)
+
+running 9 tests
+test tests::authoritative_lane_refuses_remote_backend_shape ... ok
+test tests::exact_dot_conformance ... ok
+test tests::exact_matrix_conformance ... ok
+test tests::f32_binary_family_is_correct_and_failure_atomic ... ok
+test tests::f32_pointwise_is_advisory_and_nonfinite_failure_is_atomic ... ok
+test tests::malformed_shapes_and_overflow_fail_loudly ... ok
+test tests::planted_runtime_failure_does_not_silently_retry_reference ... ok
+test tests::planner_is_independent_of_registration_order ... ok
+test tests::registry_rejects_duplicate_identity_and_unsupported_claims ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/conformance.rs (target/debug/deps/conformance-73aa820672094b18)
+
+running 1 test
+test scalar_reference_matches_v1_cross_language_fixtures ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/m1_matmul.rs (target/debug/examples/m1_matmul-4cd5993f2b29a2dc)
+
+running 4 tests
+test experiment::tests::generator_repeats_and_percentiles_are_nearest_rank ... ok
+test experiment::tests::validator_rejects_corruption_and_wrong_backend ... ok
+test experiment::tests::rectangular_packing_has_known_orientation ... ok
+test benchmark_reference_contract_checks ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (target/debug/deps/enaction_accelerator_native-c6d9e95d5a6f1ce7)
+
+running 6 tests
+test tests::generated_layouts_match_idris2_proofs ... ok
+test tests::axiom_derived_f32_kernels_execute_through_safe_registry ... ok
+test tests::axiom_derived_binary_kernels_cross_the_generated_abi ... ok
+test tests::zig_backend_executes_through_the_safe_registry ... ok
+test tests::zig_overflow_is_failure_atomic ... ok
+test tests::native_capability_evidence_is_self_consistent ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/conformance.rs (target/debug/deps/conformance-6437a54162896197)
+
+running 3 tests
+test fresh_process_worker_emits_canonical_bytes ... ok
+test rust_and_zig_match_v1_canonical_fixtures_byte_for_byte ... ok
+test zig_canonical_bytes_repeat_across_fresh_processes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests examples/m1_matmul_native.rs (target/debug/examples/m1_matmul_native-5a277edf1bd9e613)
+
+running 4 tests
+test experiment::tests::validator_rejects_corruption_and_wrong_backend ... ok
+test experiment::tests::rectangular_packing_has_known_orientation ... ok
+test experiment::tests::generator_repeats_and_percentiles_are_nearest_rank ... ok
+test benchmark_native_contract_checks ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (target/debug/deps/enaction_contracts-2946c13c6593e67f)
+
+running 26 tests
+test belief::tests::affect_annotation_has_no_field_that_could_carry_truth ... ok
+test belief::tests::a_valid_interval_round_trips_through_serde ... ok
+test belief::tests::an_inverted_interval_is_unrepresentable ... ok
+test belief::tests::belief_nesting_uses_the_trace_crates_representation ... ok
+test package::tests::a_newer_minor_than_the_host_is_rejected ... ok
+test package::tests::a_belief_without_provenance_is_rejected ... ok
+test belief::tests::ignorance_outranks_the_believed_floor ... ok
+test belief::tests::the_normative_evaluation_order_is_walked_in_order ... ok
+test package::tests::a_supersession_cycle_names_a_belief_actually_on_the_cycle_exactly_once ... ok
+test package::tests::a_valid_package_validates ... ok
+test package::tests::a_source_event_the_package_lacks_is_rejected ... ok
+test package::tests::a_wrong_kernel_major_is_rejected ... ok
+test package::tests::an_empty_name_in_an_ascription_path_is_rejected ... ok
+test package::tests::a_package_round_trips_through_serde ... ok
+test package::tests::decreasing_and_equal_stamps_are_both_non_monotonic ... ok
+test package::tests::duplicate_ids_are_rejected_for_events_and_beliefs ... ok
+test package::tests::every_fault_is_reported_not_only_the_first ... ok
+test reduce::tests::a_belief_does_not_move_when_no_event_names_its_holder ... ok
+test reduce::tests::replaying_the_same_events_yields_equal_states ... ok
+test package::tests::nesting_is_bounded_at_the_declared_maximum_exactly ... ok
+test package::tests::supersession_must_name_a_real_belief_and_must_not_loop ... ok
+test package::tests::the_digest_is_compared_when_supplied_and_skipped_when_not ... ok
+test version::tests::a_host_accepts_its_own_version_and_older_minors ... ok
+test version::tests::a_newer_minor_than_the_host_knows_is_rejected ... ok
+test version::tests::a_wrong_major_is_rejected_in_both_directions ... ok
+test package::tests::the_supersession_walk_is_linear_not_quadratic_in_chain_length ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running unittests src/lib.rs (target/debug/deps/enaction_creusot_verification-01467bcedc233a1c)
+
+running 3 tests
+test contracts_version::tests::a_host_accepts_its_own_version_and_older_minors ... ok
+test contracts_version::tests::a_newer_minor_than_the_host_knows_is_rejected ... ok
+test contracts_version::tests::a_wrong_major_is_rejected_in_both_directions ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/enaction_time-b7144477ab04e190)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/blend.rs (target/debug/deps/blend-be8acde88edf80a6)
+
+running 15 tests
+test a_stationary_value_does_not_shimmer ... ok
+test alpha_is_clamped_and_nan_safe ... ok
+test a_stationary_slot_renders_stationary ... ok
+test commit_then_snap_leaves_nothing_to_interpolate ... ok
+test commit_shifts_curr_into_prev ... ok
+test computing_the_endpoint_would_be_inexact ... ok
+test endpoints_are_bit_exact ... ok
+test f32_blends_through_f64_without_leaving_the_interval ... ok
+test interpolation_is_monotonic_across_the_interval ... ok
+test len_reports_the_slot_count ... ok
+test prime_seeds_both_steps ... ok
+test slots_are_independent ... ok
+test snap_alone_would_lose_the_fresh_state ... ok
+test the_buffer_is_inline_fixed_size_storage ... ok
+test sampling_past_the_end_panics - should panic ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/idaptik_parity.rs (target/debug/deps/idaptik_parity-1716787d9c19af50)
+
+running 6 tests
+test discrete_values_are_read_from_current_not_interpolated ... ok
+test healthy_fixed_step_accounting_matches_sixty_hertz_host_policy ... ok
+test discontinuity_resets_partial_wall_clock_time ... ok
+test continuous_interpolation_matches_idaptik_vectors_bit_for_bit ... ok
+test hostile_elapsed_time_is_ignored_or_bounded_by_declared_policy ... ok
+test restart_and_snapshot_restore_use_commit_then_snap ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/step.rs (target/debug/deps/step-85b09fa8939bcf34)
+
+running 18 tests
+test a_huge_stall_is_capped_rather_than_replayed ... ok
+test a_long_frame_owes_several_steps_and_keeps_the_remainder ... ok
+test a_nan_frame_does_not_poison_the_clock_permanently ... ok
+test a_short_frame_owes_no_steps_but_accumulates ... ok
+test a_zero_step_cap_is_rejected - should panic ... ok
+test a_zero_rate_is_rejected - should panic ... ok
+test a_nan_step_length_is_rejected - should panic ... ok
+test a_stall_does_not_starve_later_frames ... ok
+test an_exact_frame_owes_exactly_one_step ... ok
+test an_exactly_divisible_frame_leaves_no_remainder ... ok
+test no_simulation_time_is_invented_or_lost ... ok
+test reset_discards_the_partial_step ... ok
+test non_finite_and_negative_time_is_ignored ... ok
+test rate_and_step_length_round_trip ... ok
+test the_cap_is_configurable ... ok
+test took_shortcut_resets_on_the_next_healthy_frame ... ok
+test driving_a_buffer_from_the_clock_never_leaves_the_interval ... ok
+test alpha_stays_in_range_across_a_long_irregular_run ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/enaction_trace-019201f65f6c8086)
+
+running 48 tests
+test belief::tests::advance_is_any_monotone_accumulator ... ok
+test belief::tests::a_meter_and_its_belief_enter_the_trace_as_caused_tropes ... ok
+test belief::tests::channel_tables_are_data_and_missing_channels_are_inert ... ok
+test belief::tests::observed_matches_idaptik_bit_for_bit_across_a_long_run ... ok
+test belief::tests::pinning_means_never_forgetting ... ok
+test belief::tests::quantisation_is_explicit_and_saturating ... ok
+test belief::tests::the_ceiling_and_floor_are_exact ... ok
+test belief::tests::scaling_reproduces_the_from_value_signal_law ... ok
+test belief::tests::the_threshold_is_inclusive_and_none_below_it ... ok
+test belief::tests::ties_resolve_to_the_earlier_entry ... ok
+test mass::tests::combination_saturates_instead_of_overflowing ... ok
+test belief::tests::unobserved_matches_idaptik_bit_for_bit ... ok
+test mass::tests::the_scale_is_the_hard_ceiling ... ok
+test mass::tests::ordering_is_total_and_matches_the_raw_scale ... ok
+test store::tests::a_delta_answers_before_the_baseline_and_perspectives_stay_separate ... ok
+test mass::tests::deserialization_cannot_smuggle_an_out_of_range_value ... ok
+test store::tests::a_revision_cites_the_event_it_supersedes ... ok
+test store::tests::rebuild_leaves_hand_built_epistemic_seams_alone ... ok
+test store::tests::no_belief_moves_without_evidence ... ok
+test store::tests::store_minted_tropes_compose_with_theory_of_mind_unmodified ... ok
+test store::tests::the_baseline_is_registered_not_asserted ... ok
+test store::tests::rebuild_reproduces_the_store_from_a_round_tripped_trace ... ok
+test store::tests::the_deception_discovery_scenario_leaves_a_traceable_moment ... ok
+test tests::a_retraction_must_cite_its_contradicting_evidence ... ok
+test tests::a_self_model_is_a_legitimate_particular ... ok
+test tests::a_retraction_needs_a_prior_assertion ... ok
+test tests::a_shuffled_trace_with_sound_causality_is_valid ... ok
+test tests::an_absent_cause_is_distinguished_from_an_out_of_order_one ... ok
+test tests::an_ascription_is_held_by_the_ascriber_not_the_bearer ... ok
+test tests::an_event_must_be_about_a_declared_trope ... ok
+test tests::confidence_crosses_only_at_the_epistemic_seam ... ok
+test tests::causality_must_point_backwards ... ok
+test tests::deterministic_appraisal_chain_keeps_every_domain_explicit ... ok
+test tests::an_empty_name_in_the_path_is_rejected ... ok
+test tests::held_value_reads_absence_after_retraction_while_latest_value_stays_telemetry ... ok
+test tests::divergence_measures_how_wrong_a_model_is ... ok
+test tests::nesting_beyond_the_declared_order_is_rejected ... ok
+test tests::duplicate_ids_are_caught_for_both_tropes_and_events ... ok
+test tests::held_by_separates_an_agents_world_from_the_world ... ok
+test tests::peers_finds_every_other_bearer_of_a_resembling_trope ... ok
+test tests::only_epistemic_tropes_can_be_retracted ... ok
+test tests::resemblance_respects_domain_and_intentional_object ... ok
+test tests::pre_revision_traces_parse_and_default_events_serialize_unchanged ... ok
+test tests::second_order_ascribes_the_first_order_not_the_ground ... ok
+test tests::sally_anne_the_ascription_tracks_sallys_evidence_not_the_world ... ok
+test tests::the_belief_contract_profile_demands_provenance_and_confidence ... ok
+test tests::the_guilty_conscience_trap_shows_up_as_projection ... ok
+test tests::two_bearers_of_one_kind_are_distinct_particulars_that_resemble ... ok
+
+test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
