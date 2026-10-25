@@ -211,6 +211,7 @@ REQUIRED_WORKFLOWS=(
     "security-policy.yml"
     "wellknown-enforcement.yml"
     "workflow-linter.yml"
+    "proven-tests-gate.yml"
     # npm-bun-blocker.yml and ts-blocker.yml were retired in #14 and replaced by
     # runtime-policy.yml: the old gate failed any build carrying bun.lockb with
     # "Use Deno instead", which blocked the estate's new first-choice runtime, so

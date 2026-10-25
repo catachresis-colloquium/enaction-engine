@@ -7,11 +7,9 @@ name: Workflow Security Linter
 
 on:
   push:
-    paths:
-      - '.github/workflows/**'
+    branches:
+      - main
   pull_request:
-    paths:
-      - '.github/workflows/**'
   workflow_dispatch:
 
 concurrency:
@@ -75,6 +73,18 @@ jobs:
           fi
           echo "All workflows have SPDX headers"
 
+      - name: Test foundation workflow contracts
+        run: |
+          set -euo pipefail
+          bash tests/workflows/foundation_ci_config_test.sh
+          bash tests/workflows/lock_sync_gate_test.sh
+          bash tests/workflows/check_lock_sync_test.sh
+          bash tests/workflows/proven_tests_config_test.sh
+          bash tests/workflows/validate_workflows_test.sh
+
+      - name: Test static-analysis report contracts
+        run: bash tests/workflows/static_analysis_report_test.sh
+
       - name: Check Permissions Declaration
         run: |
           echo "=== Checking Permissions ==="
@@ -92,10 +102,10 @@ jobs:
           fi
           echo "All workflows have permissions declared"
 
-      - name: Check SHA-Pinned Actions
+      - name: Check Action Lock Coverage and Reusable Workflow Pins
         run: |
           set -euo pipefail
-          echo "=== Checking Action Pinning ==="
+          echo "=== Checking Action Lock Coverage and Pinning ==="
           if [ ! -f .github/workflows/actions.lock ]; then
             echo "ERROR: .github/workflows/actions.lock is required"
             exit 1
