@@ -358,6 +358,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [panic-attack-assail, hypatia-scan, patch-bridge-triage, pons-rust-scan]
+    if: ${{ !cancelled() && needs.patch-bridge-triage.result == 'success' && needs.pons-rust-scan.result == 'success' && needs.panic-attack-assail.result != 'skipped' && needs.hypatia-scan.result != 'skipped' }}
     permissions:
       actions: read
       contents: read
