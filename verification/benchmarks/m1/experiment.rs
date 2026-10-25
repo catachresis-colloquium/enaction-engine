@@ -27,6 +27,8 @@ const PHASES: [&str; 7] = [
 type Shape = (usize, usize, usize);
 type Error = Box<dyn std::error::Error>;
 
+/// Build an advisory f32 matmul request for `(m, k, n)`, requiring the named
+/// backend, resilient support, and at least tolerance-bounded determinism.
 fn request(shape: Shape, backend: &dyn Backend) -> KernelRequest<'static> {
     KernelRequest {
         operation: Operation::TensorF32MatMul,
@@ -44,8 +46,9 @@ fn request(shape: Shape, backend: &dyn Backend) -> KernelRequest<'static> {
     }
 }
 
-// Integer state evolution is platform-independent. Division deliberately makes
-// most source f64 values inexact in f32, unlike all-integer toy fixtures.
+/// Fill `values` deterministically in `[-1000/997, 1000/997]`, advancing `state`
+/// once per element so subsequent calls can continue the same sequence.
+/// Division deliberately makes most source f64 values inexact in f32.
 fn generate(values: &mut [f64], state: &mut u64) {
     for value in values {
         *state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
@@ -53,6 +56,8 @@ fn generate(values: &mut [f64], state: &mut u64) {
     }
 }
 
+/// Copy a `k`-by-`n` matrix from column-major to row-major storage.
+/// Both slices must hold at least `k * n` elements; zero extents write nothing.
 fn pack_right(k: usize, n: usize, column_major: &[f32], row_major: &mut [f32]) {
     for row in 0..k {
         for column in 0..n {
@@ -73,12 +78,20 @@ struct Run {
     evidence: ExecutionEvidence,
 }
 
+/// Return elapsed nanoseconds, panicking if the duration exceeds `u64::MAX`.
 fn nanos(start: Instant) -> u64 {
     u64::try_from(start.elapsed().as_nanos()).expect("measurement fits u64")
 }
 
-// The diagnostic pass takes inner timestamps; the total-latency pass does not.
-// Both perform identical work and retain all seven buffers through output copy.
+/// Generate, convert, and pack seeded inputs, then plan, execute, and copy a
+/// matrix result. Return operands, the copied result, execution evidence, live
+/// buffer capacity in bytes, and timings in nanoseconds.
+///
+/// With `profile`, record seven phase durations; otherwise leave them zero.
+/// Total latency covers allocation through output copy, excluding validation
+/// and buffer destruction. Both modes retain seven buffers through the copy.
+/// Return an error for a non-matrix layout and propagate planning and execution
+/// errors without retrying.
 fn pipeline(
     registry: &Registry<'_>,
     req: &KernelRequest<'_>,
@@ -168,8 +181,17 @@ fn pipeline(
     })
 }
 
-// Independent f64 arithmetic over the quantized operands. This is a numerical
-// oracle, not a replacement backend or an exact real-arithmetic proof.
+/// Check execution evidence and numerical error using independent f64 arithmetic
+/// over the quantized operands. `shape` must match the run's buffer dimensions.
+/// Return JSON error maxima, a checksum, and Rust-reference bit mismatch counts;
+/// bit mismatches alone do not fail validation. Relative error uses a `1e-12`
+/// denominator floor, and conversion error is measured against the f64 inputs.
+///
+/// Return an error for unexpected evidence, non-finite results, or error above
+/// `2 * gamma_k * sum(abs(products)) + 1e-12`, where
+/// `gamma_k = k * f32::EPSILON / (1 - k * f32::EPSILON)`.
+/// Propagate errors from the scalar reference execution. This numerical oracle
+/// is not an exact real-arithmetic proof.
 fn validate(run: &Run, shape: Shape, backend: &dyn Backend) -> Result<Value, Error> {
     let (m, k, n) = shape;
     if run.evidence.backend_id != backend.descriptor().id
@@ -238,6 +260,8 @@ fn validate(run: &Run, shape: Shape, backend: &dyn Backend) -> Result<Value, Err
     )
 }
 
+/// Return JSON min, max, mean, and nearest-rank p50/p95 in the input's units.
+/// Panics if `values` is empty.
 fn distribution(values: &[u64]) -> Value {
     let mut sorted = values.to_vec();
     sorted.sort_unstable();
@@ -247,6 +271,15 @@ fn distribution(values: &[u64]) -> Value {
         "max": sorted[sorted.len()-1], "mean": values.iter().map(|&v| v as f64).sum::<f64>() / values.len() as f64})
 }
 
+/// Run the four fixed matmul shapes using only `backend` and write metadata,
+/// samples, summaries, and memory statistics as JSON Lines to stdout.
+/// Read an optional sample count from process arguments (default 101, range
+/// `1..=10000`), with ten warmups per shape and two timing passes per sample.
+/// Report process peak RSS in KiB on Linux and null on other operating systems.
+///
+/// Propagate argument parsing, registration, planning, execution, validation,
+/// stdout I/O, and Linux RSS read/parse errors. Out-of-range counts and extra
+/// arguments return a usage error. Failure can leave partial stdout output.
 pub fn run(backend: &dyn Backend) -> Result<(), Error> {
     let mut args = std::env::args().skip(1);
     let samples: usize = args.next().as_deref().unwrap_or("101").parse()?;
