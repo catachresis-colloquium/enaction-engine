@@ -89,6 +89,8 @@ jobs:
         run: |
           set -euo pipefail
           jq -r --arg ws "$GITHUB_WORKSPACE" '
+            # Return input as text with %, CR, LF, colon, and comma escaped
+            # for GitHub workflow annotations.
             def esc: tostring | gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A") | gsub(":"; "%3A") | gsub(","; "%2C");
             .weak_points[]
             | select(.suppressed != true and .file != null)
@@ -189,6 +191,8 @@ jobs:
         run: |
           set -euo pipefail
           jq -r --arg ws "$GITHUB_WORKSPACE" '
+            # Return input as text with %, CR, LF, colon, and comma escaped
+            # for GitHub workflow annotations.
             def esc: tostring | gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A") | gsub(":"; "%3A") | gsub(","; "%2C");
             .[]
             | select(.file != null)
@@ -422,6 +426,8 @@ jobs:
         run: |
           set -euo pipefail
           jq -r --arg ws "$GITHUB_WORKSPACE" '
+            # Return input as text with %, CR, LF, colon, and comma escaped
+            # for GitHub workflow annotations.
             def esc: tostring | gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A") | gsub(":"; "%3A") | gsub(","; "%2C");
             .findings[]
             | select(.file != null)
