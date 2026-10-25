@@ -819,6 +819,90 @@ mod tests {
     }
 
     #[test]
+    fn validator_checks_every_cell_of_a_rectangular_result() {
+        let shape = (2, 3, 2);
+        let mut run = reference_run(shape, SEED, false);
+        run.source_left = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        // Host B is column-major; the compute operand is row-major.
+        run.source_right = vec![7.0, 9.0, 11.0, 8.0, 10.0, 12.0];
+        run.left = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        run.right = vec![7.0, 8.0, 9.0, 10.0, 11.0, 12.0];
+        let expected = [58.0, 64.0, 139.0, 154.0];
+        run.result.copy_from_slice(&expected);
+        let report = validate(&run, shape, &ScalarReferenceBackend).unwrap();
+        assert_eq!(report["max_abs_error_f64"], 0.0);
+        assert_eq!(report["rust_bit_mismatches"], 0);
+
+        for index in 0..expected.len() {
+            run.result.copy_from_slice(&expected);
+            run.result[index] += 1.0;
+            let error = validate(&run, shape, &ScalarReferenceBackend).unwrap_err();
+            assert!(error.to_string().starts_with(&format!(
+                "numerical check failed at {},{}:",
+                index / shape.2,
+                index % shape.2
+            )));
+        }
+    }
+
+    #[test]
+    fn validator_maps_conversion_error_through_rectangular_packing() {
+        let shape = (2, 3, 2);
+        let mut run = reference_run(shape, SEED, false);
+        run.source_left.fill(1.0);
+        let source = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        run.source_right.copy_from_slice(&source);
+        run.left.fill(1.0);
+        run.right.copy_from_slice(&[1.0, 4.0, 2.0, 5.0, 3.0, 6.0]);
+        run.result.copy_from_slice(&[6.0, 15.0, 6.0, 15.0]);
+        // Every source position must contribute to the maximum, using the
+        // column-major index even at positions that move during packing.
+        for index in 0..run.source_right.len() {
+            run.source_right.copy_from_slice(&source);
+            run.source_right[index] += 2.0_f64.powi(-25);
+            let report = validate(&run, shape, &ScalarReferenceBackend).unwrap();
+            assert_eq!(report["max_abs_error_f64"], 0.0);
+            assert_eq!(report["max_input_conversion_abs_error"], 2.0_f64.powi(-25));
+        }
+    }
+
+    #[test]
+    fn validator_zero_output_extents_keep_the_empty_checksum() {
+        for shape in [(0, 3, 2), (2, 3, 0), (0, 0, 0)] {
+            let run = reference_run(shape, SEED, false);
+            assert!(run.result.is_empty());
+            let report = validate(&run, shape, &ScalarReferenceBackend).unwrap();
+            assert_eq!(report["output_fnv1a64"], "cbf29ce484222325");
+            assert_eq!(report["max_abs_error_f64"], 0.0);
+            assert_eq!(report["max_relative_error_f64_floor_1e_12"], 0.0);
+            assert_eq!(report["rust_bit_mismatches"], 0);
+        }
+    }
+
+    #[test]
+    fn validator_enforces_the_absolute_error_floor_at_adjacent_f32_values() {
+        let shape = (1, 0, 1);
+        let mut run = reference_run(shape, SEED, false);
+        // With no products, gamma contributes nothing. These adjacent f32
+        // values lie on opposite sides of the documented f64 1e-12 floor.
+        let below = 1e-12_f32;
+        let above = f32::from_bits(below.to_bits() + 1);
+        assert!(f64::from(below) < 1e-12);
+        assert!(f64::from(above) > 1e-12);
+        for sign in [-1.0, 1.0] {
+            run.result[0] = sign * below;
+            validate(&run, shape, &ScalarReferenceBackend).unwrap();
+            run.result[0] = sign * above;
+            let error = validate(&run, shape, &ScalarReferenceBackend).unwrap_err();
+            assert!(
+                error
+                    .to_string()
+                    .starts_with("numerical check failed at 0,0:")
+            );
+        }
+    }
+
+    #[test]
     fn distribution_reports_all_statistics_without_mutating_samples() {
         let values = [9, 1, 4, 2, 4];
         assert_eq!(
