@@ -35,7 +35,8 @@ assert_absent() {
 }
 
 printf '%s\n' 'Proven-Tests integration contract tests'
-assert_present 'workflow is a manual and pull-request gate' '^  (workflow_dispatch:|pull_request:)' "$WORKFLOW"
+assert_present 'workflow is a manual gate' '^  workflow_dispatch:' "$WORKFLOW"
+assert_present 'workflow is a pull-request gate' '^  pull_request:' "$WORKFLOW"
 assert_present 'workflow fetches the immutable framework commit' 'FRAMEWORK_COMMIT: eca682bcd419554f6779e72969902e6faef4fd9d' "$WORKFLOW"
 assert_present 'workflow installs the pinned Idris2 compiler' 'IDRIS2_VERSION: v0\.7\.0' "$WORKFLOW"
 assert_present 'workflow runs the repository test runner' 'run: scripts/run-proven-tests\.sh' "$WORKFLOW"

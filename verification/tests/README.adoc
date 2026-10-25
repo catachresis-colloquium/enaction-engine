@@ -17,8 +17,9 @@ strings used by C, Zig, and Rust consumers.
 
 The CI job fetches and verifies the exact framework commit, installs the
 pinned Idris2 compiler, installs the framework and local ABI packages, then
-builds and runs the test executable. No GitHub Actions are used by this job;
-its dependency closure therefore does not depend on `actions.lock`.
+builds and runs the test executable. The job uses `actions/checkout@v7.0.1`,
+which requires a corresponding workflow entry and dependency pin in
+`.github/workflows/actions.lock`.
 
 == Running locally
 

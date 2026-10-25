@@ -89,12 +89,13 @@ jobs:
         run: |
           set -euo pipefail
           jq -r --arg ws "$GITHUB_WORKSPACE" '
-            def esc: tostring | gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A") | gsub(":"; "%3A") | gsub(","; "%2C");
+            def esc_data: tostring | gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A");
+            def esc: esc_data | gsub(":"; "%3A") | gsub(","; "%2C");
             .weak_points[]
             | select(.suppressed != true and .file != null)
             | (.file | ltrimstr($ws + "/") | esc) as $file
             | (.line // 1) as $line
-            | (.description | esc) as $message
+            | (.description | esc_data) as $message
             | if .severity == "Critical" or .severity == "High" then
                 "::error file=\($file),line=\($line)::[panic-attack] \($message)"
               else
@@ -189,12 +190,13 @@ jobs:
         run: |
           set -euo pipefail
           jq -r --arg ws "$GITHUB_WORKSPACE" '
-            def esc: tostring | gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A") | gsub(":"; "%3A") | gsub(","; "%2C");
+            def esc_data: tostring | gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A");
+            def esc: esc_data | gsub(":"; "%3A") | gsub(","; "%2C");
             .[]
             | select(.file != null)
             | (.file | ltrimstr($ws + "/") | esc) as $file
             | (.line // 1) as $line
-            | (.reason // .message // .type // "finding" | esc) as $message
+            | (.reason // .message // .type // "finding" | esc_data) as $message
             | if .severity == "critical" or .severity == "high" then
                 "::error file=\($file),line=\($line)::[hypatia] \($message)"
               else
@@ -422,12 +424,13 @@ jobs:
         run: |
           set -euo pipefail
           jq -r --arg ws "$GITHUB_WORKSPACE" '
-            def esc: tostring | gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A") | gsub(":"; "%3A") | gsub(","; "%2C");
+            def esc_data: tostring | gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A");
+            def esc: esc_data | gsub(":"; "%3A") | gsub(","; "%2C");
             .findings[]
             | select(.file != null)
             | (.file | ltrimstr($ws + "/") | esc) as $file
             | (.line // 1) as $line
-            | (.description // .reason // .message // .type // "finding" | esc) as $message
+            | (.description // .reason // .message // .type // "finding" | esc_data) as $message
             | if .severity == "critical" or .severity == "high" then
                 "::error file=\($file),line=\($line)::[\(.scanner)] \($message)"
               else
@@ -446,7 +449,7 @@ jobs:
           ## Validated Unified Findings Deposit
 
           **Repository:** ${{ github.repository }}
-          **Commit:** `${{ github.sha }}`
+          **Commit:** \`${{ github.sha }}\`
           **Deposited at:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
           | Severity | Count |
@@ -457,6 +460,6 @@ jobs:
           | Low      | ${{ steps.combine.outputs.low }} |
           | **Total**| ${{ steps.combine.outputs.total }} |
 
-          Findings saved as the canonical `unified-findings` artifact.
-          Pons Rust reports are available separately as `pons-rust-findings`.
+          Findings saved as the canonical \`unified-findings\` artifact.
+          Pons Rust reports are available separately as \`pons-rust-findings\`.
           EOF
