@@ -56,5 +56,8 @@ assert_present 'compile-time negative fixture is exercised' '^failing$' "$TEST_S
 assert_absent 'new tests do not accrue FixtureDebt' 'FixtureDebt' "$TEST_SOURCE"
 assert_absent 'new tests do not call the framework legacy provisionalTest helper' '(^|[^[:alnum:]_])provisionalTest[[:space:]]' "$TEST_SOURCE"
 
+# Keep behavioral runner tests on the existing CI entry point.
+bash "$ROOT/tests/workflows/run_proven_tests_test.sh"
+
 printf '\nproven-tests integration tests: %d passed, %d failed\n' "$pass_count" "$fail_count"
 [[ "$fail_count" -eq 0 ]]
