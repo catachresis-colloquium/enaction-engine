@@ -436,6 +436,436 @@ pub fn contract_checks(backend: &dyn Backend) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use enaction_accelerator::{
+        AcceleratorError, BackendDescriptor, Capability, ContractVersion, DeviceClass,
+        KernelBuffers,
+    };
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    fn reference_run(shape: Shape, seed: u64, profile: bool) -> Run {
+        let mut registry = Registry::new();
+        registry.register(&ScalarReferenceBackend).unwrap();
+        pipeline(
+            &registry,
+            &request(shape, &ScalarReferenceBackend),
+            seed,
+            profile,
+        )
+        .unwrap()
+    }
+
+    fn exact_run() -> Run {
+        let mut run = reference_run((1, 1, 1), SEED, false);
+        run.source_left[0] = 2.0;
+        run.source_right[0] = 3.0;
+        run.left[0] = 2.0;
+        run.right[0] = 3.0;
+        run.result[0] = 6.0;
+        run
+    }
+
+    #[test]
+    fn request_pins_the_advisory_operation_and_backend() {
+        let req = request((3, 5, 7), &ScalarReferenceBackend);
+        assert_eq!(req.operation, Operation::TensorF32MatMul);
+        assert_eq!(req.version, ACCELERATOR_CONTRACT_VERSION);
+        assert_eq!(req.layout, Layout::MatMul { m: 3, k: 5, n: 7 });
+        assert_eq!(req.lane, ExecutionLane::Advisory);
+        assert_eq!(req.minimum_support, SupportLevel::Resilient);
+        assert_eq!(req.minimum_determinism, Determinism::ToleranceBounded);
+        assert_eq!(req.fallback, FallbackPolicy::RequireNamedBackend);
+        assert_eq!(
+            req.named_backend,
+            Some(ScalarReferenceBackend.descriptor().id)
+        );
+    }
+
+    #[test]
+    fn generator_matches_the_recorded_seed_sequence() {
+        let mut state = SEED;
+        let mut values = [0.0; 6];
+        generate(&mut values, &mut state);
+        // Pin the stream used by recorded experiments, including wraparound.
+        assert_eq!(
+            values,
+            [345.0, 684.0, -106.0, -847.0, 678.0, -934.0].map(|v| v / 997.0)
+        );
+        assert_eq!(state, 0xfea1_ce6f_82bc_3a10);
+    }
+
+    #[test]
+    fn generator_continues_across_buffers_and_empty_calls_do_not_advance() {
+        let mut state = u64::MAX;
+        generate(&mut [], &mut state);
+        assert_eq!(state, u64::MAX);
+        let mut whole = [0.0; 9];
+        let mut whole_state = state;
+        generate(&mut whole, &mut whole_state);
+        let mut split = [0.0; 9];
+        generate(&mut split[..4], &mut state);
+        generate(&mut [], &mut state);
+        generate(&mut split[4..], &mut state);
+        assert_eq!(split, whole);
+        assert_eq!(state, whole_state);
+    }
+
+    #[test]
+    fn packing_handles_single_extents_and_preserves_unused_capacity() {
+        for (k, n, expected) in [
+            (1, 4, [1.0, 2.0, 3.0, 4.0]),
+            (4, 1, [1.0, 2.0, 3.0, 4.0]),
+            (2, 2, [1.0, 3.0, 2.0, 4.0]),
+        ] {
+            let source = [1.0, 2.0, 3.0, 4.0, 99.0];
+            let mut packed = [91.0; 6];
+            pack_right(k, n, &source, &mut packed);
+            assert_eq!(&packed[..4], &expected, "shape {k}x{n}");
+            assert_eq!(&packed[4..], &[91.0; 2]);
+        }
+    }
+
+    #[test]
+    fn packing_zero_extents_never_accesses_either_slice() {
+        for (k, n) in [(0, 0), (0, 3), (3, 0)] {
+            let mut packed = [91.0; 2];
+            pack_right(k, n, &[], &mut packed);
+            assert_eq!(packed, [91.0; 2]);
+            pack_right(k, n, &[], &mut []);
+        }
+    }
+
+    #[test]
+    fn pipeline_uses_one_continuous_stream_for_both_operands() {
+        let run = reference_run((1, 3, 1), SEED, false);
+        assert_eq!(run.source_left, [345.0, 684.0, -106.0].map(|v| v / 997.0));
+        assert_eq!(run.source_right, [-847.0, 678.0, -934.0].map(|v| v / 997.0));
+        assert_eq!(
+            run.left,
+            run.source_left
+                .iter()
+                .map(|&v| v as f32)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            run.right,
+            run.source_right
+                .iter()
+                .map(|&v| v as f32)
+                .collect::<Vec<_>>()
+        );
+        validate(&run, (1, 3, 1), &ScalarReferenceBackend).unwrap();
+    }
+
+    #[test]
+    fn profiling_preserves_operands_results_and_execution_evidence() {
+        let shape = (3, 5, 7);
+        let plain = reference_run(shape, SEED, false);
+        let profiled = reference_run(shape, SEED, true);
+        assert_eq!(plain.phases, [0; 7]);
+        // Clock intervals are disjoint; no wall-clock performance threshold.
+        assert!(profiled.phases.iter().sum::<u64>() <= profiled.total_ns);
+        assert_eq!(plain.source_left, profiled.source_left);
+        assert_eq!(plain.source_right, profiled.source_right);
+        assert_eq!(plain.left, profiled.left);
+        assert_eq!(plain.right, profiled.right);
+        assert_eq!(plain.result, profiled.result);
+        assert_eq!(plain.evidence, profiled.evidence);
+        assert_eq!(
+            plain.payload_capacity_bytes,
+            profiled.payload_capacity_bytes
+        );
+        assert_eq!(
+            validate(&plain, shape, &ScalarReferenceBackend).unwrap(),
+            validate(&profiled, shape, &ScalarReferenceBackend).unwrap()
+        );
+        let next_seed = reference_run(shape, SEED + 1, false);
+        assert_ne!(plain.source_left, next_seed.source_left);
+        assert_ne!(plain.result, next_seed.result);
+    }
+
+    #[test]
+    fn pipeline_zero_inner_extent_returns_a_full_zero_matrix() {
+        let run = reference_run((2, 0, 3), SEED, false);
+        assert!(run.source_left.is_empty());
+        assert!(run.source_right.is_empty());
+        assert!(run.left.is_empty());
+        assert!(run.right.is_empty());
+        assert_eq!(run.result, [0.0; 6]);
+        assert_eq!(run.payload_capacity_bytes, 48);
+        let report = validate(&run, (2, 0, 3), &ScalarReferenceBackend).unwrap();
+        assert_eq!(report["max_abs_error_f64"], 0.0);
+        assert_eq!(report["max_relative_error_f64_floor_1e_12"], 0.0);
+        assert_eq!(report["max_input_conversion_abs_error"], 0.0);
+        assert_eq!(report["rust_bit_mismatches"], 0);
+    }
+
+    #[test]
+    fn pipeline_rejects_non_matrix_layouts_before_planning() {
+        for layout in [Layout::Dot { len: 3 }, Layout::Vector { len: 3 }] {
+            let mut req = request((1, 1, 1), &ScalarReferenceBackend);
+            req.layout = layout;
+            let error = pipeline(&Registry::new(), &req, SEED, false).err().unwrap();
+            assert_eq!(error.to_string(), "matrix required");
+        }
+    }
+
+    #[test]
+    fn pipeline_propagates_missing_backend_errors() {
+        let req = request((1, 1, 1), &ScalarReferenceBackend);
+        let error = pipeline(&Registry::new(), &req, SEED, false).err().unwrap();
+        assert_eq!(
+            error.downcast_ref::<AcceleratorError>(),
+            Some(&AcceleratorError::NamedBackendUnavailable(
+                ScalarReferenceBackend.descriptor().id.to_owned()
+            ))
+        );
+    }
+
+    struct FailingBackend(AtomicUsize);
+
+    impl Backend for FailingBackend {
+        fn descriptor(&self) -> &'static BackendDescriptor {
+            static DESCRIPTOR: BackendDescriptor = BackendDescriptor {
+                id: "test.m1.failure",
+                implementation_version: ACCELERATOR_CONTRACT_VERSION,
+                device_class: DeviceClass::Cpu,
+                priority: 100,
+                is_reference: false,
+                is_remote: false,
+                capabilities: &[Capability {
+                    operation: Operation::TensorF32MatMul,
+                    version: ACCELERATOR_CONTRACT_VERSION,
+                    support: SupportLevel::Resilient,
+                    determinism: Determinism::ToleranceBounded,
+                }],
+            };
+            &DESCRIPTOR
+        }
+
+        fn execute(
+            &self,
+            _request: &KernelRequest<'_>,
+            _buffers: KernelBuffers<'_>,
+        ) -> Result<ExecutionEvidence, AcceleratorError> {
+            panic!("the benchmark must use binary32 buffers")
+        }
+
+        fn execute_f32_binary(
+            &self,
+            _request: &KernelRequest<'_>,
+            _buffers: F32BinaryKernelBuffers<'_>,
+        ) -> Result<ExecutionEvidence, AcceleratorError> {
+            self.0.fetch_add(1, Ordering::Relaxed);
+            Err(AcceleratorError::BackendFailure {
+                backend: self.descriptor().id,
+                message: "planted benchmark failure",
+            })
+        }
+    }
+
+    #[test]
+    fn pipeline_does_not_retry_or_fall_back_after_execution_failure() {
+        let failing = FailingBackend(AtomicUsize::new(0));
+        let mut registry = Registry::new();
+        registry.register(&ScalarReferenceBackend).unwrap();
+        registry.register(&failing).unwrap();
+        let req = request((2, 3, 2), &failing);
+        let error = pipeline(&registry, &req, SEED, false).err().unwrap();
+        assert_eq!(
+            error.downcast_ref::<AcceleratorError>(),
+            Some(&AcceleratorError::BackendFailure {
+                backend: "test.m1.failure",
+                message: "planted benchmark failure",
+            })
+        );
+        assert_eq!(failing.0.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn validator_reports_exact_errors_and_little_endian_checksum() {
+        let report = validate(&exact_run(), (1, 1, 1), &ScalarReferenceBackend).unwrap();
+        assert_eq!(
+            report,
+            json!({
+                "max_abs_error_f64": 0.0,
+                "max_relative_error_f64_floor_1e_12": 0.0,
+                "max_input_conversion_abs_error": 0.0,
+                "rust_bit_mismatches": 0,
+                // FNV-1a over 6.0f32's little-endian bytes [0, 0, 192, 64].
+                "output_fnv1a64": "4a98b67f9ba34875",
+            })
+        );
+    }
+
+    #[test]
+    fn validator_rejects_each_mismatched_evidence_field() {
+        let mut run = exact_run();
+        let valid = run.evidence;
+        let mut invalid = [valid; 7];
+        invalid[0].backend_id = "unexpected";
+        invalid[1].backend_version = ContractVersion::new(2, 0);
+        invalid[2].operation = Operation::TensorF32Add;
+        invalid[3].operation_version = ContractVersion::new(1, 1);
+        invalid[4].support = SupportLevel::Conformant;
+        invalid[5].determinism = Determinism::AdvisoryOnly;
+        invalid[6].determinism = Determinism::CanonicalExact;
+        for evidence in invalid {
+            run.evidence = evidence;
+            let error = validate(&run, (1, 1, 1), &ScalarReferenceBackend).unwrap_err();
+            assert_eq!(
+                error.to_string(),
+                "unexpected execution evidence; no fallback permitted",
+                "{evidence:?}"
+            );
+        }
+        for support in [SupportLevel::Resilient, SupportLevel::ProductionSupported] {
+            run.evidence = ExecutionEvidence { support, ..valid };
+            validate(&run, (1, 1, 1), &ScalarReferenceBackend).unwrap();
+        }
+    }
+
+    #[test]
+    fn validator_rejects_nonfinite_results() {
+        let mut run = exact_run();
+        for value in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            run.result[0] = value;
+            let error = validate(&run, (1, 1, 1), &ScalarReferenceBackend).unwrap_err();
+            assert!(error.to_string().contains("numerical check failed at 0,0"));
+        }
+    }
+
+    #[test]
+    fn validator_allows_bit_mismatches_within_the_numerical_bound() {
+        let mut run = exact_run();
+        run.source_left[0] = 1.0;
+        run.source_right[0] = 1.0;
+        run.left[0] = 1.0;
+        run.right[0] = 1.0;
+        // For k=1, two ULPs above 1.0 fit 2*gamma_k; three do not.
+        run.result[0] = f32::from_bits(1.0_f32.to_bits() + 2);
+        let report = validate(&run, (1, 1, 1), &ScalarReferenceBackend).unwrap();
+        assert_eq!(report["rust_bit_mismatches"], 1);
+        assert_eq!(report["max_abs_error_f64"], 2.0 * f64::from(f32::EPSILON));
+        assert_eq!(
+            report["max_relative_error_f64_floor_1e_12"],
+            report["max_abs_error_f64"]
+        );
+        run.result[0] = f32::from_bits(1.0_f32.to_bits() + 3);
+        assert!(validate(&run, (1, 1, 1), &ScalarReferenceBackend).is_err());
+    }
+
+    #[test]
+    fn validator_separates_conversion_error_from_quantized_arithmetic() {
+        let mut run = reference_run((1, 1, 2), SEED, false);
+        run.source_left = vec![1.0 + 2.0_f64.powi(-25)];
+        run.source_right = vec![2.0, 3.0 + 2.0_f64.powi(-24)];
+        run.left = vec![1.0];
+        run.right = vec![2.0, 3.0];
+        run.result = vec![2.0, 3.0];
+        let report = validate(&run, (1, 1, 2), &ScalarReferenceBackend).unwrap();
+        assert_eq!(report["max_abs_error_f64"], 0.0);
+        assert_eq!(report["max_input_conversion_abs_error"], 2.0_f64.powi(-24));
+    }
+
+    #[test]
+    fn validator_floors_relative_error_when_products_cancel() {
+        let mut run = reference_run((1, 2, 1), SEED, false);
+        run.source_left = vec![1.0, -1.0];
+        run.source_right = vec![1.0, 1.0];
+        run.left = vec![1.0, -1.0];
+        run.right = vec![1.0, 1.0];
+        run.result = vec![1e-14];
+        let report = validate(&run, (1, 2, 1), &ScalarReferenceBackend).unwrap();
+        let error = f64::from(run.result[0]);
+        assert_eq!(report["max_abs_error_f64"], error);
+        assert_eq!(report["max_relative_error_f64_floor_1e_12"], error / 1e-12);
+        assert_eq!(report["rust_bit_mismatches"], 1);
+    }
+
+    #[test]
+    fn validator_preserves_signed_zero_in_bit_counts_and_checksum() {
+        let mut run = exact_run();
+        run.source_left[0] = 0.0;
+        run.left[0] = 0.0;
+        run.result[0] = 0.0;
+        let positive = validate(&run, (1, 1, 1), &ScalarReferenceBackend).unwrap();
+        run.result[0] = -0.0;
+        let negative = validate(&run, (1, 1, 1), &ScalarReferenceBackend).unwrap();
+        assert_eq!(positive["rust_bit_mismatches"], 0);
+        assert_eq!(negative["rust_bit_mismatches"], 1);
+        assert_eq!(positive["output_fnv1a64"], "4d25767f9dce13f5");
+        assert_eq!(negative["output_fnv1a64"], "4d24f67f9dcd3a75");
+        assert_eq!(negative["max_abs_error_f64"], 0.0);
+    }
+
+    #[test]
+    fn independent_oracle_rejects_a_result_computed_from_mispacked_inputs() {
+        let shape = (2, 3, 2);
+        let mut run = reference_run(shape, SEED, false);
+        run.right.swap(0, 1);
+        ScalarReferenceBackend
+            .execute_f32_binary(
+                &request(shape, &ScalarReferenceBackend),
+                F32BinaryKernelBuffers {
+                    left: &run.left,
+                    right: &run.right,
+                    output: &mut run.result,
+                },
+            )
+            .unwrap();
+        // Rust bit comparison alone would accept this incorrect packing.
+        let error = validate(&run, shape, &ScalarReferenceBackend).unwrap_err();
+        assert!(error.to_string().contains("numerical check failed"));
+    }
+
+    #[test]
+    fn distribution_reports_all_statistics_without_mutating_samples() {
+        let values = [9, 1, 4, 2, 4];
+        assert_eq!(
+            distribution(&values),
+            json!({
+                "min": 1, "p50": 4, "p95": 9, "max": 9, "mean": 4.0,
+            })
+        );
+        assert_eq!(values, [9, 1, 4, 2, 4]);
+        assert_eq!(
+            distribution(&[7]),
+            json!({
+                "min": 7, "p50": 7, "p95": 7, "max": 7, "mean": 7.0,
+            })
+        );
+        assert_eq!(
+            distribution(&[0; 3]),
+            json!({
+                "min": 0, "p50": 0, "p95": 0, "max": 0, "mean": 0.0,
+            })
+        );
+    }
+
+    #[test]
+    fn distribution_uses_nearest_rank_at_percentile_boundaries() {
+        let twenty: Vec<u64> = (1..=20).rev().collect();
+        let twenty_one: Vec<u64> = (1..=21).rev().collect();
+        assert_eq!(distribution(&twenty)["p50"], 10);
+        assert_eq!(distribution(&twenty)["p95"], 19);
+        assert_eq!(distribution(&twenty_one)["p50"], 11);
+        assert_eq!(distribution(&twenty_one)["p95"], 20);
+    }
+
+    #[test]
+    fn distribution_mean_does_not_overflow_integer_accumulators() {
+        let report = distribution(&[u64::MAX; 2]);
+        assert_eq!(report["min"], u64::MAX);
+        assert_eq!(report["max"], u64::MAX);
+        assert_eq!(report["mean"].as_f64(), Some(u64::MAX as f64));
+    }
+
+    #[test]
+    #[should_panic]
+    fn distribution_requires_at_least_one_sample() {
+        distribution(&[]);
+    }
+
     #[test]
     fn rectangular_packing_has_known_orientation() {
         let mut packed = [0.0; 6];
