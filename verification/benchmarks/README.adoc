@@ -1,3 +1,7 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = Benchmarks Unit
+
+link:m1/README.adoc[M1 synthetic CPU matrix experiment] measures the existing
+Rust reference and optional Zig backend with raw phase and total-latency data.
+Run `just bench` for portable Rust or `just bench compare` with Zig 0.16.0.

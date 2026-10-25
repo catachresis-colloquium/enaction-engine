@@ -1,0 +1,6 @@
+PASS: all Rust, Zig, Idris2 and proof source files have SPDX headers
+PASS: no banned proof escape constructs in source files
+PASS: no production Zig pointer conversions; the single test-fixture exception is scoped
+PASS: no disconnected generic FFI module or placeholder integration test
+
+Aspect test summary: 4 passed, 0 failed

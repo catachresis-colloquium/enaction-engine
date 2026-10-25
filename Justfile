@@ -137,10 +137,10 @@ e2e:
 aspect:
     @bash tests/aspect_tests.sh
 
-# Run benchmarks — NOT IMPLEMENTED: benches/ has no runnable benchmarks yet.
-bench:
-    @echo "bench: NOT IMPLEMENTED — no runnable benchmarks exist yet" >&2
-    @exit 1
+# Reproducible synthetic advisory matrix benchmark (portable Rust by default).
+# `just bench compare` explicitly requires the pinned Zig native toolchain.
+bench mode="scalar" output="target/m1-results" samples="101" rounds="3":
+    bash scripts/bench-accelerator-m1.sh "{{mode}}" "{{output}}" "{{samples}}" "{{rounds}}"
 
 # Check that the public readiness record is complete and does not imply an unearned grade.
 readiness:

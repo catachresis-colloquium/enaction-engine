@@ -1,0 +1,1 @@
+PASS: wasm32-freestanding was rejected by the 64-bit pointer guard.

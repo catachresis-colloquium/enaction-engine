@@ -1,0 +1,2 @@
+Idris 2, version 0.8.0
+Now compiling the executable: accelerator-abi-gen

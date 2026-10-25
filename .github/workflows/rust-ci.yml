@@ -72,3 +72,5 @@ jobs:
           cargo check --locked -p enaction-accelerator-native --all-targets
           cargo clippy --locked -p enaction-accelerator-native --all-targets -- -D warnings
           cargo test --locked -p enaction-accelerator-native --all-targets
+      - name: M1 benchmark smoke (synthetic, no performance threshold)
+        run: bash scripts/bench-accelerator-m1.sh compare target/m1-ci 1 1

@@ -227,7 +227,50 @@ operationCodeInjective TensorF32Relu6 TensorF32Relu6 Refl = Refl
 operationCodeInjective TensorF32MatMul TensorF32MatMul Refl = Refl
 operationCodeInjective TensorF32Add TensorF32Add Refl = Refl
 operationCodeInjective TensorF32Mul TensorF32Mul Refl = Refl
-operationCodeInjective _ _ Refl impossible
+-- Keep both constructors concrete: a wildcard impossible clause does not
+-- expose the unequal Bits32 literals to Idris2's impossibility checker.
+operationCodeInjective FixedI32Dot FixedI32MatMul Refl impossible
+operationCodeInjective FixedI32Dot TensorF32Relu Refl impossible
+operationCodeInjective FixedI32Dot TensorF32Relu6 Refl impossible
+operationCodeInjective FixedI32Dot TensorF32MatMul Refl impossible
+operationCodeInjective FixedI32Dot TensorF32Add Refl impossible
+operationCodeInjective FixedI32Dot TensorF32Mul Refl impossible
+operationCodeInjective FixedI32MatMul FixedI32Dot Refl impossible
+operationCodeInjective FixedI32MatMul TensorF32Relu Refl impossible
+operationCodeInjective FixedI32MatMul TensorF32Relu6 Refl impossible
+operationCodeInjective FixedI32MatMul TensorF32MatMul Refl impossible
+operationCodeInjective FixedI32MatMul TensorF32Add Refl impossible
+operationCodeInjective FixedI32MatMul TensorF32Mul Refl impossible
+operationCodeInjective TensorF32Relu FixedI32Dot Refl impossible
+operationCodeInjective TensorF32Relu FixedI32MatMul Refl impossible
+operationCodeInjective TensorF32Relu TensorF32Relu6 Refl impossible
+operationCodeInjective TensorF32Relu TensorF32MatMul Refl impossible
+operationCodeInjective TensorF32Relu TensorF32Add Refl impossible
+operationCodeInjective TensorF32Relu TensorF32Mul Refl impossible
+operationCodeInjective TensorF32Relu6 FixedI32Dot Refl impossible
+operationCodeInjective TensorF32Relu6 FixedI32MatMul Refl impossible
+operationCodeInjective TensorF32Relu6 TensorF32Relu Refl impossible
+operationCodeInjective TensorF32Relu6 TensorF32MatMul Refl impossible
+operationCodeInjective TensorF32Relu6 TensorF32Add Refl impossible
+operationCodeInjective TensorF32Relu6 TensorF32Mul Refl impossible
+operationCodeInjective TensorF32MatMul FixedI32Dot Refl impossible
+operationCodeInjective TensorF32MatMul FixedI32MatMul Refl impossible
+operationCodeInjective TensorF32MatMul TensorF32Relu Refl impossible
+operationCodeInjective TensorF32MatMul TensorF32Relu6 Refl impossible
+operationCodeInjective TensorF32MatMul TensorF32Add Refl impossible
+operationCodeInjective TensorF32MatMul TensorF32Mul Refl impossible
+operationCodeInjective TensorF32Add FixedI32Dot Refl impossible
+operationCodeInjective TensorF32Add FixedI32MatMul Refl impossible
+operationCodeInjective TensorF32Add TensorF32Relu Refl impossible
+operationCodeInjective TensorF32Add TensorF32Relu6 Refl impossible
+operationCodeInjective TensorF32Add TensorF32MatMul Refl impossible
+operationCodeInjective TensorF32Add TensorF32Mul Refl impossible
+operationCodeInjective TensorF32Mul FixedI32Dot Refl impossible
+operationCodeInjective TensorF32Mul FixedI32MatMul Refl impossible
+operationCodeInjective TensorF32Mul TensorF32Relu Refl impossible
+operationCodeInjective TensorF32Mul TensorF32Relu6 Refl impossible
+operationCodeInjective TensorF32Mul TensorF32MatMul Refl impossible
+operationCodeInjective TensorF32Mul TensorF32Add Refl impossible
 
 ||| Contrapositive form for consumers: different operations cannot share a
 ||| numeric discriminant.

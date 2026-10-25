@@ -1,0 +1,12 @@
+=== OpenSSF Best Practices Verification ===
+  OK:   SECURITY.md
+  OK:   LICENSE
+  OK:   CONTRIBUTING.md
+  OK:   README.adoc
+  OK:   .machine_readable/descriptiles/STATE.a2ml
+  OK:   .machine_readable/descriptiles/META.a2ml
+  OK:   .machine_readable/descriptiles/ECOSYSTEM.a2ml
+  OK:   CHANGELOG.md
+  OK:   .github/workflows/ (29 workflows)
+
+PASS: All OpenSSF Best Practices prerequisites satisfied.

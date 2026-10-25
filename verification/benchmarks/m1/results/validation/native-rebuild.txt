@@ -1,0 +1,19 @@
+   Compiling enaction-accelerator-native v0.1.0 (/workspace/scratch/2b208cd7a904/enaction-engine/crates/enaction-accelerator-native)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.51s
+       Fresh unicode-ident v1.0.24
+       Fresh proc-macro2 v1.0.107
+       Fresh cfg-if v1.0.4
+       Fresh libc v0.2.189
+       Fresh quote v1.0.47
+       Dirty enaction-accelerator-native v0.1.0 (/workspace/scratch/2b208cd7a904/enaction-engine/crates/enaction-accelerator-native): the file `src/interface/ffi/src/axiom_matmul.zig` has changed (1792932547.150241834s, 16s after last build at 1792932531.675411085s)
+   Compiling enaction-accelerator-native v0.1.0 (/workspace/scratch/2b208cd7a904/enaction-engine/crates/enaction-accelerator-native)
+       Fresh syn v2.0.119
+       Fresh getrandom v0.4.3
+       Fresh pearlite-syn v0.13.0
+       Fresh uuid v1.26.0
+       Fresh creusot-std-proc v0.13.0
+       Fresh creusot-std v0.13.0
+       Fresh enaction-accelerator v0.1.0 (/workspace/scratch/2b208cd7a904/enaction-engine/crates/enaction-accelerator)
+     Running `/workspace/scratch/2b208cd7a904/enaction-engine/target/debug/build/enaction-accelerator-native-db4b84d754ebd89f/build-script-build`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name enaction_accelerator_native --edition=2024 crates/enaction-accelerator-native/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=80c70388701c5885 -C extra-filename=-073260af5f2cdad0 --out-dir /workspace/scratch/2b208cd7a904/enaction-engine/target/debug/deps -C incremental=/workspace/scratch/2b208cd7a904/enaction-engine/target/debug/incremental -L dependency=/workspace/scratch/2b208cd7a904/enaction-engine/target/debug/deps --extern enaction_accelerator=/workspace/scratch/2b208cd7a904/enaction-engine/target/debug/deps/libenaction_accelerator-e254298dd9e4f9eb.rmeta -L native=/workspace/scratch/2b208cd7a904/enaction-engine/target/debug/build/enaction-accelerator-native-e44b107bba739903/out -l static=enaction_accelerator`
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.01s
