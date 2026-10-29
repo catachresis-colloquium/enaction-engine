@@ -44,7 +44,7 @@ jobs:
       # misleading "Path does not exist: results.sarif" error on top of the
       # real one. One honest failure beats two.
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4.39.0
+        uses: github/codeql-action/upload-sarif@v4.39.1
         with:
           sarif_file: results.sarif
           category: oikosbot
