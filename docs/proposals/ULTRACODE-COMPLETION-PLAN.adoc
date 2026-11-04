@@ -1,0 +1,655 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Fastest route to a game-design instrument: ultracode completion plan
+:toc:
+:toclevels: 2
+:sectnums:
+
+Status: **Proposed** (2026-11-04). Architecture:
+link:../architecture/GAME-DESIGN-SYSTEM.adoc[GAME-DESIGN-SYSTEM]. Brief for
+the parallel AffineScript session:
+link:AFFINESCRIPT-SESSION-BRIEF.adoc[AFFINESCRIPT-SESSION-BRIEF].
+
+This plan was produced by an ultracode run. Twenty-two agents mapped 21
+estate repositories plus the two proving-ground games. Three independent
+architecture proposals followed (elegance-first, dependability-first,
+designer-value-first). Three judges scored them, eight adversarial checks
+tested the factual claims they rested on, and one synthesis merged them. Every
+measured result below was re-run in this session; see the appendix.
+
+== The two fastest routes, in one view
+
+*Engineering critical path.* The first thing a designer can use is the
+IDApTIK cognition preview at the end of Wave 4:
+
+. Wave 1: holes first.
+** IDApTIK package-runner.
+** Observer fix.
+** Mandatory digest.
+** Lawful ledger.
+. Wave 2: `enaction-validate` process seam and `conformance/time/v1`.
+. Wave 3: IDApTIK `--emit-epistemic` and the UMS `ProcessPreviewAdapter`.
+. Wave 4: explain lens and `just demo-designer`.
+
+That is four waves and about 32 agent-sessions, most of them parallel.
+Wave 5 replaces the game's own reasoner with the kernel's and proves Slavia
+parity. It is hard-gated on an owner-recorded ADR-0017 T1 want.
+
+*Proof critical path.* Each rung is chosen because a designer-facing label
+depends on it:
+
+. Rung 0, gate honesty: no vacuous pass.
+. Rung 3, observer noninterference: the fog-of-war guarantee.
+. Rung 2, `Certain` is not `Known`.
+. Rung 1, status order.
+. Rung 4, ledger laws: mass conserved; non-associativity recorded as a
+  countermodel.
+. Rung 5, generic verdict soundness, upstream.
+. Rung 7, Creusot in CI.
+. Rung 9, Rocq recheck.
+
+Rungs 6 and 8 (replay and locality, model-to-code correspondence) bind the
+Wave 5 reducer.
+
+Fastest is not the same as smallest. The smallest thing that "runs" is a stub
+adapter returning canned beliefs, and that is refused: it would be a silent
+green and would show designers omniscient agents (see the observer leak).
+
+== Preconditions
+
+=== Owner rulings
+
+These are asked through the selector. The default arm is labelled on each.
+
+[cols="1,3,3,2",options="header"]
+|===
+| # | Question | Options, rated (elegance/correctness, then dependability) | Gates
+
+| Q1 | Canonical parity bytes
+| A (default): RFC 8785 JCS over integer-only I-JSON, estate D306; A/A.
+  B: canonical CBOR, as ADR-0015 is written; B/A.
+  Experiment E2 runs first either way.
+| Steps 11, 23
+
+| Q2 | Observer boundary
+| A (default): baseline is a frozen prior; A/A+.
+  B: default-Unknown plus a secret-types visibility lattice; A+/A, more work.
+| Step 2
+
+| Q3 | Template proofs (`Properties.agda`, `TypeSafety.v`)
+| A (default): delete, and accept honest red until Cac proofs land; A/A.
+  B: keep them gated and label them scaffold in words; C/B.
+| Step 1
+
+| Q4 | ADR-0017 T1
+| Record a dated want for a kernel-owned reducer in IDApTIK and/or Slavia, or
+  decline. Declining keeps the recommended arm permanently.
+| Wave 5
+
+| Q5 | UMS `apps/studio` is TypeScript, against policy
+| A: port to affinescript-tea once the explain lens exists.
+  B: record an exemption with an unblock condition.
+  C: leave it unflagged (not offered).
+| none on the critical path
+
+| Q6 | Cross-repo PRs into IDApTIK and Slavia
+| Allow draft PRs from the session, or have the owner apply the patches.
+| Steps 6, 7, 18, 27
+
+| Q7 | Canonical forge
+| The real remotes are `catachresis-colloquium/*`; the docs say
+  `metadatastician/*` (54 references in Enaction). Rule before any sweep.
+| none
+
+| Q8 | 2026-11-30 identity review
+| Write `docs/theory/ENACTIVE-COMMITMENTS.adoc`, or execute the pre-agreed
+  rename (ADR-0018/0021). Nothing in this plan is evidence for the enactive
+  claim.
+| none
+|===
+
+=== Toolchains
+
+Present in agent containers: cargo and rustc 1.97, bun 1.4.4, Agda 2.6.3
+with agda-stdlib 2.3 (installed this session), Coq 8.18, just.
+
+Absent: Idris2, Zig 0.14/0.16, cargo-creusot 0.13 with its pinned nightly,
+Why3 and provers, Lean, Nickel, gnatprove, wasmtime, and the aarch64 and
+wasm32 Rust targets.
+
+Every gate on an absent tool FAILs locally and is reported CI-only or
+ASSUMED. A SessionStart provisioning script would let them run instead; the
+precedent is echo-types `scripts/provision-agda.sh`. It is a cross-repo item.
+
+Environment variables used in the gates below: `ENACTION_ROOT`, `UMS_ROOT`,
+`IDAPTIK_ROOT` and `SLAVIA_ROOT`, each pointing at a checkout.
+
+== Waves
+
+Each step's `done_when` is a command whose failure is visible. Ratings are
+elegance/correctness first, then dependability/security. Steps in a wave run
+as parallel agents on disjoint files. One coordinator owns the shared files
+(`Cargo.toml`, `Cargo.lock`, `Justfile`, workflows, MANIFESTs), following
+`GAME-ENGINE-TEMPLATE-AGENT-PROMPTS.adoc`.
+
+=== Wave 1: holes before features (11 sessions; 1-8 in parallel)
+
+[cols="1,3,5,4,1",options="header"]
+|===
+| # | Step and repository | What | done_when | Rating
+
+| 1 | Proof-gate honesty (enaction)
+| `check-proofs.sh` FAILs when a MANIFEST gates zero modules; today Lean passes
+  vacuously. Add a planted negative control, and fix EXPLAINME's stale "lists
+  only enaction-time". Never quarantine a compiling template: in this script
+  that is an UNEXPECTED-pass FAIL.
+| `bash tests/check-proofs-vacuous.sh && cargo test --locked --all-targets`
+| A/A
+
+| 2 | Observer boundary (enaction-trace)
+| Tests first: the Sally-Anne two-run probe, and a proptest with
+  `PROPTEST_CASES=1024` that perturbs only events outside P's closure. Then
+  the baseline becomes a frozen prior (Q2). Add a `planted-omniscience`
+  feature that restores the leak.
+| `cargo test --locked -p enaction-trace observer_` passes, and with
+  `--features planted-omniscience` the output contains `test result: FAILED`
+| A/A+
+
+| 3 | Contract fail-closed (enaction-contracts)
+| `computed_digest: &str`. Add `StatusDisagreesWithInterval`. Add
+  `package_fault_coverage`, proving every `rule()` fires on a planted package.
+| `cargo test --locked -p enaction-contracts --test package_fault_coverage && ! rg -q 'computed_digest: Option' crates/enaction-contracts/src/package.rs`
+| A/A
+
+| 4 | Experiments E1 and E2 (test-only)
+| E1: drive `BeliefStore` through a Ghost-Lobby-shaped false-belief scenario,
+  convert to `EpistemicPackage`, validate, and check two-run byte identity.
+  Record each store/contract mismatch as a T3-candidate in DEFECTS. E2: check
+  whether sorted serde_json bytes equal RFC 8785 JCS for kernel types, against
+  ijson-jcs vectors.
+| `cargo test --locked -p enaction-contracts --test trace_package_seam --test canonical_bytes && grep -q T3-candidate docs/status/DEFECTS.adoc`
+| A/B
+
+| 5 | UMS boundary gate and honesty (UMS)
+| Delete the `affective-engine` fallback, use `mktemp` instead of a fixed
+  `/tmp` path, accept `*_ROOT` variables, and add a planted-violation
+  self-test and a weekly workflow. EXPLAINME: replace the false "TypeScript
+  ... not used". ROUNDTRIP-STATUS: mark "tested/CI-gated" stale.
+| `bash scripts/check-architecture-boundaries.sh && bash tests/boundaries-planted-violation.sh`
+| A/A
+
+| 6 | IDApTIK donor holes (owner-gated PR)
+| (a) `examples/package-runner.rs`: six lines, probe-proven byte-identical
+  across two processes. (b) First-max `most_likely`. (c) A checked
+  `Bpa::new -> Result<_, LedgerFault>`: sums to T, focal sets inside the
+  frame. `absorb(Ledger, Bpa)` makes prior-conflict double counting
+  unrepresentable, and the remainder is recorded. (d) T3 records in
+  `ENGINE_EXTRACTION_NOTES.md`.
+| `IDAPTIK_ROOT=… just roundtrip-idaptik` (in UMS), then in IDApTIK
+  `cargo test --locked -p idaptik-core most_likely_ties_resolve_to_first_declared absorb_conserves_mass`;
+  goldens unchanged
+| A/A
+
+| 7 | Slavia `--locked` (owner-gated PR)
+| Refresh `engine/Cargo.lock` (`--locked` currently fails). Add a slavia-core
+  CI job. Leave zone_a untouched.
+| `cargo test --locked -p slavia-core`
+| A/A
+
+| 8 | Decision records, Proposed
+| Enaction ADR-0022 (frozen prior), 0023 (ground focal sets over declared
+  frames, ordered fold, recorded remainder, `cat(S)`), 0024 (canonical bytes),
+  and amendments to 0015 (quantisation boundary, contract name `time`) and
+  0016 (Known → Certain). UMS ADR-0019 (preview is processes over data seams).
+| each file has `Status: Proposed` and names its default arm
+| A/A
+
+| 9 | Coordinator
+| Rebase in dependency order (1, 3, 2, 4; then 5). Re-run E1 on the merged
+  store, open draft PRs, collect owner answers.
+| all repository gates green; session ledger records each exit code and SHA
+| n/a
+|===
+
+=== Wave 2: contracts, conformance and theory (11 sessions)
+
+[cols="1,3,5,4,1",options="header"]
+|===
+| # | Step | What | done_when | Rating
+
+| 10 | `conformance/time/v1` + harness
+| Hash the four ADR-0015 behaviours. Harness: twice in-process, two processes,
+  snapshot every tick. CI matrix: x86_64, aarch64, wasm32-wasip1; a missing
+  target FAILs.
+| `sha256sum -c conformance/time/v1/SHA256SUMS && cargo test --locked -p enaction-time --test conformance_time`
+| A/A+
+
+| 11 | Contract evolution + `enaction-validate` (after Q1 and ADR acceptance)
+| `FrameDecl` (≤ 64), `FrameTooLarge`, `UnknownHypothesis`. Proposition
+  strings resolve once to (frame, bit). Canonical module; Known → Certain.
+  Binary: stdin package → canonical faults, exit 0/1/2.
+| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors frame_over_64_is_rejected` and `echo '{}'` into the binary exits 1
+| A/A
+
+| 12 | Agda theory I: rungs 1-3
+| `Cac/{StatusPolicy,StatusTable,KnownIsNotKnowledge,ObserverClosure}`. A
+  Rust-generated 231-row status table, checked by `refl`. Reject fixtures
+  must fail at their own declaration.
+| `bash scripts/check-proofs.sh agda && bash tests/check-agda-rejections.sh && ! rg -n 'postulate\|TERMINATING' verification/proofs/agda/Cac`
+| A/B
+
+| 13 | Agda theory II: rung 4
+| `Cac/{Frame,Ledger,Categorical,Countermodel}`: commutativity; divmod-exact
+  absorb; floor-loss bound; categorical intersection; the two probe
+  countermodels as `refl`; first-max argmax.
+| `bash scripts/check-proofs.sh agda` with `Cac/Ledger.agda` gated
+| A/A
+
+| 14 | Upstream rung 5 (residual-evidence-types)
+| `Finite/Generic.agda`; the Int checker becomes an instance.
+| `just check` (9 expected rejections still fire)
+| A/A
+
+| 15 | Creusot in CI (RUST-G2)
+| Copy IDApTIK's `creusot-proof.yml` provisioning. Add Mass saturating ops
+  and StatusPolicy totality obligations, and a planted-mutant leg.
+| the workflow concludes success, and the mutant leg concludes failure
+| A/B
+
+| 16 | UMS `dlc/vm` compile gate
+| CI downloads the AffineScript v0.1.1 linux-x64 binary, verifies it against
+  the release SHA256SUMS, checks all 28 sources and runs
+  `reversibility.affine`. Publish the per-file table for the AffineScript
+  session.
+| workflow `dlc-vm.yml` green; until then it is honestly red, and the
+  guarantee stays `aspirational`
+| B/C
+
+| 17 | Coordinator
+| Merge the MANIFEST edits; pin residual-evidence-types in `fetch-siblings.sh`;
+  record which legs are CI-only.
+| cargo, clippy, `check-proofs agda`, rejections, `time` conformance all green
+| n/a
+|===
+
+=== Wave 3: preview seam (6 sessions)
+
+[cols="1,3,5,4,1",options="header"]
+|===
+| # | Step | What | done_when | Rating
+
+| 18 | IDApTIK `--emit-epistemic` + esm donor fixtures (owner-gated)
+| Emits an `EpistemicPackage` from the real Ghost Lobby evidence (frames
+  usb/note/unknown and front_door/ventilation/unknown), a canonical ledger
+  trace and world-truth atoms, as data with no enaction dependency. The
+  `CacTrace` is labelled fixture.
+| `cargo test --locked -p idaptik-core --test esm_conformance_emit`, and the
+  emitted package passes `enaction-validate`
+| A/A
+
+| 19 | UMS `ProcessPreviewAdapter` + response schema + guarantee gate
+| Pipeline: compile → pre-built runner → `enaction-validate`. Argv only,
+  cleared environment, timeout, stdout cap. A missing binary is a FAIL.
+  Write the stub-binary protocol test first so this runs in parallel with
+  step 18.
+| `cargo test --locked -p ums-profile-sdk --test process_preview && bash scripts/check-guarantee-evidence.sh && ! bash scripts/check-guarantee-evidence.sh --descriptor tests/fixtures/unbacked-machine-checked.json`
+| A/A
+
+| 20 | Rocq recheck (rung 9)
+| Hand re-proof of rungs 1 and 4 in `verification/proofs/coq/Cac.v`.
+| `coqc` output contains "Closed under the global context"; no
+  `Admitted\|admit.\|Axiom`
+| A/A
+
+| 21 | Coordinator
+| Swap the stubs for the real binaries; run the preview twice and compare
+  bytes.
+| two `just preview-idaptik` runs hash identically
+| n/a
+|===
+
+=== Wave 4: the designer milestone (4 sessions)
+
+[cols="1,3,5,4,1",options="header"]
+|===
+| # | Step | What | done_when | Rating
+
+| 22 | Explain lens + `just demo-designer` + `DESIGNER-QUICKSTART.adoc`
+| Per agent and per ToM order: proposition, status (with policy id),
+  `[belief, plausibility]`, because-events, supersession, world truth,
+  diverges-from-world, certain-but-false, leak verdict, Verdict/IdStatus, and
+  a GuaranteeLevel per row. Output is a JCS golden. The demo plants a fault
+  and shows its path and rule.
+| `cargo test --locked -p ums-profile-sdk --test explain_golden`, and the
+  demo output contains `replay-identical: ok`
+| B+/A
+
+| 23 | `conformance/esm/v1` bidirectional (T2)
+| Donor bytes from step 18 plus `rejected/<rule>/` for every fault. Vendored
+  by digest into IDApTIK and UMS.
+| `sha256sum -c` succeeds in all three repositories, and
+  `cargo test --locked -p enaction-contracts --test conformance_esm` passes
+| A/A
+
+| 24 | Coordinator: re-affirm
+| Refresh AFFIRMATION and PROOF-STATUS (Enaction) and ROUNDTRIP-STATUS and
+  EXPLAINME (UMS), anchored at HEAD. Label every leg not run as CI-only or
+  ASSUMED.
+| each AFFIRMATION contains `git rev-parse HEAD`
+| n/a
+|===
+
+=== Wave 5: default-arm completion (6 sessions; hard-gated on T1, T2 and T3)
+
+[cols="1,3,5,4,1",options="header"]
+|===
+| # | Step | What | done_when | Rating
+
+| 25 | `enaction-cognition` + `enaction-replay`
+| `ledger_core.rs` has no serde and no trait objects: u64 frame mask, `Bpa`,
+  `mul_div -> (q, rem)`, `absorb`, first-max. `ledger.rs` implements
+  `EpistemicReduce` per perspective. Reproduces the esm/v1 bytes exactly.
+  Creusot C1-C6 via `#[path]`. Rung 8 correspondence table.
+| every `conformance/esm/v1` case replays byte-identically via `cmp`; the
+  planted locality mutant fails
+| A/A
+
+| 26 | UMS preview switches its reasoner to `enaction-replay`
+| The descriptor's `simulationAdapter = enaction-replay@1`. Rows that do not
+  depend on the reasoner stay byte-identical; any difference in reasoner rows
+  is a recorded finding.
+| `cargo test --locked -p ums-profile-sdk --test enaction_preview --test explain_golden`
+| A/A
+
+| 27 | Slavia second-reasoner parity (owner-gated, A5 sequencing)
+| `slavia-core/tests/esm_kernel_parity.rs`: kernel IdStatus equals Slavia
+  `Read` on all 10 testbed scenarios.
+| `cargo test --locked -p slavia-core --test esm_kernel_parity`
+| A/B
+
+| 28 | Coordinator: final re-affirm
+| Rungs 6-8, the Creusot CI link, and the ABI-P6 arbitration (Idris2 pinned
+  in CI).
+| the Creusot workflow on main concludes success
+| n/a
+|===
+
+== Proof ladder
+
+[cols="1,4,2,3,2",options="header"]
+|===
+| Rung | Obligation | Prover | Reuses | Status
+
+| 0 | No proof gate passes vacuously | shell + planted control | rsr-template MANIFEST pattern | Open (Lean passes with zero files today)
+| 1 | `StatusPolicy::status` follows ADR-0016's order | Agda, `refl` over a 231-row Rust-generated table | residual-evidence correspondence pattern | Open
+| 2 | Computed `Known` is not knowledge | Agda + reject fixture | epistemic-types FactiveModality, `BeliefIsKnowledge` | Open
+| 3 | Observer noninterference | proptest (TESTED) + Agda ObserverClosure | secret-types TINI | Open; **violated on main**
+| 4 | Ledger laws: comm; divmod-exact absorb; floor-loss bound; categorical = intersection; non-associativity countermodel | Agda (`Data.Nat.DivMod`) | echo-types no-section; secret-types Countermodels | Open; Partial empirically
+| 5 | Verdict / IdStatus soundness over any finite list | Agda, upstream | residual-evidence Finite/Row | Partial (Int instance landed)
+| 6 | `replay (xs ++ ys) = replay (replay xs) ys`; locality | Agda | echo-types aggregation-as-fold; occupancy cut-factor (shape only) | Open
+| 7 | Creusot on the shipped code: P1-P4, then C1-C6 on `ledger_core.rs` | Creusot 0.13 (CI-only) | IDApTIK kernel provisioning | Partial (P1/P2 local only)
+| 8 | Bounded exhaustive Rust ↔ Agda ledger correspondence | Agda `refl` over a generated table | residual-evidence pattern | Open
+| 9 | Rocq recheck of rungs 1 and 4 | Coq 8.18 | none | Open; Lean ASSUMED until provisioned
+| 10 | ABI-P6 arbitration (refuted at Idris2 0.7.0, repaired under 0.8.0, CI pins 0.7.0) | Idris2 (CI) | Accelerator.idr | Contested
+| 11 | Per-agent projection soundness for looping protocols | Agda, upstream | choreographic-types K-CUT-LOSS | Deferred: needs μ-recursion
+|===
+
+== Empirical experiments before bigger work
+
+* **E1, seam (step 4).** Trace store to package to validator, two-run byte
+  identity. Every mismatch becomes a T3 candidate.
+* **E2, canonical bytes (step 4).** Sorted serde_json versus RFC 8785 JCS on
+  kernel types. This decides Q1 with evidence rather than taste.
+* **B1, ledger representation (bench).** u64 bitset versus `Vec<String>`
+  focal sets. Measured 48 vs 563 ns per combine at frame size 2. Before
+  ADR-0023 is accepted, re-run on frame sizes 2, 8, 32 and 64 under
+  `cargo bench` with criterion, on two hosts.
+* **B2, preview latency (bench).** Wall time of compile → runner →
+  validate for the Ghost Lobby package, cold and warm. The decision it
+  informs: keep processes, or adopt the hermetic wasm preview later.
+* **P1, fuzz admission.** `cargo fuzz` on `validate_package` and the
+  `Bpa::new` constructor for 10 minutes per CI run. No panic is allowed;
+  every rejection names a rule.
+
+== AffineScript: critical libraries, and the one thing the other session must do
+
+The parallel session owns the language. This plan needs one specific,
+bounded deliverable from it: compile UMS `dlc/vm` (28 `.affine` files, never
+compiled) and report per instruction whether every-instruction-has-an-inverse
+holds. That deliverable, plus six stdlib libraries with conformance vectors
+generated from the Rust authorities, is set out in
+link:AFFINESCRIPT-SESSION-BRIEF.adoc[the brief]. The libraries are Mass,
+Bpa, Mulberry32, canonical JSON with SHA-256, OrdMap and the event log.
+Nothing else in this plan waits on AffineScript.
+
+== What else must be created
+
+* *Enaction:*
+** `tests/check-proofs-vacuous.sh` and `tests/check-agda-rejections.sh`
+** `crates/enaction-trace/tests/observer.rs`
+** `crates/enaction-contracts/{tests/package_fault_coverage.rs, src/canonical.rs, src/bin/enaction-validate.rs}`
+** `conformance/{time,esm}/v1`
+** `verification/proofs/agda/Cac/*` and `verification/proofs/coq/Cac.v`
+** `.github/workflows/creusot.yml`
+** ADRs 0022-0024
+** later, `crates/enaction-cognition`
+* *UMS:*
+** `crates/ums-profile-sdk/src/preview.rs` and its tests
+** `adapters/enaction/preview-response.schema.json`
+** `scripts/check-guarantee-evidence.sh`
+** `.github/workflows/{estate-boundaries,dlc-vm}.yml`
+** ADR-0019
+** `docs/DESIGNER-QUICKSTART.adoc`
+** `vendor/enaction/conformance/esm/v1`
+* *IDApTIK:*
+** `examples/package-runner.rs` with `--emit-epistemic`
+** `Bpa` / `LedgerFault` / remainder in `vsm.rs`
+** the vendored digest
+* *Slavia:*
+** a refreshed lock and `--locked` CI job
+** later, `tests/esm_kernel_parity.rs`
+* *residual-evidence-types:* `src/ResidualEvidence/Finite/Generic.agda`.
+
+== Explicitly rejected
+
+* Extracting `enaction-cognition` before T1, T2 and T3. This includes an
+  agent-written "want", which is the retrofit T1 forbids.
+* Affect, conation, runtime, ECS, renderer or physics crates.
+* Any Cargo edge among UMS, Enaction and games.
+* The proposal to fix conservation with a residue field alone. Falsified: two
+  conflicted ledgers total 12,500.
+* Batch or parallel ledger merges.
+* Quarantining compiling templates.
+* Vacuous `done_when` forms (`; echo $?`, `grep -qv Admitted`, test-count
+  regexes).
+* A stub adapter outside tests.
+* `cargo run` in a game root as the preview path.
+* Counting the six-row `CacTrace` as cognition.
+* Merging the authoring miniKanren into the kernel.
+* Non-ground focal sets.
+* Rewriting `apps/studio` unasked.
+* Bulk A2ML conversion.
+* Licence normalisation.
+* Reference sweeps before Q7.
+* Admin-merging over red.
+
+A new Idris2 model of the JSON preview protocol is a deliberate departure
+from the letter of PROOF-POLICY ("APIs → Idris2"). Arm A (chosen): JSON
+schema plus fixtures plus Creusot on the reducer, because no C-ABI seam
+exists. Arm B (deferred, not refused): an Idris2 wire model with a `Dec`
+admission decider, the day the reducer gains a C ABI.
+
+== Tropes, types and logics worth pursuing
+
+* **Categorical evidence** as the bridge between relational answers and
+  Dempster-Shafer mass. This resolves CAC-KERNEL §8 open problem 1, and it is
+  the most "final" result here.
+* **The ledger as a Mealy machine** over a checked evidence alphabet, not a
+  monoid. Research rung: exact accumulation over `T^k`, with quantisation
+  only at observation, gives a genuine monoid action that makes parallel
+  merge legal.
+* **Echo residue** for every forgetting step: floor division, quantisation,
+  and UMS compilation. Each records what it forgets, so diagnostics can cite
+  it.
+* **The baseline as Stalnaker common ground**, which generalises to per-agent
+  common ground through a visibility lattice (Q2 arm B).
+* **Factivity split.** A preview is the one place where a world-truth oracle
+  exists, so "how wrong are the agents" becomes a designer diagnostic.
+* **Tropical MinPlus budgets** for solver fuel and ToM depth. A secret-types
+  caution: fuel exhaustion is an observable channel, so report it as an
+  explicit verdict.
+* **Choreographies** for "an NPC must not believe its message landed without
+  an acknowledgement". This waits on μ-recursion in choreographic-types.
+* **Typed mod boundary**: overlay restore, the reversible `dlc/vm`, and a
+  fail-closed typed-wasm `VerifiedModule`. A hermetic wasm preview is the
+  elegant long-term successor to the process seam.
+
+== Beyond these two repositories (estate list)
+
+* *IDApTIK:*
+** steps 6 and 18;
+** owner rulings on the two unjoined belief systems (f64 meters vs the
+   ledger) and on the Billy closed-door limit cycle.
+* *Chronicles of Slavia (owner-only):*
+** licence text contradictions;
+** ADR-0009 accepted but not executed;
+** the CLADE uuid mismatch;
+** content ids hard-coded in `session.rs`.
+* *hyperpolymath/affinescript:* the brief.
+* *hyperpolymath/residual-evidence-types:* step 14; stale STATE counts.
+* *hyperpolymath/choreographic-types:* μ-recursion, the highest-value
+  upstream ask.
+* *hyperpolymath/secret-types:* `proof-check-agda` fails because a template
+  `Properties.agda` is mis-wired (re-run 2026-10-27).
+* *hyperpolymath/occupancy-types:*
+** the repo-shape gate fails on `main`: `root-allow.txt` lacks
+   `PROOF-STATUS.adoc` and `occupancy-types.agda-lib`;
+** its gate needs Julia.
+* *hyperpolymath/typell:* L8-L10 in `typell-vcl/src/bridge.rs` are not
+  guarded by `l5_pass`; server handlers return `valid=true` without reading
+  input.
+* *hyperpolymath/typed-wasm:* `gate_module` passes carrier-less modules and
+  skips `verify_capabilities` and `wasmparser::Validator`. It must fail
+  closed before any use for admitting mod wasm.
+* *hyperpolymath/echo-types:* README "WFS, not yet OFS" contradicts
+  PROOF-STATUS "F5 FULL PASS" (flag only).
+* *metadatastician/standards:*
+** `DATA-FORMAT-ROUTING.adoc` is cited as canon but absent;
+** the Dedukti recheck gate (standards#692) does not exist;
+** LICENCE-POLICY does not list Enaction or UMS as AGPL (flag only);
+** add a reusable Creusot provisioning action;
+** add a game-runtime archetype to rsr-template-repo.
+* *rsr-template-repo:*
+** `validate-rsr` fails its own conformance;
+** no Creusot or Kani tooling, despite policy.
+* *Both target repositories* still carry retired A2ML (Enaction 124 files,
+  UMS 20). Track this under kyX; do not hand-convert.
+* *Platform:* agent containers lack Idris2, Zig, Creusot, Lean, Nickel and
+  wasmtime. Commit signatures show `%G?=E` and cannot be verified locally.
+
+== Running it as an ultracode session
+
+Give the session this prompt:
+
+[source,text]
+----
+ultracode. Execute docs/proposals/ULTRACODE-COMPLETION-PLAN.adoc in
+catachresis-colloquium/enaction-engine, wave by wave. Read
+docs/architecture/GAME-DESIGN-SYSTEM.adoc first. For each wave: one workflow,
+one agent per step in a git worktree (disjoint files), then the wave's
+coordinator step inline. Every step must end with its done_when passing, and
+for every planted-failure control, failing. A step whose toolchain is absent
+is reported CI-only, never passed. Open draft PRs per repository; merge
+nothing without the owner. Do not start a step whose owner question
+(Q1-Q8) is unanswered; do every other step. Stop before Wave 5 unless the
+owner has recorded the ADR-0017 T1 want in a consumer repository.
+----
+
+Workflow shape per wave: `pipeline(steps, implement, verify)`. The verify
+stage runs the `done_when` and the planted control in a fresh agent that is
+told to refute success. It is followed by a coordinator barrier and a
+completeness critic asking "which done_when did not actually run?"
+Concurrency in this container was two agents (4 CPUs). A larger container
+roughly halves wall time for Waves 1 and 2.
+
+[appendix]
+== Probe sources and results (re-run 2026-11-04)
+
+The crates link the real code by path. Enaction is at `3bb44c8` and IDApTIK
+at `f71718b`.
+
+.Observer leak (`enaction-trace` path dependency)
+[source,rust]
+----
+use enaction_trace::{Trace, Trope, TropeId, TraceEvent, Revision, Domain};
+use enaction_trace::store::{BeliefStore, Perspective, Subject};
+fn run(hidden_value: i32) -> Option<i32> {
+  let marble = Subject{kind:"marble_location".into(), about:Some("marble".into())};
+  let mut trace = Trace{ tropes: vec![Trope{id:TropeId(1),holders:vec![],bearer:"world".into(),
+    about:Some("marble".into()),kind:"marble_location".into(),domain:Domain::Mechanical}],
+    events: vec![TraceEvent{id:1,tick:1,trope:TropeId(1),value_milli:1_000,confidence:None,
+    revision:Revision::Assert,caused_by:vec![]}]};
+  // Anne moves the marble while Sally is out: an event Sally never observes.
+  trace.events.push(TraceEvent{id:2,tick:2,trope:TropeId(1),value_milli:hidden_value,
+    confidence:None,revision:Revision::Assert,caused_by:vec![]});
+  let mut store = BeliefStore::new(); store.register_baseline(marble.clone(), TropeId(1));
+  store.belief(&trace, &Perspective(vec!["sally".into()]), &marble).map(|v| v.value_milli)
+}
+fn main(){ let a=run(1_000); let b=run(2_000); println!("{a:?} {b:?}"); }
+// Result: Some(1000) Some(2000) — Sally reads hidden world truth.
+----
+
+.IDApTIK ledger defects (`idaptik-core` path dependency)
+[source,rust]
+----
+use idaptik_core::scenario::vsm::{EvidenceLedger, FocalMass, HypothesisLedger, Hypothesis};
+fn f(h:&[&str], m:u32)->FocalMass{FocalMass{hypotheses:h.iter().map(|s|s.to_string()).collect(),mass:m}}
+fn total(l:&EvidenceLedger)->u32{l.focal_masses.iter().map(|f|f.mass).sum::<u32>()+l.conflict_mass}
+fn main(){
+  let fr=vec!["a".to_string(),"b".to_string()];
+  let l=EvidenceLedger::from_evidence(fr.clone(),vec![f(&["a"],5000),f(&["b"],5000)]);
+  let r=EvidenceLedger::from_evidence(fr.clone(),vec![f(&["a"],3333),f(&["a","b"],6667)]);
+  println!("{}", total(&l.combine_conjunctive(&r)));                                   // 9998
+  println!("{}", total(&EvidenceLedger::from_evidence(fr.clone(),
+                        vec![f(&["a"],8000),f(&["b"],8000)])));                          // 16000
+  println!("{:?}", EvidenceLedger::from_evidence(fr.clone(),vec![f(&["zebra"],4000)])
+                   .focal_masses);                                                     // accepted
+  let h=HypothesisLedger{hypotheses:vec![
+    Hypothesis{proposition:"first".into(),confidence:5000,supporting_events:vec![],contrary_events:vec![]},
+    Hypothesis{proposition:"second".into(),confidence:5000,supporting_events:vec![],contrary_events:vec![]}]};
+  println!("{:?}", h.most_likely().map(|x|&x.proposition));                             // "second"
+}
+----
+
+Further results from the same session:
+
+* Associativity over 20,000 random two-hypothesis triples: non-associative
+  18,961/20,000, non-commutative 0/20,000, maximum binary loss 6.
+* Two conflicted ledgers: total 12,500 against T = 10,000.
+* A u64-bitset reimplementation matches IDApTIK on 20,000/20,000 cases, with
+  exact conservation when the remainder is recorded, at 48 vs 563 ns per
+  combine.
+* The six-line `package-runner` (load_package, run_package, serde_json to
+  stdout, exit 2/3) runs byte-identically across two processes.
+
+Ground-truthed gates, 2026-10-27 to 2026-11-04:
+
+* Enaction:
+** 154 Rust tests pass and clippy is clean;
+** the Agda and Coq gates pass on template files only.
+* UMS:
+** 131/131 pass with `IDAPTIK_ROOT` set;
+** a clean checkout without it fails one test, which hard-codes
+   `/home/user/IDApTIK`;
+** `just roundtrip-idaptik` cannot pass, because IDApTIK has no
+   package-runner.
+* typed-wasm workspace: tests pass.
+* Agda theory repos pass:
+** echo-types (`All` and `Smoke`);
+** absolute-zero;
+** epistemic-types (8 expected rejections);
+** residual-evidence-types (9);
+** choreographic-types (5, with an `AGDA_VERSION` override).
+* Agda theory repos that fail:
+** secret-types (mis-wired template);
+** occupancy-types (repo shape; Julia, Idris2 and Lean absent).

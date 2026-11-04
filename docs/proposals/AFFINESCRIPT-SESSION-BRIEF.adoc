@@ -1,0 +1,110 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Brief for the parallel AffineScript session
+:toc:
+
+Status: **Proposed** (2026-11-04). This brief is from the Enaction + UMS
+game-design plan
+(link:ULTRACODE-COMPLETION-PLAN.adoc[ULTRACODE-COMPLETION-PLAN]). Hand it to
+the session working on `hyperpolymath/affinescript`.
+
+Enaction and UMS do not wait on AffineScript for their critical path: Rust
+stays the implementation language (Enaction ADR-0004). The items below are
+what AffineScript must supply so that, when it is adopted, it produces bytes
+the kernel and UMS accept. They are ordered by how much they unblock.
+
+== 1. The one specific deliverable: compile UMS `dlc/vm`
+
+`catachresis-colloquium/universal-modding-studio` holds a 23-instruction
+reversible VM in 28 `.affine` files under `dlc/vm/`. It has never compiled.
+Its manifest claims every-instruction-has-an-inverse, and nothing has ever
+checked that (UMS EXPLAINME).
+
+. Use a pinned, digest-verified binary at UMS commit `09dd204` or later.
+  Release v0.1.1 ships `affinescript-linux-x64` and `SHA256SUMS`; v0.2.0 ships
+  no assets (verified against the GitHub releases API on 2026-11-04). Either
+  publish v0.2.0 assets or declare v0.1.1 the estate CI pin.
+. Run `affinescript check` on every `dlc/vm/src/**/*.affine`. Deliver a
+  per-file table: pass or fail, E-code, and the failing construct.
+. Fix the walls that are compiler bugs, in the compiler. For walls where the
+  VM source is wrong, file UMS issues: the missing `StateBackend.affine`, and
+  the manifest pointer to the missing `docs/SOUNDNESS.adoc`. Do not rewrite
+  UMS files.
+. Make `tests/properties/reversibility.affine` execute, and report for each of
+  the 23 instructions whether its inverse holds.
+
+UMS will gate this in CI (plan step 16), and the gate stays honestly red
+until the table is all-pass.
+
+== 2. Contract the plan's gates rely on
+
+* `check` and `compile` exit non-zero on any error, and never substitute stub
+  bodies silently. typed-wasm-codegen's undiagnosed stub substitution is the
+  counter-example to avoid.
+* Core-wasm integer semantics:
+** u32 wrapping multiply and add, and logical shift right (for Mulberry32);
+** either i64 or documented 32-bit mask idioms (frame bitsets; `Int` lowers
+   to I32 at `lib/codegen.ml:250`);
+** integer division and remainder that truncate exactly as Rust does (the
+   ledger's `mul_div` remainder depends on it).
+* Document that the typed-wasm ownership section maps `own` to Linear. That is
+  unfaithful for affine values, so no Enaction or UMS gate may count
+  L7/L10 verification of AffineScript output as an affine guarantee.
+
+== 3. Critical libraries, in the compiler stdlib
+
+Land these in the compiler stdlib. Do not put them in `affinescript-libraries`:
+its sources do not parse under the current grammar and its Justfile does not
+load. Each library ships with JSON conformance vectors generated from its Rust
+authority and pinned by sha256.
+
+[cols="2,3,4,3",options="header"]
+|===
+| Library | Why it is critical | Minimum viable surface | Vectors from
+
+| `Mass` (fixed-point, scale 10,000)
+| ADR-0015 makes the cognition surface float-free. 10,000² = 10^8 fits in I32.
+| private constructor; `new : Int -> Option Mass`; `add_sat`, `sub_sat`; `mul_div : Mass -> Mass -> (Mass, Int)`; `FULL`, `ZERO`, `compare`
+| `enaction-trace/src/mass.rs`; the plan's rung-4 countermodels
+
+| `Bpa` / categorical evidence
+| How an AffineScript mod produces evidence the kernel accepts: sums to T, focal sets inside a declared frame, absorbed in order, never merged
+| `Bpa.new : Frame -> List (Mask, Mass) -> Result Bpa LedgerFault`; `cat : Frame -> Mask -> Bpa`; `absorb : Ledger -> Bpa -> Ledger` with a recorded remainder
+| `conformance/esm/v1` (plan step 23)
+
+| `Mulberry32` seeded PRNG, with an affine `Rng`
+| ADR-0015 forbids ambient randomness. The only machine-checked estate RNG is IDApTIK's Creusot-proved one; replays desync unless streams match bit for bit
+| `seeded : Int -> Rng`; `next_u32 : Rng -> (Int, Rng)`; `range`
+| first 1,000 outputs for 5 seeds from `idaptik-kernel/src/rng.rs`
+
+| Canonical JSON (RFC 8785 JCS, integer-only I-JSON) + SHA-256
+| Package digests, conformance bytes and preview goldens all hash canonical bytes (estate D306)
+| `encode_canonical : Json -> Result String` (keys sorted by UTF-16 code unit, no whitespace, non-integers rejected); a decoder that rejects duplicate keys; `sha256` (or a Bun-ESM extern)
+| RFC 8785 appendix; the `ijson-jcs` corpus; `conformance/esm/v1/expected`
+
+| `OrdMap` / `OrdSet`
+| ADR-0015 forbids unordered iteration on any output path. Today `dict.affine` is an O(n) string-keyed association list
+| balanced tree with a real `Ord` bound: `insert`, `lookup`, `remove`, in-order `fold`, `to_list`
+| property: iteration order equals sort order for any insertion order
+
+| Event log / replay fold
+| The executable half of every determinism MUST, and the AffineScript form of proof rung 6. It needs no effect handlers, which compile on no backend (#555)
+| `Log<E>` whose `append` rejects non-monotonic `(tick, seq)`; `fold`; `split_at`; `verify_restore_every_tick`; an affine `Snapshot`
+| `conformance/time/v1` (plan step 10)
+
+| `Diagnostic {path, rule, message, level}`
+| One trust vocabulary across Enaction `PackageFault`, the UMS `GuaranteeLevel` and typed-wasm `humanize`
+| record + `Level` enum + a path builder (`events[event_id=3].confidence`)
+| the UMS `preview-response.schema.json`
+|===
+
+Conditional: if the owner rules to port UMS `apps/studio` away from TypeScript
+(plan question Q5), a Bun-ESM `fetch_json` binding for affinescript-tea, and a
+pure `view : Report -> Html` whose text projection equals the explain-lens
+golden, become the first real AffineScript application view.
+
+== 4. Explicitly not needed by this plan
+
+Effect-handler compilation (#555/#623), WasmGC, faces, a typed-wasm Affine
+kind and Polonius are all off this plan's critical path. Do not reprioritise
+for them on this plan's account.

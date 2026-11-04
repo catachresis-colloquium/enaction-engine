@@ -1,0 +1,320 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Enaction + UMS as a game-design instrument: target architecture
+:toc:
+:toclevels: 2
+
+Status: **Proposed** (2026-11-04). This document describes a destination and
+the seams that reach it. It does not claim that any `new` component below
+exists. The execution plan, with gates and waves, is
+link:../proposals/ULTRACODE-COMPLETION-PLAN.adoc[ULTRACODE-COMPLETION-PLAN].
+Nothing here overrides `CAC-KERNEL.adoc`, which stays normative. Where this
+document proposes a change to it, the change is an ADR marked Proposed and
+needs the owner's acceptance.
+
+== What "usefully contribute to the design of any game" means
+
+A game takes part by publishing three things:
+
+* a profile descriptor for UMS (vocabularies, edit verbs, constraints);
+* a versioned package contract (`contracts/<game>/v1`);
+* a headless runner that emits kernel-contract data: an `EpistemicPackage`
+  plus world-truth atoms, with no Cargo link to Enaction or UMS.
+
+In return the designer gets six things for any scenario they author:
+
+. **Fail-closed admission.** Every fault carries a stable field path and rule
+  name, and nothing is silently skipped.
+. **Content-addressed identity.** The package digest is mandatory and computed
+  over canonical bytes.
+. **Replay identity.** The preview runs twice in separate processes and
+  refuses to report if the bytes differ.
+. **A belief report.** Per agent and per theory-of-mind order: status,
+  `[belief, plausibility]`, the events behind each belief, the supersession
+  chain, divergence from world truth, certain-but-false warnings and an
+  observer-leak verdict.
+. **Verdicts in a sound vocabulary.** `entailed / refuted / unresolved /
+  inconsistent` and `identified / unidentified / no-candidate`, taken from
+  `residual-evidence-types`.
+. **An evidence level on every row.** One of `machine-checked`,
+  `runtime-validated`, `tested`, `designed` or `aspirational`, allowed only
+  when a named gate backs it.
+
+This is a design instrument, not a game engine. It answers questions such as
+"does the guard come to believe the USB is in the vent, why, and is that
+true?" for content that has not shipped yet.
+
+== Layers and the single authority for each
+
+[source,text]
+----
+ designer
+    │  CLI first (ums-profile preview --explain); studio later
+    ▼
+ UMS Core ── profile SDK, ai-edit (authoring miniKanren), dlc, compilers
+    │  owns: authoring, compilation, orchestration, evidence labels
+    │  process seam: argv only, cleared env, timeout, output cap
+    ▼
+ game runner (e.g. IDApTIK examples/package-runner --emit-epistemic)
+    │  owns: world truth, perception, game rules, package loading
+    │  data seam: EpistemicPackage + world-truth atoms, canonical JSON
+    ▼
+ enaction-validate          (Waves 1-4: contracts + canonical bytes only)
+ enaction-replay            (Wave 5: the single CAC reducer, enaction-cognition)
+    │  owns: event/package/reduction semantics, mass units, canonical bytes
+    ▼
+ preview response ──► explain lens (JCS golden) ──► designer
+----
+
+No layer links another as a library. UMS never depends on Enaction or on a
+game in Cargo (UMS ADR-0010/0016). Games never depend on UMS. IDApTIK does
+not depend on `enaction-*` (IDApTIK ADR-0009); it emits data that matches the
+contract instead. The seams are processes and versioned data, so each side
+can be replaced and tested alone.
+
+== Components
+
+[cols="3,2,1,4",options="header"]
+|===
+| Component | Repository | Status | Role and gate
+
+| `enaction-trace` (Trace, Trope, Mass, BeliefStore, divergence, projections)
+| enaction-engine | change
+| The authority for what a trace event is and for mass units. *Change:*
+`BeliefStore::belief` falls through to `trace.latest_value` of the baseline
+trope, so an agent with no observations reads live world truth (probe:
+Sally reads 1000 and 2000 in two runs that differ only in an unobserved
+event). Fix: the baseline becomes a frozen prior (ADR-0022, Proposed). Gate:
+an observer proptest, plus a `planted-omniscience` feature that must make it
+fail.
+
+| `enaction-contracts` (EpistemicPackage, validate_package, EpistemicReduce, StatusPolicy)
+| enaction-engine | change
+| The contract authority; it stays behaviour-free (ADR-0019). *Changes:* the
+digest becomes mandatory (today `computed_digest: Option<&str>` skips the
+check on `None`). A stored `Belief.status` must agree with
+`StatusPolicy(interval)`. Add frame declarations (at most 64 hypotheses),
+canonical bytes, and `Known` renamed to `Certain`. Add a binary target,
+`enaction-validate`, as the process seam.
+
+| `conformance/time/v1`, then `conformance/esm/v1`
+| enaction-engine (owner copy), vendored by digest
+| new
+| The cross-repository currency ADR-0015 defines. `time` comes first: lerp
+clamp, one-term interior, commit-then-snap, catch-up cap. `esm` is the
+CAC-KERNEL §7 first slice, with bytes produced by IDApTIK and reproduced by
+Enaction (T2).
+
+| `verification/proofs/agda/Cac/*`, `verification/proofs/coq/Cac.v`
+| enaction-engine | new
+| The first theory that is about Enaction. Today the Agda and Coq gates pass
+on template files only.
+
+| `.github/workflows/creusot.yml`
+| enaction-engine | new
+| Puts the existing local Creusot harness (RUST-P1/P2) into CI, copying
+IDApTIK's working provisioning, with a planted mutant.
+
+| `enaction-cognition` (`ledger_core.rs`, `ledger.rs`, `enaction-replay`)
+| enaction-engine | new, Wave 5 only
+| The single CAC reducer. It is admitted only when ADR-0017 T1, T2 and T3 are
+all on record. `ledger_core.rs` is dependency-free so Creusot proves the
+exact file that ships.
+
+| `examples/package-runner.rs --emit-epistemic`, lawful `vsm.rs` ledger
+| IDApTIK | new / change
+| The game-owned runner. It does not exist today, so UMS
+`just roundtrip-idaptik` cannot pass against IDApTIK `f71718b`. The ledger
+repairs are listed under "Measured evidence".
+
+| `ProcessPreviewAdapter`, `ums-profile preview [--explain]`, `preview-response.schema.json`
+| universal-modding-studio | new
+| The first non-test `SimulationAdapter`. It runs pre-built binaries by path,
+never `cargo run` in a game root. With no runner or validator present it
+fails; it never falls back to a stub.
+
+| `scripts/check-guarantee-evidence.sh`
+| universal-modding-studio | new
+| A descriptor guarantee at `tested` or above must name a recipe or CI job
+that exists. IDApTIK's hard-coded six-row `CacTrace` is labelled `designed`,
+never shown as cognition.
+
+| `scripts/check-architecture-boundaries.sh` + weekly workflow
+| universal-modding-studio | change
+| The executable form of ADR-0016. Remove the `affective-engine` fallback and
+the fixed `/tmp` path, and add a planted-violation self-test.
+
+| `dlc/vm` (28 `.affine`, reversible VM)
+| universal-modding-studio | change
+| Never compiled. Gains a CI job against the digest-verified AffineScript
+v0.1.1 binary. The per-file triage belongs to the AffineScript session.
+
+| `ResidualEvidence/Finite/Generic.agda`
+| residual-evidence-types | new
+| Verdict and IdStatus soundness over any finite candidate list, so Enaction
+imports the lattice rather than copying it.
+
+| Slavia ESM parity test
+| chronicles-of-slavia | new, Wave 5, owner-gated
+| The test that one reducer serves a structurally different reasoner: kernel
+IdStatus must equal Slavia `Read` on the 10 testbed scenarios.
+|===
+
+Unchanged and off the route: `enaction-time` (its behaviours become
+`conformance/time/v1`), `enaction-accelerator(-native)`, UMS `ums-ai-edit`
+(the authoring reasoner stays a separate layer), and UMS `apps/studio`
+(flagged; see the plan's owner questions).
+
+== Invariants
+
+Each one is enforced by a gate that can be shown to fail.
+
+. The simulation advances only in whole, equal steps, and interpolation never
+  feeds simulation (existing; `enaction-time` tests).
+. **Observer noninterference.** For two traces that agree on every event in
+  perspective P's observation set and causal closure, every belief P reads is
+  byte-identical. The secret-types TINI shape, read per perspective.
+. **The package digest is mandatory** and computed over canonical bytes.
+. **Evidence is an ordered fold**, in `(tick, sequence)` order, of checked
+  basic belief assignments (BPAs) into a ledger. It is never a monoid merge:
+  IDApTIK's combine is non-associative in 18,961 of 20,000 measured triples.
+. **Focal sets are ground** subsets of a declared finite frame. A non-ground
+  query denotes the set of its groundings (ADR-0023, Proposed).
+. **Mass is conserved exactly.** Floor-division remainders are recorded:
+  `T·(Σq + Δconflict) + Σrem = (Σledger)(Σbpa)`.
+. **No float crosses the kernel.** f64 belief kinetics quantise exactly once,
+  through `to_milli`, before they become an event mass (ADR-0015 amendment).
+. **`Certain` is not `Known`.** Mass certainty never reads as knowledge.
+  Factive `Known` is computed only where world truth exists, which a preview
+  supplies.
+. **No trust label without a gate.** A missing toolchain is a FAIL, reported
+  as CI-only or ASSUMED, never as a pass.
+. **A released game never depends on UMS** (UMS ADR-0016).
+
+== Default arm and recommended arm
+
+Default arm (most elegant and correct long term): the kernel owns one CAC
+reducer, `enaction-cognition`. It folds checked BPAs into per-perspective
+ledgers over ground focal sets. It is proved in Agda and, by Creusot, on the
+exact production `ledger_core.rs`. UMS reaches it through three processes
+over canonical data.
+
+Recommended arm: the same destination, sequenced holes-first and
+designer-value-first. Waves 1-4 deliver a fail-closed IDApTIK cognition
+preview in which IDApTIK's own repaired ledger is the reasoner, and Enaction
+supplies validation, canonical bytes, fixtures and proofs. Wave 5 swaps in
+`enaction-cognition`.
+
+The arms differ in ordering only. ADR-0017 forbids designing an extraction
+before a consumer records the want in its own repository, and an
+agent-written want is the retrofit T1 rejects. The seam is the same either
+way, so the swap costs no rework. Until Wave 5, "any game" means any game
+that brings its own reasoner.
+
+Two smaller labelled choices:
+
+* **Observer fix.** Default arm: the baseline is a frozen prior captured at
+  registration. This is minimal and keeps Slavia's "baseline plus own deltas".
+  Arm B: default-Unknown with a secret-types visibility lattice, the later
+  generalisation.
+* **Canonical bytes.** Default arm: RFC 8785 JCS over integer-only I-JSON
+  (estate D306). Arm B: canonical CBOR, as ADR-0015 is written today.
+  Experiment E2 decides before any contract change.
+
+== The theory spine
+
+The hardest open problem in CAC-KERNEL §8 is the proposition language, and
+whether a Dempster-Shafer focal set may contain a non-ground proposition. It
+resolves through **categorical evidence**. A relational query's answer set S
+over a declared frame is the BPA `cat(S)`. Conjunctive absorption of
+categorical evidence is exact set intersection (`T·T/T = T`, with no
+rounding). `IdStatus(cat S)` coincides with Slavia's `Read` (Unified,
+Ambiguous, Contradiction).
+
+The two miniKanren engines and IDApTIK's Dempster ledger therefore become one
+structure: one trace, one ledger, many front-end solvers. That is stronger
+than the contract's stated fallback, "one trace, two reasoners".
+
+[cols="2,3,3",options="header"]
+|===
+| Repository | Artefact reused | What it buys the designer
+
+| epistemic-types
+| FactiveModality vs BeliefModality; `BeliefIsKnowledge` rejection
+| The tool never presents confidence as truth (Known → Certain).
+
+| secret-types
+| `Noninterference.Statement.TINI`, down-closed Observer
+| A fog-of-war guarantee: no agent acts on what it could not observe.
+
+| residual-evidence-types
+| Finite Verdict / IdStatus soundness; 546-row correspondence pattern
+| "Does the guard identify X?" is a proved verdict, not a heuristic.
+
+| echo-types
+| `no-section-of-collapsing-map`; `aggregation-as-fold`; `A↔ΣEcho`
+| Floor division forgets; recording the remainder is why mass is conserved.
+  The same reading explains what UMS compilation forgets.
+
+| occupancy-types, echo-types
+| `Timeline.cut-factor` (statement shape); fold over `++`
+| Scrub to any tick and resume with the same future: snapshots need only the
+  fold law, so non-associativity does not threaten replay.
+
+| tropical-types
+| MinPlus resource instances
+| Solver fuel, events per tick and theory-of-mind depth budgeted in
+  deterministic units, never milliseconds.
+
+| choreographic-types
+| K-CUT-LOSS, sender-cannot-know-receipt
+| Per-agent views that stay consistent with the global trace (needs
+  μ-recursion upstream first).
+|===
+
+== Measured evidence (2026-11-04)
+
+These measurements were run in this session against the real crates:
+Enaction `3bb44c8`, IDApTIK `f71718b`, Rust 1.97. The probe sources are in
+the plan's appendix.
+
+[cols="3,2",options="header"]
+|===
+| Probe | Result
+
+| Sally-Anne leak: `BeliefStore::belief` with no observations, two runs differing only in an unobserved world event
+| reads 1000 vs 2000: noninterference violated
+
+| IDApTIK `EvidenceLedger::combine_conjunctive` on two full BPAs
+| total 9,998 (2 units lost to floor division)
+
+| Over-full BPA (16,000 > 10,000)
+| accepted
+
+| Out-of-frame focal set `{zebra}`
+| accepted
+
+| `HypothesisLedger::most_likely` tie (docs promise first-declared)
+| returns the last
+
+| Associativity over 20,000 random triples
+| fails in 18,961; commutativity never fails; max binary loss 6
+
+| Two conflicted ledgers combined
+| total 12,500 against T = 10,000 (prior conflict double-counted)
+
+| u64-bitset reimplementation vs IDApTIK `Vec<String>` focal sets
+| equal on 20,000/20,000; exact conservation with remainder 20,000/20,000;
+  48 vs 563 ns per combine (one host, frame size 2)
+|===
+
+== What this architecture refuses
+
+* `enaction-affect`, `enaction-conation`, a runtime, ECS, renderer or physics
+  crate (ADR-0012, ADR-0017).
+* Any Cargo edge between UMS, Enaction and a game.
+* Unifying the UMS authoring miniKanren with the kernel reasoner. They are
+  different layers: JSON terms with floats versus float-free cognition.
+* Batch or parallel ledger merges.
+* A stub preview adapter outside tests.
+* Labelling the six-row `CacTrace` as cognition.
