@@ -92,6 +92,14 @@ These are asked through the selector. The default arm is labelled on each.
   reducer in Chronicles of Slavia (or another non-donor consumer) in that
   consumer's own repository, or decline. Declining keeps the recommended arm
   permanently.
+  Independence is part of this ruling. ADR-0017's rationale says
+  "same-author second callers do not supply independence"; its T1 text does
+  not demand another author, and instead compensates with the want recorded
+  first plus T2 and T3. Chronicles of Slavia has the same author as IDApTIK.
+  The owner rules either (a) that a same-author want satisfies T1 under
+  those compensating gates, or (b) that T1 needs an independently authored
+  consumer. Under (b), Wave 5 waits for one, and an ADR amendment should say so.
+  The plan does not presume either ruling.
 | Wave 5
 
 | Q5 | UMS `apps/studio` is TypeScript, against policy
@@ -245,7 +253,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | Hash the four ADR-0015 behaviours. Harness: twice in-process, two processes,
   snapshot every tick. CI matrix: x86_64, aarch64, wasm32-wasip1; a missing
   target FAILs.
-| `sha256sum -c conformance/time/v1/SHA256SUMS && cargo test --locked -p enaction-time --test conformance_time`
+| `sha256sum -c conformance/time/v1/SHA256SUMS && cargo test --locked -p enaction-time --test conformance_time`,
+  and the `conformance-time` workflow concludes success on the reviewed
+  commit with all three matrix legs present and green, each built with
+  `--target <triple>` (a host-only `cargo test` exercises one platform)
 | A/A+
 
 | 11 | Contract evolution + `enaction-validate` (after Q1 and ADR acceptance)
@@ -306,7 +317,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | `Cac/{Frame,Ledger,Categorical,Countermodel}`: commutativity; divmod-exact
   absorb; floor-loss bound; categorical intersection; the two probe
   countermodels as `refl`; first-max argmax.
-| `bash scripts/check-proofs.sh agda` with `Cac/Ledger.agda` gated
+| `bash scripts/check-proofs.sh agda` with all four of `Cac/Frame`,
+  `Cac/Ledger`, `Cac/Categorical` and `Cac/Countermodel` listed in the proof
+  MANIFEST (Agda checks only transitive imports, so gating one module does
+  not check the others)
 | A/A
 
 | 14 | Upstream rung 5 (residual-evidence-types)
@@ -416,9 +430,14 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | B+/A
 
 | 23 | `conformance/esm/v1` bidirectional (T2)
-| Donor bytes from step 18 plus `rejected/<rule>/` for every fault. Vendored
-  by digest into IDApTIK and UMS.
-| `sha256sum -c` succeeds in all three repositories,
+| Donor bytes from step 18 plus `rejected/<rule>/` for every fault. One
+  authoritative corpus digest (the sha256 of the corpus's canonical
+  `SHA256SUMS`) is published in Enaction as `conformance/esm/v1/CORPUS.sha256`
+  and vendored by that value into IDApTIK and UMS.
+| the corpus digest computed in each of the three repositories equals the
+  value in Enaction's `CORPUS.sha256` (a local `SHA256SUMS` updated alongside
+  a changed corpus would otherwise pass), `sha256sum -c` succeeds in all
+  three,
   `cargo test --locked -p enaction-contracts --test conformance_esm` passes,
   IDApTIK regenerates every accepted case with `--emit-epistemic` and its
   canonical output equals `expected/` under `cmp`, the UMS adapter test
