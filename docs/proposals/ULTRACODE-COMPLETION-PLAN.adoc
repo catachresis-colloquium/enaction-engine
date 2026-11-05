@@ -72,11 +72,16 @@ These are asked through the selector. The default arm is labelled on each.
   string, because I-JSON integers beyond that round in JavaScript consumers.
   B: canonical CBOR, as ADR-0015 is written, which keeps full `u64`; B/A.
   Experiment E2 runs first either way.
+  *Ruled 2026-11-05: A (JCS).* ADR-0015's "canonical CBOR" wording is
+  amended to match, in the same change as step 11.
 | Steps 11, 23
 
 | Q2 | Observer boundary
 | A (default): baseline is a frozen prior; A/A+.
   B: default-Unknown plus a secret-types visibility lattice; A+/A, more work.
+  *Ruled 2026-11-05: both, staged.* Step 2 lands A now and closes the leak.
+  B follows as an ADR, opened when a game needs graded visibility, and
+  must keep step 2's observer tests and planted mutant passing.
 | Step 2
 
 | Q3 | Template proofs (`Properties.agda`, `TypeSafety.v`)
@@ -110,6 +115,9 @@ These are asked through the selector. The default arm is labelled on each.
 
 | Q6 | Cross-repo PRs into IDApTIK and Slavia
 | Allow draft PRs from the session, or have the owner apply the patches.
+  *Ruled 2026-11-05: draft PRs.* The session opens draft PRs in IDApTIK and
+  Slavia on their own branches; nothing merges without the owner. Step 27
+  still waits on Q4.
 | Steps 6, 7, 18, 27
 
 | Q7 | Canonical forge
