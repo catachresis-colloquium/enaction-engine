@@ -131,7 +131,9 @@ IDApTIK's working provisioning, with a planted mutant.
 
 | `enaction-cognition`, `enaction-replay`
 | enaction-engine | new, Wave 5 only
-| The single CAC reducer. It is designed and admitted only when ADR-0017 T1,
+| The single CAC reducer. It is designed and admitted only when ADR-0017 T1
+(as amended by the planned ADR-0025: a recorded want plus an independent
+specification by a non-owner author),
 T2 and T3 are all on record; this document deliberately fixes no internal
 shape for it. It must satisfy the contract, the conformance bytes and the
 proved ledger laws, and Creusot must prove its core as the file that ships.

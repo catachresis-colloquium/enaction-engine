@@ -33,7 +33,8 @@ IDApTIK cognition preview at the end of Wave 4:
 
 That is four waves and about 32 agent-sessions, most of them parallel.
 Wave 5 replaces the game's own reasoner with the kernel's and proves Slavia
-parity. It is hard-gated on an owner-recorded ADR-0017 T1 want.
+parity. It is hard-gated on ADR-0017 T1 as ruled in Q4 (a recorded want plus an
+independent specification), T2 and T3.
 
 *Proof critical path.* Each rung is chosen because a designer-facing label
 depends on it:
@@ -104,7 +105,17 @@ These are asked through the selector. The default arm is labelled on each.
   The owner rules either (a) that a same-author want satisfies T1 under
   those compensating gates, or (b) that T1 needs an independently authored
   consumer. Under (b), Wave 5 waits for one, and an ADR amendment should say so.
-  The plan does not presume either ruling.
+  *Ruled 2026-11-05: (c), independence by independent specification.* T1 is
+  met when both of these hold:
+  (1) a dated want for a kernel-owned reducer is recorded in a second,
+  non-donor consumer's repository (Chronicles of Slavia);
+  (2) a person other than the owner, named by the owner, has written a set of
+  scenarios with expected beliefs (`conformance/esm/v1/independent/`),
+  committed under that person's authorship with a commit date earlier than
+  the first reducer-design commit.
+  Independence then comes from a specification the owner did not write, not
+  from a whole second game, so it can be scheduled. ADR-0025 amends ADR-0017
+  to say so, and step 25's gate requires the reducer to pass that set.
 | Wave 5
 
 | Q5 | UMS `apps/studio` is TypeScript, against policy
@@ -239,7 +250,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 
 | 8 | Decision records, Proposed
 | Enaction ADR-0022 (frozen prior), 0023 (ground focal sets over declared
-  frames, ordered fold, recorded remainder, `cat(S)`), 0024 (canonical bytes),
+  frames, ordered fold, recorded remainder, `cat(S)`), 0024 (canonical bytes, JCS per Q1), 0025 (T1 independence by independent specification, per Q4),
   and amendments to 0015 (quantisation boundary, contract name `time`) and
   0016 (Known → Certain). UMS ADR-0019 (preview is processes over data seams).
 | each file has `Status: Proposed` and names its default arm
@@ -501,7 +512,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   binary refuses an event without an evidence payload with the named fault
   `MissingEvidencePayload`; it never guesses a BPA from a scalar.
 | every accepted `conformance/esm/v1` case replays byte-identically via
-  `cmp`, and every `rejected/<rule>/` case is refused with its rule; a
+  `cmp`, and every `rejected/<rule>/` case is refused with its rule; every
+  scenario in the independent specification (`conformance/esm/v1/independent/`,
+  Q4) yields its expected beliefs, and `git log` shows that set was
+  committed by its named author before the first reducer-design commit; a
   scalar-only package is refused with `MissingEvidencePayload`; the planted
   locality mutant fails; Creusot obligations are stated for the reducer's
   core and gated; the rung-8 `Correspondence` check passes for the reducer's
@@ -603,7 +617,7 @@ Nothing else in this plan waits on AffineScript.
 ** `conformance/{time,esm}/v1`
 ** `verification/proofs/agda/Cac/*` and `verification/proofs/coq/Cac.v`
 ** `.github/workflows/creusot.yml`
-** ADRs 0022-0024
+** ADRs 0022-0025
 ** later, `crates/enaction-cognition`
 * *UMS:*
 ** `crates/ums-profile-sdk/src/preview.rs` and its tests
@@ -737,7 +751,9 @@ is reported CI-only, never passed. Open draft PRs per repository; merge
 nothing without the owner. Do not start a step whose owner question
 (Q1-Q8) is unanswered; do every other step. Stop before Wave 5 unless all
 three ADR-0017 triggers are on record: T1 (the owner's dated want in a
-second, non-donor consumer's repository), T2 (step 23 merged, with every
+second, non-donor consumer's repository, and the independent specification
+in conformance/esm/v1/independent/ committed by its named non-owner author
+before any reducer-design commit, per ADR-0025), T2 (step 23 merged, with every
 repository's digest check passing) and T3 (the recorded surprises from steps
 4 and 6 merged).
 ----
