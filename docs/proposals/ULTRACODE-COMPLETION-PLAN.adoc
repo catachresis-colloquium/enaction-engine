@@ -69,8 +69,9 @@ These are asked through the selector. The default arm is labelled on each.
 | Q1 | Canonical parity bytes
 | A (default): RFC 8785 JCS over integer-only I-JSON, estate D306; A/A,
   *provided* every `u64` field (event ids, ticks, sequences, `valid_from`,
-  fixed seeds) is bounded to 2^53−1 or encoded as a canonical decimal
-  string, because I-JSON integers beyond that round in JavaScript consumers.
+  fixed seeds) is bounded to 2^53−1 and refused above it, with no
+  decimal-string escape, because I-JSON integers beyond that round in
+  JavaScript consumers.
   B: canonical CBOR, as ADR-0015 is written, which keeps full `u64`; B/A.
   Experiment E2 runs first either way.
   *Ruled 2026-11-05: A (JCS).* ADR-0015's "canonical CBOR" wording is
@@ -161,7 +162,12 @@ Environment variables used in the gates below: `ENACTION_ROOT`, `UMS_ROOT`,
 
 == Waves
 
-Each step's `done_when` is a command whose failure is visible. Ratings are
+Each step's `done_when` is a command whose failure is visible. A
+`cargo test <name>` filter that matches nothing exits 0, so every named test
+in a `done_when` runs through `scripts/cargo-test-exact.sh <package> <name>`,
+which passes `--exact` and fails unless the output reports exactly one test
+run and passed. Step 1 adds that script with a planted control: a misspelled
+name must fail. Ratings are
 elegance/correctness first, then dependability/security. Steps in a wave run
 as parallel agents on disjoint files. One coordinator owns the shared files
 (`Cargo.toml`, `Cargo.lock`, `Justfile`, workflows, MANIFESTs), following
@@ -174,13 +180,13 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | # | Step and repository | What | done_when | Rating
 
 | 1 | Proof-gate honesty (enaction)
-| `check-proofs.sh` FAILs when a MANIFEST gates zero modules; today Lean passes
+| Add `scripts/cargo-test-exact.sh` (see the Waves preamble). `check-proofs.sh` FAILs when a MANIFEST gates zero modules; today Lean passes
   vacuously. Add a planted negative control, and fix EXPLAINME's stale "lists
   only enaction-time". Never quarantine a compiling template: in this script
   that is an UNEXPECTED-pass FAIL. Templates are not deleted here (see Q3).
   The Lean gate, which gates zero modules and has no toolchain in agent
   containers, turns red by design; that is the one expected red.
-| `bash tests/check-proofs-vacuous.sh && cargo test --locked --all-targets`
+| `bash tests/check-proofs-vacuous.sh && bash tests/check-cargo-test-exact.sh && cargo test --locked --all-targets`, where the second script requires `scripts/cargo-test-exact.sh` to fail on a misspelled test name and pass on a real one
 | A/A
 
 | 2 | Observer boundary (enaction-trace)
@@ -314,23 +320,38 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   gains a `policy_digest`. The profile side (UMS, from the compiled profile)
   passes the policy document as a separate argument, `--policies FILE`, and
   the validator refuses with `PolicyDigestMismatch` unless the file's
-  canonical digest equals `ProfileRef.policy_digest`.
-  Binary: stdin envelope plus `--policies` → validate the package against
-  those policies, check every truth atom names a declared qualified hypothesis,
-  reject a second truth atom for an exclusive frame, pass the envelope
-  through with canonical faults; exit 0/1/2.
+  canonical digest equals `ProfileRef.policy_digest`. The policy document
+  names the profile id and version it belongs to, and the adapter passes the
+  id and version it compiled as `--expect-profile ID@VERSION`. The validator
+  refuses with `ProfileMismatch` unless `ProfileRef`, the policy document and
+  that argument all agree, so a stale runner cannot borrow another
+  profile's policy.
+  Parsing is strict: the envelope and every nested contract type reject
+  unknown fields (`deny_unknown_fields`) before canonicalisation, so the
+  digest always covers every field supplied. Frames hold 1 to 64 hypotheses;
+  a 64-entry frame with a focal mask using bit 63 is admitted.
+  Binary: stdin envelope plus `--policies` and `--expect-profile` → validate
+  the package against those policies, check every truth atom names a declared
+  qualified hypothesis, reject a second truth atom for an exclusive frame,
+  pass the envelope through with canonical faults. Exit 0: valid. Exit 1: a
+  validation fault in the input. Exit 2: an invocation or operational
+  failure (missing or unreadable `--policies` file, missing argument,
+  unreadable stdin), so an adapter can tell a bad package from a broken
+  call.
   The same change revises `CAC-KERNEL.adoc` (§3 data model, §6 validation,
   §8 open problem 1), which stays the normative authority; no wire change
   lands before the kernel document says it.
-| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected && cargo test --locked -p enaction-contracts conflicting_truth_atoms_are_rejected && cargo test --locked -p enaction-contracts qualified_hypotheses_disambiguate_frames && cargo test --locked -p enaction-contracts runner_cannot_supply_its_own_policies && cargo test --locked -p enaction-contracts ambiguous_frames_are_rejected && cargo test --locked -p enaction-contracts confidence_must_match_payload && cargo test --locked -p enaction-contracts dependent_evidence_is_refused && cargo test --locked -p enaction-contracts shared_group_across_perspectives_is_admitted && cargo test --locked -p enaction-contracts mutated_package_with_stale_digest_is_rejected && cargo test --locked -p enaction-contracts u64_boundaries_follow_q1 && for t in 'enaction-runner-output/1' policy_digest PolicyDigestMismatch '--policies' 'exit 0' 'exit 1' 'exit 2'; do rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc || exit 1; done`.
+| `for t in canonical_bytes_match_jcs_vectors frame_over_64_is_rejected frame_of_64_with_bit_63_is_admitted conflicting_truth_atoms_are_rejected qualified_hypotheses_disambiguate_frames runner_cannot_supply_its_own_policies profile_mismatch_is_refused unknown_fields_are_rejected_before_hashing ambiguous_frames_are_rejected confidence_must_match_payload dependent_evidence_is_refused shared_group_across_perspectives_is_admitted mutated_package_with_stale_digest_is_rejected u64_boundaries_follow_q1; do bash scripts/cargo-test-exact.sh enaction-contracts "$t" \|\| exit 1; done && for t in 'enaction-runner-output/1' policy_digest PolicyDigestMismatch ProfileMismatch '--policies' '--expect-profile' 'exit 0' 'exit 1' 'exit 2'; do rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc \|\| exit 1; done`.
   The boundary test covers 2^53−1, 2^53 and `u64::MAX` (under arm A: accepted,
   refused, refused). The kernel-document check looks for the contract itself,
   so an unrelated edit to `CAC-KERNEL.adoc` cannot satisfy it.
-  The binary is exercised three ways, through fixtures under
-  `tests/fixtures/cli/`: a valid envelope with the matching policy file exits
-  0; the same envelope with a policy file whose digest differs exits 1 with
-  `PolicyDigestMismatch`; and, separately, `echo '{}'` with the matching
-  policy file exits 1 with an envelope fault
+  The binary is exercised five ways, through fixtures under
+  `tests/fixtures/cli/`: a valid envelope with the matching policy file and
+  profile exits 0; the same envelope with a policy file whose digest differs
+  exits 1 with `PolicyDigestMismatch`; with a different `--expect-profile` it
+  exits 1 with `ProfileMismatch`; separately, `echo '{}'` with the matching
+  policy file exits 1 with an envelope fault; and a missing `--policies` file
+  exits 2
 | A/A
 
 | 12 | Agda theory I: rungs 1-3
@@ -401,9 +422,13 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   the real Ghost Lobby evidence (frames usb/note/unknown and
   front_door/ventilation/unknown), a canonical ledger trace and world-truth
   atoms, as data with no enaction dependency. The `CacTrace` is labelled
-  fixture.
-| `cargo test --locked -p idaptik-core --test esm_conformance_emit`, and the
-  emitted envelope passes `enaction-validate`
+  fixture. The runner also implements the versioned counterfactual seam
+  `enaction-counterfactual/1`, which the leak verdict needs. The envelope
+  gains `world_events` (id, value) and `causal_edges` (cause id → effect id),
+  and the runner accepts `--perturb FILE` (world-event ids with replacement
+  values) and replays with those values substituted.
+| `cargo test --locked -p idaptik-core --test esm_conformance_emit && cargo test --locked -p idaptik-core --test counterfactual_perturb`,
+  and the emitted envelope passes `enaction-validate`
 | A/A
 
 | 19 | UMS `ProcessPreviewAdapter` + response schema + guarantee gate
@@ -411,14 +436,19 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   `enaction-validate --policies <profile policy file>`; the adapter takes the
   policy file from the profile it compiled against, never from the runner. The response schema carries the world-truth atoms the
   explain lens needs. Argv only, cleared environment, timeout, stdout cap. A
-  missing binary is a FAIL. The guarantee gate requires *passing* evidence,
-  not a name that exists: a `tested` label must name a recipe that the gate
-  runs and that exits 0, or a CI run id that concluded success on the current
-  head; `machine-checked` must name a MANIFEST-gated module that passed in
-  that run.
+  missing binary is a FAIL. The guarantee gate requires *passing, relevant*
+  evidence, not a name that exists or an arbitrary command that exits 0. A
+  `tested` label must name an entry in the reviewed gate registry
+  (`docs/status/GUARANTEE-GATES.adoc`, changed only by reviewed PR). Each
+  entry maps one guarantee to one specific test and to a planted failure
+  that the test must catch. The gate runs both, on the current head.
+  `machine-checked` must name a MANIFEST-gated module that passed in that
+  run.
   Write the stub-binary protocol test first so this runs in parallel with
   step 18.
-| `cargo test --locked -p ums-profile-sdk --test process_preview && bash scripts/check-guarantee-evidence.sh && ! bash scripts/check-guarantee-evidence.sh --descriptor tests/fixtures/unbacked-machine-checked.json`
+| `cargo test --locked -p ums-profile-sdk --test process_preview && bash scripts/check-guarantee-evidence.sh && ! bash scripts/check-guarantee-evidence.sh --descriptor tests/fixtures/unbacked-machine-checked.json && ! bash scripts/check-guarantee-evidence.sh --descriptor tests/fixtures/tested-names-true.json`,
+  where the last fixture labels a guarantee `tested` with the recipe `true`
+  and no registry entry
 | A/A
 
 | 20 | Rocq recheck (rung 9)
@@ -459,11 +489,15 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   projection fixed (the low-equivalence condition of invariant 2), and require
   identical beliefs. An event that causally changes something the perspective
   observes is never perturbed, since an honest reasoner may then legitimately
-  change its mind.
+  change its mind. The adapter computes each perspective's closure from the
+  runner's `causal_edges` and drives the runs through `--perturb`
+  (`enaction-counterfactual/1`, step 18). A runner that does not implement
+  that seam gets the verdict `unverified`, never `no-leak`.
 | `cargo test --locked -p ums-profile-sdk --test explain_golden && cargo test --locked -p ums-profile-sdk --test leak_verdict_paired`,
   where a planted reasoner that reads an unobserved event must be reported
-  `leak` and the honest reasoner `no-leak`; and the demo output contains
-  `replay-identical: ok`
+  `leak`, the honest reasoner `no-leak`, and a runner without the seam
+  `unverified`; the paired runs go through the real IDApTIK runner, not only
+  a stub; and the demo output contains `replay-identical: ok`
 | B+/A
 
 | 23 | `conformance/esm/v1` bidirectional (T2)

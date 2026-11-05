@@ -22,7 +22,11 @@ A game takes part by publishing three things:
   envelope, `enaction-runner-output/1`: an `EpistemicPackage` and
   world-truth atoms (at most one per exclusive frame), with no Cargo link to
   Enaction or UMS. The runner never supplies the depth and status policies:
-  they come from the profile, bound to `ProfileRef` by digest.
+  they come from the profile, bound to `ProfileRef` by digest and to the
+  profile id and version the adapter compiled. To earn a leak verdict, the
+  runner also implements `enaction-counterfactual/1`: it reports world events
+  and their causal edges, and it replays with chosen hidden events perturbed.
+  A runner without that seam gets the verdict `unverified`.
 
 In return the designer gets six things for any scenario they author:
 
@@ -154,9 +158,11 @@ fails; it never falls back to a stub.
 | universal-modding-studio | new
 | Every descriptor guarantee must name its gate, at every level including
 `designed` and `aspirational`; a missing or empty gate reference is refused.
-A guarantee at `tested` or above must also carry passing evidence:
-a recipe the gate runs and that exits 0, or a CI run id that concluded success
-on the current head. `machine-checked` must name a MANIFEST-gated module that
+A guarantee at `tested` or above must also carry passing, relevant evidence:
+an entry in the reviewed gate registry (`docs/status/GUARANTEE-GATES.adoc`)
+that maps the guarantee to one specific test and a planted failure that the
+test catches, both run on the current head. An arbitrary command that exits
+0 is not evidence. `machine-checked` must name a MANIFEST-gated module that
 passed in that run. A name that merely exists is not evidence. IDApTIK's
 hard-coded six-row `CacTrace` is labelled `designed`, never shown as
 cognition.
@@ -248,8 +254,9 @@ Two smaller labelled choices:
   Arm B: default-Unknown with a secret-types visibility lattice, the later
   generalisation.
 * **Canonical bytes.** Default arm: RFC 8785 JCS over integer-only I-JSON
-  (estate D306). It requires every `u64` field to be bounded to 2^53−1 or
-  carried as a canonical decimal string, because larger I-JSON integers round
+  (estate D306), chosen by the owner on 2026-11-05 (Q1). It bounds every
+  `u64` field to 2^53−1 and refuses larger values as `IntegerOutOfRange`,
+  with no decimal-string escape, because larger I-JSON integers round
   in JavaScript consumers such as UMS. Arm B: canonical CBOR, as ADR-0015 is
   written today, which keeps full `u64`. Experiment E2 decides before any
   contract change.
