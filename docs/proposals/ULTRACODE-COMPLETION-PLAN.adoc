@@ -197,7 +197,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   dependents): `tests/mutants/omniscience.patch` plus
   `scripts/check-observer-mutant.sh`, which applies the patch to a temporary
   copy of the crate and requires the observer tests to fail there.
-| `cargo test --locked -p enaction-trace observer_` passes, and
+| `bash scripts/cargo-test-exact.sh enaction-trace observer_sally_anne_two_run_probe && bash scripts/cargo-test-exact.sh enaction-trace observer_proptest_perturbs_outside_closure` pass, and
   `bash scripts/check-observer-mutant.sh` exits 0 only when the patched copy
   reports `test result: FAILED`
 | A/A+
@@ -244,7 +244,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   unrepresentable, and the remainder is recorded. (d) T3 records in
   `ENGINE_EXTRACTION_NOTES.md`.
 | `IDAPTIK_ROOT=… just roundtrip-idaptik` (in UMS), then in IDApTIK
-  `cargo test --locked -p idaptik-core most_likely_ties_resolve_to_first_declared && cargo test --locked -p idaptik-core absorb_conserves_mass`;
+  `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core most_likely_ties_resolve_to_first_declared && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_conserves_mass`;
   goldens unchanged
 | A/A
 
@@ -315,6 +315,11 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   Define the versioned runner-output envelope `enaction-runner-output/1`:
   `{package, world_truth: [atom], ledger_trace?}`. World truth cannot travel
   inside an `EpistemicPackage`, which has no field for it.
+  Define a second, separately versioned envelope, `enaction-counterfactual/1`:
+  `{world_events: [(id, value)], causal_edges: [(cause id, effect id)]}`,
+  validated by `enaction-validate --counterfactual` with the same strict
+  parsing. It stays separate so that `enaction-runner-output/1` never grows
+  optional fields that strict parsing would refuse.
   The depth and status policies never come from the runner, which could
   otherwise choose thresholds that legitimise its own beliefs. `ProfileRef`
   gains a `policy_digest`. The profile side (UMS, from the compiled profile)
@@ -341,7 +346,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   The same change revises `CAC-KERNEL.adoc` (§3 data model, §6 validation,
   §8 open problem 1), which stays the normative authority; no wire change
   lands before the kernel document says it.
-| `for t in canonical_bytes_match_jcs_vectors frame_over_64_is_rejected frame_of_64_with_bit_63_is_admitted conflicting_truth_atoms_are_rejected qualified_hypotheses_disambiguate_frames runner_cannot_supply_its_own_policies profile_mismatch_is_refused unknown_fields_are_rejected_before_hashing ambiguous_frames_are_rejected confidence_must_match_payload dependent_evidence_is_refused shared_group_across_perspectives_is_admitted mutated_package_with_stale_digest_is_rejected u64_boundaries_follow_q1; do bash scripts/cargo-test-exact.sh enaction-contracts "$t" \|\| exit 1; done && for t in 'enaction-runner-output/1' policy_digest PolicyDigestMismatch ProfileMismatch '--policies' '--expect-profile' 'exit 0' 'exit 1' 'exit 2'; do rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc \|\| exit 1; done`.
+| `for t in canonical_bytes_match_jcs_vectors frame_over_64_is_rejected frame_of_64_with_bit_63_is_admitted conflicting_truth_atoms_are_rejected qualified_hypotheses_disambiguate_frames runner_cannot_supply_its_own_policies profile_mismatch_is_refused unknown_fields_are_rejected_before_hashing ambiguous_frames_are_rejected confidence_must_match_payload dependent_evidence_is_refused shared_group_across_perspectives_is_admitted mutated_package_with_stale_digest_is_rejected u64_boundaries_follow_q1 counterfactual_envelope_is_validated_strictly; do bash scripts/cargo-test-exact.sh enaction-contracts "$t" \|\| exit 1; done && for t in 'enaction-runner-output/1' 'enaction-counterfactual/1' policy_digest PolicyDigestMismatch ProfileMismatch '--policies' '--expect-profile' 'exit 0' 'exit 1' 'exit 2'; do rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc \|\| exit 1; done`.
   The boundary test covers 2^53−1, 2^53 and `u64::MAX` (under arm A: accepted,
   refused, refused). The kernel-document check looks for the contract itself,
   so an unrelated edit to `CAC-KERNEL.adoc` cannot satisfy it.
@@ -422,13 +427,16 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   the real Ghost Lobby evidence (frames usb/note/unknown and
   front_door/ventilation/unknown), a canonical ledger trace and world-truth
   atoms, as data with no enaction dependency. The `CacTrace` is labelled
-  fixture. The runner also implements the versioned counterfactual seam
-  `enaction-counterfactual/1`, which the leak verdict needs. The envelope
-  gains `world_events` (id, value) and `causal_edges` (cause id → effect id),
-  and the runner accepts `--perturb FILE` (world-event ids with replacement
-  values) and replays with those values substituted.
+  fixture. The runner also implements the counterfactual seam the leak
+  verdict needs. On `--emit-counterfactual` it writes a separate document in
+  the `enaction-counterfactual/1` envelope that step 11 defines,
+  `{world_events: [(id, value)], causal_edges: [(cause id, effect id)]}`, so
+  the strict `enaction-runner-output/1` envelope is never extended. It
+  accepts `--perturb FILE` (world-event ids with replacement values) and
+  replays with those values substituted.
 | `cargo test --locked -p idaptik-core --test esm_conformance_emit && cargo test --locked -p idaptik-core --test counterfactual_perturb`,
-  and the emitted envelope passes `enaction-validate`
+  and the emitted runner envelope passes `enaction-validate`, and the
+  emitted counterfactual document passes `enaction-validate --counterfactual`
 | A/A
 
 | 19 | UMS `ProcessPreviewAdapter` + response schema + guarantee gate

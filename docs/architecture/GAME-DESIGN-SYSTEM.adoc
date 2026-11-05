@@ -24,7 +24,8 @@ A game takes part by publishing three things:
   Enaction or UMS. The runner never supplies the depth and status policies:
   they come from the profile, bound to `ProfileRef` by digest and to the
   profile id and version the adapter compiled. To earn a leak verdict, the
-  runner also implements `enaction-counterfactual/1`: it reports world events
+  runner also implements `enaction-counterfactual/1`, a separate versioned
+  document beside the runner output: it reports world events
   and their causal edges, and it replays with chosen hidden events perturbed.
   A runner without that seam gets the verdict `unverified`.
 
