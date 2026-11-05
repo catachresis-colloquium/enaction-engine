@@ -88,6 +88,20 @@ Detailed, serious, not yet accepted as decisions.
   conflict, guilt, reunion), narrative. **Design only, deferred** — waiting on
   mood and relationship state existing at all. Reads almost exactly like a
   requirements document for what cac-engine already implements.
+
+| `docs/architecture/GAME-DESIGN-SYSTEM.adoc`
+| enaction-engine
+| Proposed 2026-11-04. Target architecture for Enaction + UMS as a
+  game-design instrument: process seams, the categorical-evidence resolution
+  of CAC-KERNEL §8 open problem 1, invariants, and measured defects (the
+  `BeliefStore` observer leak; the IDApTIK ledger's non-associativity and mass
+  loss).
+
+| `docs/proposals/ULTRACODE-COMPLETION-PLAN.adoc`
+| enaction-engine
+| Proposed 2026-11-04. Five waves with executable gates, a proof ladder
+  (rungs 0-11), owner questions Q1-Q8, and the estate action list. ADRs
+  0022-0025 are planned from it and do not exist yet.
 |===
 
 == Working hypotheses

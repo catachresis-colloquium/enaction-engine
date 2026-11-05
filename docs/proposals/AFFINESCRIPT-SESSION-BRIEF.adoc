@@ -1,0 +1,122 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Brief for the parallel AffineScript session
+:toc:
+
+Status: **Proposed** (2026-11-04). This brief is from the Enaction + UMS
+game-design plan
+(link:ULTRACODE-COMPLETION-PLAN.adoc[ULTRACODE-COMPLETION-PLAN]). Hand it to
+the session working on `hyperpolymath/affinescript`.
+
+Enaction and UMS do not wait on AffineScript for their critical path: Rust
+stays the implementation language (Enaction ADR-0004). The items below are
+what AffineScript must supply so that, when it is adopted, it produces bytes
+the kernel and UMS accept. They are ordered by how much they unblock.
+
+== 1. The one specific deliverable: compile UMS `dlc/vm`
+
+`catachresis-colloquium/universal-modding-studio` holds a 23-instruction
+reversible VM in 28 `.affine` files under `dlc/vm/`. It has never compiled.
+Its manifest claims every-instruction-has-an-inverse, and nothing has ever
+checked that (UMS EXPLAINME).
+
+. Pin one exact pair: a UMS source commit (`09dd204` is the current
+  candidate) and the compiler executable's sha256. Record both beside the
+  per-file table and the vectors, and regenerate both whenever either pinned
+  value changes, so the results always describe the source that was checked.
+  Release v0.1.1 ships `affinescript-linux-x64` and `SHA256SUMS`; v0.2.0 ships
+  no assets (verified against the GitHub releases API on 2026-11-04). Either
+  publish v0.2.0 assets or declare v0.1.1 the estate CI pin. Consumers pin the
+  executable's sha256 in their own repository; a `SHA256SUMS` fetched from the
+  same release cannot detect a replaced asset.
+. Run `affinescript check` on every `dlc/vm/src/**/*.affine`. Deliver a
+  per-file table: pass or fail, E-code, and the failing construct.
+. Fix the walls that are compiler bugs, in the compiler. For walls where the
+  VM source is wrong, file UMS issues: the missing `StateBackend.affine`, and
+  the manifest pointer to the missing `docs/SOUNDNESS.adoc`. Do not rewrite
+  UMS files.
+. Make `tests/properties/reversibility.affine` execute, and report for each of
+  the 23 instructions whether its inverse holds.
+
+UMS will gate this in CI (plan step 16), and the gate stays honestly red
+until the table is all-pass.
+
+== 2. Contract the plan's gates rely on
+
+* `check` and `compile` exit non-zero on any error, and never substitute stub
+  bodies silently. typed-wasm-codegen's undiagnosed stub substitution is the
+  counter-example to avoid.
+* Core-wasm integer semantics:
+** u32 wrapping multiply and add, and logical shift right (for Mulberry32);
+** either i64 or documented 32-bit mask idioms (frame bitsets; `Int` lowers
+   to I32 at `lib/codegen.ml:250`);
+** integer division and remainder that truncate exactly as Rust does (the
+   ledger's `mul_div` remainder depends on it).
+* Document that the typed-wasm ownership section maps `own` to Linear. That is
+  unfaithful for affine values, so no Enaction or UMS gate may count
+  L7/L10 verification of AffineScript output as an affine guarantee.
+
+== 3. Critical libraries, in the compiler stdlib
+
+Land these in the compiler stdlib. Do not put them in `affinescript-libraries`:
+its sources do not parse under the current grammar and its Justfile does not
+load. Each library ships with JSON conformance vectors generated from its Rust
+authority and pinned by sha256.
+
+[cols="2,3,4,3",options="header"]
+|===
+| Library | Why it is critical | Minimum viable surface | Vectors from
+
+| `Mass` (fixed-point, scale 10,000)
+| ADR-0015 makes the cognition surface float-free. 10,000² = 10^8 fits in I32.
+| private constructor; `new : Int -> Option Mass`, returning `None` for any value below 0 or above `FULL` (the Rust authority takes `u16`, so the AffineScript port must check the lower bound explicitly); `to_int`; `add_checked : Mass -> Mass -> Option Mass` (fails above `FULL`); `add_sat`, `sub_sat`; `mul_div : Mass -> Mass -> (Mass, Int)`; `FULL`, `ZERO`, `compare`
+| `enaction-trace/src/mass.rs` for everything except `mul_div`, which has no
+  Rust authority in Enaction yet. Its only existing authority is the donor
+  product in IDApTIK `scenario/vsm.rs` (`combine_conjunctive`): `(a * b) /
+  10_000` in `u64`, flooring, with the remainder discarded. `mul_div` returns
+  that quotient plus the remainder, so `a * b = q * 10_000 + r` with
+  `0 <= r < 10_000`. Generate its vectors only after the matching
+  `Mass::mul_div` lands in `enaction-trace` (plan step 15). Other vectors come
+  from the plan's rung-4 countermodels.
+
+| `Bpa` / categorical evidence
+| How an AffineScript mod produces evidence the kernel accepts: sums to T, focal sets inside a declared frame, absorbed in order, never merged
+| `Mask.of_ids : Frame -> List HypothesisId -> Result Mask LedgerFault`, the only way to build a `Mask`, refusing an empty list, duplicates and unknown ids; `Mask.to_ids` for the wire form; `Bpa.new : Frame -> List (Mask, Mass) -> Result Bpa LedgerFault` (`Mask` is internal; the JSON encoding of a focal set is an array of hypothesis ids in declaration order, never a number, so a 64-hypothesis frame respects the Q1 integer bound), which never uses `add_sat` (it would hide an over-full input) and, because `Int` lowers to I32, rejects as soon as the running total exceeds T, before it can grow toward the I32 limit and wrap; it rejects any final total other than T; `cat : Frame -> Mask -> Result Bpa LedgerFault`, which rejects a mask outside the frame exactly as `Bpa.new` does; `absorb : Ledger -> Bpa -> Ledger` with a recorded remainder
+| `conformance/esm/v1` (plan step 23), plus rejection vectors for the measured donor defects: over-full (8,000 + 8,000), out-of-frame focal sets, negative masses (`Mass.new -1` is `None`, and a BPA containing one is refused), `Mask.of_ids` on empty, duplicate, unknown and bit-63 inputs, a constructor round trip for `U32.of_decimal` across 0, 2^31 and 2^32−1, and a list of individually valid masses whose plain I32 sum would wrap back to exactly 10,000
+
+| `Mulberry32` seeded PRNG, with an affine `Rng`
+| ADR-0015 forbids ambient randomness. The only machine-checked estate RNG is IDApTIK's Creusot-proved one; replays desync unless streams match bit for bit
+| `U32.of_decimal : String -> Option U32` and `U32.of_bits : Int -> Int -> Option U32` (high and low 16-bit halves), so every 32-bit seed, including `0x80000000` and `0xFFFFFFFF`, can be constructed; `seeded : U32 -> Rng`; `next_u32 : Rng -> (U32, Rng)`, where `U32` is an opaque 32-bit pattern with unsigned compare and `to_decimal`, because `Int` lowers to I32 and would wrap outputs from 2^31 to 2^32−1 negative. No `range`: the donor (`idaptik-kernel/src/rng.rs`) defines only `new`, `next_u32` and `next_f64`, so a `range` waits for a Rust authority
+| first 1,000 outputs for 5 seeds from `idaptik-kernel/src/rng.rs`, serialised as unsigned decimals, with seeds that include high-bit values (`0x80000000` and `0xFFFFFFFF` among them) and outputs at or above 2^31
+
+| Canonical bytes + SHA-256. Conditional on plan Q1: arm A is RFC 8785 JCS over integer-only I-JSON (this row); arm B is deterministically encoded CBOR (RFC 8949 §4.2.1), which keeps full `u64`. Do not build this row until Q1 is answered.
+| Package digests, conformance bytes and preview goldens all hash canonical bytes (estate D306). Building the wrong format would produce digests no kernel accepts
+| `encode_canonical : Json -> Result String` (keys sorted by UTF-16 code unit, no whitespace, non-integers and integers beyond ±(2^53−1) rejected); a decoder that rejects duplicate keys; `package_digest`, which hashes the canonical bytes with `manifest.digest` omitted; `sha256` (or a Bun-ESM extern)
+| RFC 8785 appendix; the `ijson-jcs` corpus; `conformance/esm/v1/expected`
+
+| `OrdMap` / `OrdSet`
+| ADR-0015 forbids unordered iteration on any output path. Today `dict.affine` is an O(n) string-keyed association list
+| balanced tree with a real `Ord` bound: `insert`, `lookup`, `remove`, in-order `fold`, `to_list`
+| property: iteration order equals sort order for any insertion order
+
+| Event log / replay fold
+| The executable half of every determinism MUST, and the AffineScript form of proof rung 6. It needs no effect handlers, which compile on no backend (#555)
+| `Log<E>` whose `append` rejects non-monotonic `(tick, seq)`; `fold`; `split_at`; `verify_restore_every_tick`; an affine `Snapshot`
+| `conformance/time/v1` (plan step 10)
+
+| `Diagnostic {path, rule, message, level}`
+| One trust vocabulary across Enaction `PackageFault`, the UMS `GuaranteeLevel` and typed-wasm `humanize`
+| record + `Level` enum + a path builder (`events[event_id=3].confidence`)
+| the UMS `preview-response.schema.json`
+|===
+
+Conditional: if the owner rules to port UMS `apps/studio` away from TypeScript
+(plan question Q5), a Bun-ESM `fetch_json` binding for affinescript-tea, and a
+pure `view : Report -> Html` whose text projection equals the explain-lens
+golden, become the first real AffineScript application view.
+
+== 4. Explicitly not needed by this plan
+
+Effect-handler compilation (#555/#623), WasmGC, faces, a typed-wasm Affine
+kind and Polonius are all off this plan's critical path. Do not reprioritise
+for them on this plan's account.
