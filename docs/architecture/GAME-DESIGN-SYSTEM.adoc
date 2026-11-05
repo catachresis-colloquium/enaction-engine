@@ -126,11 +126,12 @@ on template files only.
 | Puts the existing local Creusot harness (RUST-P1/P2) into CI, copying
 IDApTIK's working provisioning, with a planted mutant.
 
-| `enaction-cognition` (`ledger_core.rs`, `ledger.rs`, `enaction-replay`)
+| `enaction-cognition`, `enaction-replay`
 | enaction-engine | new, Wave 5 only
-| The single CAC reducer. It is admitted only when ADR-0017 T1, T2 and T3 are
-all on record. `ledger_core.rs` is dependency-free so Creusot proves the
-exact file that ships.
+| The single CAC reducer. It is designed and admitted only when ADR-0017 T1,
+T2 and T3 are all on record; this document deliberately fixes no internal
+shape for it. It must satisfy the contract, the conformance bytes and the
+proved ledger laws, and Creusot must prove its core as the file that ships.
 
 | `examples/package-runner.rs --emit-epistemic`, lawful `vsm.rs` ledger
 | IDApTIK | new / change
@@ -210,9 +211,9 @@ Each one is enforced by a gate that can be shown to fail.
 
 Default arm (most elegant and correct long term): the kernel owns one CAC
 reducer, `enaction-cognition`. It folds checked BPAs into per-perspective
-ledgers over ground focal sets. It is proved in Agda and, by Creusot, on the
-exact production `ledger_core.rs`. UMS reaches it through three processes
-over canonical data.
+ledgers over ground focal sets. Its laws are proved in Agda and, by Creusot,
+on the production code that ships. Its internal design waits for T1. UMS
+reaches it through three processes over canonical data.
 
 Recommended arm: the same destination, sequenced holes-first and
 designer-value-first. Waves 1-4 deliver a fail-closed IDApTIK cognition

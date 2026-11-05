@@ -64,13 +64,13 @@ authority and pinned by sha256.
 
 | `Mass` (fixed-point, scale 10,000)
 | ADR-0015 makes the cognition surface float-free. 10,000² = 10^8 fits in I32.
-| private constructor; `new : Int -> Option Mass`; `add_sat`, `sub_sat`; `mul_div : Mass -> Mass -> (Mass, Int)`; `FULL`, `ZERO`, `compare`
+| private constructor; `new : Int -> Option Mass`; `to_int`; `add_checked : Mass -> Mass -> Option Mass` (fails above `FULL`); `add_sat`, `sub_sat`; `mul_div : Mass -> Mass -> (Mass, Int)`; `FULL`, `ZERO`, `compare`
 | `enaction-trace/src/mass.rs`; the plan's rung-4 countermodels
 
 | `Bpa` / categorical evidence
 | How an AffineScript mod produces evidence the kernel accepts: sums to T, focal sets inside a declared frame, absorbed in order, never merged
-| `Bpa.new : Frame -> List (Mask, Mass) -> Result Bpa LedgerFault`; `cat : Frame -> Mask -> Bpa`; `absorb : Ledger -> Bpa -> Ledger` with a recorded remainder
-| `conformance/esm/v1` (plan step 23)
+| `Bpa.new : Frame -> List (Mask, Mass) -> Result Bpa LedgerFault`, which sums masses as widened `Int` (never with `add_sat`, which would hide an over-full input) and rejects any total other than T; `cat : Frame -> Mask -> Bpa`; `absorb : Ledger -> Bpa -> Ledger` with a recorded remainder
+| `conformance/esm/v1` (plan step 23), plus rejection vectors for the measured donor defects: over-full (8,000 + 8,000) and out-of-frame focal sets
 
 | `Mulberry32` seeded PRNG, with an affine `Rng`
 | ADR-0015 forbids ambient randomness. The only machine-checked estate RNG is IDApTIK's Creusot-proved one; replays desync unless streams match bit for bit

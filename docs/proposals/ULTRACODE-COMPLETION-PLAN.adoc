@@ -80,9 +80,11 @@ These are asked through the selector. The default arm is labelled on each.
 | Step 2
 
 | Q3 | Template proofs (`Properties.agda`, `TypeSafety.v`)
-| A (default): delete, and accept honest red until Cac proofs land; A/A.
+| A (default): delete each template in the same change that gates its first
+  real replacement (Agda in step 12, Coq in step 20), so no gate is ever red
+  in between; A/A.
   B: keep them gated and label them scaffold in words; C/B.
-| Step 1
+| Steps 12, 20
 
 | Q4 | ADR-0017 T1
 | T1 needs a *second* consumer: IDApTIK is the donor and first caller, so its
@@ -148,7 +150,9 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | `check-proofs.sh` FAILs when a MANIFEST gates zero modules; today Lean passes
   vacuously. Add a planted negative control, and fix EXPLAINME's stale "lists
   only enaction-time". Never quarantine a compiling template: in this script
-  that is an UNEXPECTED-pass FAIL.
+  that is an UNEXPECTED-pass FAIL. Templates are not deleted here (see Q3).
+  The Lean gate, which gates zero modules and has no toolchain in agent
+  containers, turns red by design; that is the one expected red.
 | `bash tests/check-proofs-vacuous.sh && cargo test --locked --all-targets`
 | A/A
 
@@ -225,7 +229,9 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | 9 | Coordinator
 | Rebase in dependency order (1, 3, 2, 4; then 5). Re-run E1 on the merged
   store, open draft PRs, collect owner answers.
-| all repository gates green; session ledger records each exit code and SHA
+| every repository gate green except the Lean proof gate, which the session
+  ledger records as expected-red (zero gated modules, toolchain absent) with
+  its reason; the ledger records each exit code and SHA
 | n/a
 |===
 
@@ -268,7 +274,9 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | 12 | Agda theory I: rungs 1-3
 | `Cac/{StatusPolicy,StatusTable,CertainIsNotKnown,ObserverClosure}`. A
   Rust-generated 231-row status table, checked by `refl`. Reject fixtures
-  must fail at their own declaration.
+  must fail at their own declaration. Under Q3 arm A, the same change deletes
+  the template `Properties.agda`, so the Agda gate goes straight from template
+  to real proof without a red window.
 | `bash scripts/check-proofs.sh agda && bash tests/check-agda-rejections.sh && ! rg -n 'postulate\|TERMINATING' verification/proofs/agda/Cac`
 | A/B
 
@@ -337,7 +345,8 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | A/A
 
 | 20 | Rocq recheck (rung 9)
-| Hand re-proof of rungs 1 and 4 in `verification/proofs/coq/Cac.v`.
+| Hand re-proof of rungs 1 and 4 in `verification/proofs/coq/Cac.v`. Under Q3
+  arm A, the same change deletes the template `TypeSafety.v`.
 | `Cac.v` ends with one `Print Assumptions` per exported obligation, and
   the number of "Closed under the global context" lines in the `coqc`
   output equals the number of `Print Assumptions` commands in the file; no
@@ -380,8 +389,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | Refresh AFFIRMATION and PROOF-STATUS (Enaction) and ROUNDTRIP-STATUS and
   EXPLAINME (UMS), anchored at HEAD. Label every leg not run as CI-only or
   ASSUMED.
-| in each repository, the SHA recorded in the AFFIRMATION's anchor equals the
-  output of `git rev-parse HEAD`
+| in each repository, the AFFIRMATION records the source commit S the gates
+  ran on (an attestation commit cannot name itself); S is an ancestor of
+  HEAD, and `git diff --name-only S HEAD` lists only the re-affirmation files
+  (AFFIRMATION, PROOF-STATUS, ROUNDTRIP-STATUS, EXPLAINME)
 | n/a
 |===
 
@@ -391,14 +402,18 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 |===
 | # | Step | What | done_when | Rating
 
-| 25 | `enaction-cognition` + `enaction-replay`
-| `ledger_core.rs` has no serde and no trait objects: u64 frame mask, `Bpa`,
-  `mul_div -> (q, rem)`, `absorb`, first-max. `ledger.rs` implements
-  `EpistemicReduce` per perspective, absorbing each event's checked evidence
-  payload from step 11. Reproduces the esm/v1 bytes exactly.
-  Creusot C1-C6 via `#[path]`. Rung 8 correspondence table.
-| every `conformance/esm/v1` case replays byte-identically via `cmp`; the
-  planted locality mutant fails
+| 25 | Design, then extract, the kernel reducer (`enaction-cognition`, `enaction-replay`)
+| The reducer is *designed* here, after T1 is on record, not in this plan
+  (ADR-0017 rejects a design that precedes the want). What is already fixed
+  by other work binds it: the step-11 contract, ADR-0023 if accepted, the
+  rung-4 and rung-6 laws, and the `conformance/esm/v1` bytes. The bitset
+  probe in the appendix is recorded T3 evidence, not a design. The replay
+  binary refuses an event without an evidence payload with the named fault
+  `MissingEvidencePayload`; it never guesses a BPA from a scalar.
+| every `conformance/esm/v1` case replays byte-identically via `cmp`; a
+  scalar-only package is refused with `MissingEvidencePayload`; the planted
+  locality mutant fails; Creusot and rung-8 obligations are stated for the
+  reducer's core and gated
 | A/A
 
 | 26 | UMS preview switches its reasoner to `enaction-replay`
@@ -438,7 +453,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | 4 | Ledger laws: comm; divmod-exact absorb; floor-loss bound; categorical = intersection; non-associativity countermodel | Agda (`Data.Nat.DivMod`) | echo-types no-section; secret-types Countermodels | Open; Partial empirically
 | 5 | Verdict / IdStatus soundness over any finite list | Agda, upstream | residual-evidence Finite/Row | Partial (Int instance landed)
 | 6 | `replay (xs ++ ys) = replay (replay xs) ys`; locality | Agda | echo-types aggregation-as-fold; occupancy cut-factor (shape only) | Open
-| 7 | Creusot on the shipped code: P1-P4, then C1-C6 on `ledger_core.rs` | Creusot 0.13 (CI-only) | IDApTIK kernel provisioning | Partial (P1/P2 local only)
+| 7 | Creusot on the shipped code: P1-P4, then the ledger laws on the extracted reducer's core | Creusot 0.13 (CI-only) | IDApTIK kernel provisioning | Partial (P1/P2 local only)
 | 8 | Bounded exhaustive Rust ↔ Agda ledger correspondence | Agda `refl` over a generated table | residual-evidence pattern | Open
 | 9 | Rocq recheck of rungs 1 and 4 | Coq 8.18 | none | Open; Lean ASSUMED until provisioned
 | 10 | ABI-P6 arbitration (refuted at Idris2 0.7.0, repaired under 0.8.0, CI pins 0.7.0) | Idris2 (CI) | Accelerator.idr | Contested
