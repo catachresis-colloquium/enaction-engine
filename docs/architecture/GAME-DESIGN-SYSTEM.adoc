@@ -110,7 +110,8 @@ which the profile side passes to the validator and which must match
 producer-supplied policy could certify itself.
 Hypotheses are identified by (frame id, hypothesis id), because bare names
 repeat across frames. Events gain an optional checked evidence payload, a
-BPA over focal masks, so multi-focal and categorical evidence can reach a
+BPA over focal sets (on the wire, arrays of hypothesis ids; a 64-bit mask
+only internally), so multi-focal and categorical evidence can reach a
 reducer. Each of these changes revises `CAC-KERNEL.adoc` in the same step,
 so the normative document never lags the wire. Add frame declarations (at most 64 hypotheses),
 canonical bytes, and `Known` renamed to `Certain`. Add a binary target,
