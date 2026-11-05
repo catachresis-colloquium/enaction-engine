@@ -174,8 +174,8 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   with `manifest.digest` omitted (a digest cannot hash itself; the projection
   rule ships in the conformance vectors). Add `StatusDisagreesWithInterval`,
   checked only against a policy resolved from the profile, never from the
-  producer: `validate_package` takes an `Option<&StatusPolicy>` supplied by
-  the caller. A `ProfileRef` alone cannot decide it, because two profiles may
+  producer: `validate_package` takes a required `&StatusPolicy` supplied by
+  the caller, so no call can skip the status check. A `ProfileRef` alone cannot decide it, because two profiles may
   map one interval to different statuses, and a package that embedded its own
   policy could certify itself. Add `package_fault_coverage`, proving every `rule()` fires on a
   planted package.
@@ -272,7 +272,9 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   The same change revises `CAC-KERNEL.adoc` (§3 data model, §6 validation,
   §8 open problem 1), which stays the normative authority; no wire change
   lands before the kernel document says it.
-| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected && cargo test --locked -p enaction-contracts conflicting_truth_atoms_are_rejected && cargo test --locked -p enaction-contracts qualified_hypotheses_disambiguate_frames && cargo test --locked -p enaction-contracts runner_cannot_supply_its_own_policies && ! git diff --quiet origin/main -- docs/architecture/CAC-KERNEL.adoc`, and `echo '{}'` into the binary exits 1
+| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected && cargo test --locked -p enaction-contracts conflicting_truth_atoms_are_rejected && cargo test --locked -p enaction-contracts qualified_hypotheses_disambiguate_frames && cargo test --locked -p enaction-contracts runner_cannot_supply_its_own_policies && ! git diff --quiet origin/main -- docs/architecture/CAC-KERNEL.adoc`, and `echo '{}'` into the binary with `--policies` set to a valid
+  policy file whose digest matches exits 1 with an envelope fault (so the
+  exit cannot come from a missing argument)
 | A/A
 
 | 12 | Agda theory I: rungs 1-3
@@ -298,17 +300,24 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 
 | 15 | Creusot in CI (RUST-G2)
 | Copy IDApTIK's `creusot-proof.yml` provisioning. Add Mass saturating ops
-  and StatusPolicy totality obligations, and a planted-mutant leg.
+  and `Mass::mul_div` (the donor's flooring product, returning the remainder:
+  `a * b = q * 10_000 + r`, `0 <= r < 10_000`), StatusPolicy totality
+  obligations, and a planted-mutant leg.
 | the workflow concludes success, and the mutant leg concludes failure
 | A/B
 
 | 16 | UMS `dlc/vm` compile gate
-| CI downloads the AffineScript v0.1.1 linux-x64 binary, verifies it against
-  the release SHA256SUMS, checks all 28 sources and runs
+| CI downloads the AffineScript v0.1.1 linux-x64 binary and verifies it
+  against a sha256 committed in this repository
+  (`tools/affinescript-v0.1.1.sha256`), never against a checksum fetched from
+  the same mutable release. It checks all 28 sources and runs
   `reversibility.affine`. Publish the per-file table for the AffineScript
-  session.
-| workflow `dlc-vm.yml` green; until then it is honestly red, and the
-  guarantee stays `aspirational`
+  session. The compile result is a recorded non-blocking leg: the designer
+  milestone does not wait on AffineScript.
+| `dlc-vm.yml` runs to completion and publishes the per-file table, and a
+  binary with a tampered byte is refused before execution; the compile leg is
+  green, or it is recorded expected-red with the guarantee left
+  `aspirational`
 | B/C
 
 | 17 | Coordinator
@@ -376,9 +385,14 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   `[belief, plausibility]`, because-events, supersession, world truth,
   diverges-from-world, certain-but-false, leak verdict, Verdict/IdStatus, and
   a GuaranteeLevel per row. Output is a JCS golden. The demo plants a fault
-  and shows its path and rule.
-| `cargo test --locked -p ums-profile-sdk --test explain_golden`, and the
-  demo output contains `replay-identical: ok`
+  and shows its path and rule. The leak verdict is a hyperproperty, so it
+  comes from paired runs, never from one run or from two identical runs: for
+  each perspective, re-run with every world event outside that perspective's
+  observation set perturbed, and require identical beliefs.
+| `cargo test --locked -p ums-profile-sdk --test explain_golden && cargo test --locked -p ums-profile-sdk --test leak_verdict_paired`,
+  where a planted reasoner that reads an unobserved event must be reported
+  `leak` and the honest reasoner `no-leak`; and the demo output contains
+  `replay-identical: ok`
 | B+/A
 
 | 23 | `conformance/esm/v1` bidirectional (T2)
@@ -386,8 +400,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   by digest into IDApTIK and UMS.
 | `sha256sum -c` succeeds in all three repositories,
   `cargo test --locked -p enaction-contracts --test conformance_esm` passes,
-  and the IDApTIK loader test and the UMS adapter test each reject every
-  `rejected/<rule>/` case with that rule's name
+  IDApTIK regenerates every accepted case with `--emit-epistemic` and its
+  canonical output equals `expected/` under `cmp`, the UMS adapter test
+  admits every accepted case, and the IDApTIK loader test and the UMS adapter
+  test each reject every `rejected/<rule>/` case with that rule's name
 | A/A
 
 | 24 | Coordinator: re-affirm
@@ -417,8 +433,9 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   `MissingEvidencePayload`; it never guesses a BPA from a scalar.
 | every `conformance/esm/v1` case replays byte-identically via `cmp`; a
   scalar-only package is refused with `MissingEvidencePayload`; the planted
-  locality mutant fails; Creusot and rung-8 obligations are stated for the
-  reducer's core and gated
+  locality mutant fails; Creusot obligations are stated for the reducer's
+  core and gated; the rung-8 `Correspondence` check passes for the reducer's
+  core
 | A/A
 
 | 26 | UMS preview switches its reasoner to `enaction-replay`
@@ -438,10 +455,13 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | Rungs 6-8, the Creusot CI link, and the ABI-P6 arbitration (Idris2 pinned
   in CI).
 | each obligation is checked on its own: `bash scripts/check-proofs.sh agda`
-  with `Cac/Replay`, `Cac/Locality` and the rung-8 `Correspondence` gated;
-  the Creusot workflow concludes success on the reviewed commit (its
-  `head_sha` equals `git rev-parse HEAD`); the Idris2 workflow concludes
-  success on that same commit; PROOF-STATUS records each with its run id
+  passes with `Cac/Replay`, `Cac/Locality` and the rung-8 `Correspondence`
+  gated, so each of them must typecheck; the Creusot workflow concludes
+  success on the reviewed commit (its `head_sha` equals `git rev-parse
+  HEAD`); the Idris2 workflow concludes success on that same commit under
+  Idris2 0.8.0 or newer (0.7.0 accepted the wildcard `impossible` case that
+  0.8.0 rejects, so a 0.7.0 pass cannot settle ABI-P6); PROOF-STATUS records
+  each with its run id
 | n/a
 |===
 
@@ -461,7 +481,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | 7 | Creusot on the shipped code: P1-P4, then the ledger laws on the extracted reducer's core | Creusot 0.13 (CI-only) | IDApTIK kernel provisioning | Partial (P1/P2 local only)
 | 8 | Bounded exhaustive Rust ↔ Agda ledger correspondence | Agda `refl` over a generated table | residual-evidence pattern | Open
 | 9 | Rocq recheck of rungs 1 and 4 | Coq 8.18 | none | Open; Lean ASSUMED until provisioned
-| 10 | ABI-P6 arbitration (refuted at Idris2 0.7.0, repaired under 0.8.0, CI pins 0.7.0) | Idris2 (CI) | Accelerator.idr | Contested
+| 10 | ABI-P6 arbitration (a wildcard `impossible` case accepted by Idris2 0.7.0 was rejected by 0.8.0 and repaired with explicit constructor pairs; CI still pins 0.7.0, which cannot detect its return) | Idris2 (CI) | Accelerator.idr | Contested
 | 11 | Per-agent projection soundness for looping protocols | Agda, upstream | choreographic-types K-CUT-LOSS | Deferred: needs μ-recursion
 |===
 
@@ -633,7 +653,9 @@ catachresis-colloquium/enaction-engine, wave by wave. Read
 docs/architecture/GAME-DESIGN-SYSTEM.adoc first. For each wave: one workflow,
 one agent per step in a git worktree (disjoint files), then the wave's
 coordinator step inline. Every step must end with its done_when passing, and
-for every planted-failure control, failing. A step whose toolchain is absent
+for every planted-failure control, failing. Only two legs may stay red, and
+only as recorded expected-red legs that block nothing: the Lean proof gate
+(step 9) and the dlc/vm compile leg (step 16). A step whose toolchain is absent
 is reported CI-only, never passed. Open draft PRs per repository; merge
 nothing without the owner. Do not start a step whose owner question
 (Q1-Q8) is unanswered; do every other step. Stop before Wave 5 unless all

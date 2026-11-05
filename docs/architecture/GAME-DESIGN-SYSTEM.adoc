@@ -150,7 +150,9 @@ fails; it never falls back to a stub.
 
 | `scripts/check-guarantee-evidence.sh`
 | universal-modding-studio | new
-| A descriptor guarantee at `tested` or above must carry passing evidence:
+| Every descriptor guarantee must name its gate, at every level including
+`designed` and `aspirational`; a missing or empty gate reference is refused.
+A guarantee at `tested` or above must also carry passing evidence:
 a recipe the gate runs and that exits 0, or a CI run id that concluded success
 on the current head. `machine-checked` must name a MANIFEST-gated module that
 passed in that run. A name that merely exists is not evidence. IDApTIK's
@@ -164,8 +166,9 @@ the fixed `/tmp` path, and add a planted-violation self-test.
 
 | `dlc/vm` (28 `.affine`, reversible VM)
 | universal-modding-studio | change
-| Never compiled. Gains a CI job against the digest-verified AffineScript
-v0.1.1 binary. The per-file triage belongs to the AffineScript session.
+| Never compiled. Gains a CI job against the AffineScript v0.1.1 binary,
+verified against a sha256 committed in UMS. The compile leg blocks nothing
+until it is green. The per-file triage belongs to the AffineScript session.
 
 | `ResidualEvidence/Finite/Generic.agda`
 | residual-evidence-types | new
