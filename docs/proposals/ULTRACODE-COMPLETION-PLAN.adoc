@@ -252,9 +252,20 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | `FrameDecl` (≤ 64), `FrameTooLarge`, `UnknownHypothesis`. Hypotheses are
   identified by a qualified pair (frame id, hypothesis id), resolved once to
   (frame, bit); bare names repeat across frames (Ghost Lobby uses `unknown`
-  in both). Each `EpistemicEvent` gains an optional checked evidence payload,
-  a BPA over focal masks of its frame, so a reducer can absorb multi-focal
-  and categorical evidence; the scalar `confidence` alone cannot carry it.
+  in both). Frame declarations are unambiguous: every frame is nonempty,
+  frame ids are unique, and hypothesis ids are unique within a frame, refused
+  as `EmptyFrame`, `DuplicateFrame` and `DuplicateHypothesis`. Each
+  `EpistemicEvent` gains an optional checked evidence payload, a BPA over
+  focal masks of its frame, so a reducer can absorb multi-focal and
+  categorical evidence; the scalar `confidence` alone cannot carry it. When
+  the payload is present it is the one authority: the scalar must equal the
+  payload's belief in the event's proposition (the sum of masses of focal
+  sets inside it), else `ConfidenceDisagreesWithPayload`, so a report and the
+  replay cannot read different evidence from one valid package. The payload
+  also carries `source` and `independence_group` (the ledger design's
+  mechanism against double counting): a second payload from the same group
+  is refused with `DependentEvidence` unless the profile's policy names a
+  combination rule for that group.
   Canonical module; Known → Certain.
   Define the versioned runner-output envelope `enaction-runner-output/1`:
   `{package, world_truth: [atom], ledger_trace?}`. World truth cannot travel
@@ -272,9 +283,12 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   The same change revises `CAC-KERNEL.adoc` (§3 data model, §6 validation,
   §8 open problem 1), which stays the normative authority; no wire change
   lands before the kernel document says it.
-| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected && cargo test --locked -p enaction-contracts conflicting_truth_atoms_are_rejected && cargo test --locked -p enaction-contracts qualified_hypotheses_disambiguate_frames && cargo test --locked -p enaction-contracts runner_cannot_supply_its_own_policies && ! git diff --quiet origin/main -- docs/architecture/CAC-KERNEL.adoc`, and `echo '{}'` into the binary with `--policies` set to a valid
-  policy file whose digest matches exits 1 with an envelope fault (so the
-  exit cannot come from a missing argument)
+| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected && cargo test --locked -p enaction-contracts conflicting_truth_atoms_are_rejected && cargo test --locked -p enaction-contracts qualified_hypotheses_disambiguate_frames && cargo test --locked -p enaction-contracts runner_cannot_supply_its_own_policies && cargo test --locked -p enaction-contracts ambiguous_frames_are_rejected && cargo test --locked -p enaction-contracts confidence_must_match_payload && cargo test --locked -p enaction-contracts dependent_evidence_is_refused && ! git diff --quiet origin/main -- docs/architecture/CAC-KERNEL.adoc`.
+  The binary is exercised three ways, through fixtures under
+  `tests/fixtures/cli/`: a valid envelope with the matching policy file exits
+  0; the same envelope with a policy file whose digest differs exits 1 with
+  `PolicyDigestMismatch`; and, separately, `echo '{}'` with the matching
+  policy file exits 1 with an envelope fault
 | A/A
 
 | 12 | Agda theory I: rungs 1-3
@@ -389,8 +403,12 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   a GuaranteeLevel per row. Output is a JCS golden. The demo plants a fault
   and shows its path and rule. The leak verdict is a hyperproperty, so it
   comes from paired runs, never from one run or from two identical runs: for
-  each perspective, re-run with every world event outside that perspective's
-  observation set perturbed, and require identical beliefs.
+  each perspective, re-run with world events perturbed only outside that
+  perspective's observation set *and its causal closure*, holding the observed
+  projection fixed (the low-equivalence condition of invariant 2), and require
+  identical beliefs. An event that causally changes something the perspective
+  observes is never perturbed, since an honest reasoner may then legitimately
+  change its mind.
 | `cargo test --locked -p ums-profile-sdk --test explain_golden && cargo test --locked -p ums-profile-sdk --test leak_verdict_paired`,
   where a planted reasoner that reads an unobserved event must be reported
   `leak` and the honest reasoner `no-leak`; and the demo output contains
@@ -461,11 +479,13 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   gated, so each of them must typecheck, after the status table (rung 1) and
   the correspondence table (rung 8) are regenerated from the shipped Rust and
   match the committed files under `cmp`; the Creusot workflow concludes
-  success on the reviewed commit (its `head_sha` equals `git rev-parse
-  HEAD`); the Idris2 workflow concludes success on that same commit under
-  Idris2 0.8.0 or newer (0.7.0 accepted the wildcard `impossible` case that
-  0.8.0 rejects, so a 0.7.0 pass cannot settle ABI-P6); PROOF-STATUS records
-  each with its run id
+  success on a source commit S (its `head_sha` equals S); the Idris2 workflow
+  concludes success on S under Idris2 0.8.0 or newer (0.7.0 accepted the
+  wildcard `impossible` case that 0.8.0 rejects, so a 0.7.0 pass cannot
+  settle ABI-P6); PROOF-STATUS records S and each run id. As in step 24,
+  recording the run ids advances HEAD, so the gate requires S to be an
+  ancestor of HEAD and `git diff --name-only S HEAD` to list only the
+  attestation files
 | n/a
 |===
 

@@ -20,7 +20,10 @@ reversible VM in 28 `.affine` files under `dlc/vm/`. It has never compiled.
 Its manifest claims every-instruction-has-an-inverse, and nothing has ever
 checked that (UMS EXPLAINME).
 
-. Use a pinned, digest-verified binary at UMS commit `09dd204` or later.
+. Pin one exact pair: a UMS source commit (`09dd204` is the current
+  candidate) and the compiler executable's sha256. Record both beside the
+  per-file table and the vectors, and regenerate both whenever either pinned
+  value changes, so the results always describe the source that was checked.
   Release v0.1.1 ships `affinescript-linux-x64` and `SHA256SUMS`; v0.2.0 ships
   no assets (verified against the GitHub releases API on 2026-11-04). Either
   publish v0.2.0 assets or declare v0.1.1 the estate CI pin. Consumers pin the
@@ -83,8 +86,8 @@ authority and pinned by sha256.
 
 | `Mulberry32` seeded PRNG, with an affine `Rng`
 | ADR-0015 forbids ambient randomness. The only machine-checked estate RNG is IDApTIK's Creusot-proved one; replays desync unless streams match bit for bit
-| `seeded : Int -> Rng`; `next_u32 : Rng -> (Int, Rng)`; `range`
-| first 1,000 outputs for 5 seeds from `idaptik-kernel/src/rng.rs`
+| `seeded : U32 -> Rng`; `next_u32 : Rng -> (U32, Rng)`, where `U32` is an opaque 32-bit pattern with unsigned compare and `to_decimal`, because `Int` lowers to I32 and would wrap outputs from 2^31 to 2^32−1 negative. No `range`: the donor (`idaptik-kernel/src/rng.rs`) defines only `new`, `next_u32` and `next_f64`, so a `range` waits for a Rust authority
+| first 1,000 outputs for 5 seeds from `idaptik-kernel/src/rng.rs`, serialised as unsigned decimals, with seeds chosen so the vectors include outputs at or above 2^31
 
 | Canonical bytes + SHA-256. Conditional on plan Q1: arm A is RFC 8785 JCS over integer-only I-JSON (this row); arm B is deterministically encoded CBOR (RFC 8949 §4.2.1), which keeps full `u64`. Do not build this row until Q1 is answered.
 | Package digests, conformance bytes and preview goldens all hash canonical bytes (estate D306). Building the wrong format would produce digests no kernel accepts
