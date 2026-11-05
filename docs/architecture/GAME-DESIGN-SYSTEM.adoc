@@ -19,8 +19,9 @@ A game takes part by publishing three things:
 * a profile descriptor for UMS (vocabularies, edit verbs, constraints);
 * a versioned package contract (`contracts/<game>/v1`);
 * a headless runner that emits kernel-contract data in one versioned
-  envelope, `enaction-runner-output/1`: an `EpistemicPackage` plus
-  world-truth atoms, with no Cargo link to Enaction or UMS.
+  envelope, `enaction-runner-output/1`: an `EpistemicPackage`, world-truth
+  atoms (at most one per exclusive frame), and the profile's resolved depth
+  and status policies, with no Cargo link to Enaction or UMS.
 
 In return the designer gets six things for any scenario they author:
 
@@ -98,7 +99,12 @@ build of the real crate can enable it.
 digest becomes mandatory (today `computed_digest: Option<&str>` skips the
 check on `None`). A stored `Belief.status` must agree with
 `StatusPolicy(interval)`, checked against a resolved policy that the package
-embeds or the validator is given; a `ProfileRef` alone cannot decide it. Add frame declarations (at most 64 hypotheses),
+embeds or the validator is given; a `ProfileRef` alone cannot decide it.
+Hypotheses are identified by (frame id, hypothesis id), because bare names
+repeat across frames. Events gain an optional checked evidence payload, a
+BPA over focal masks, so multi-focal and categorical evidence can reach a
+reducer. Each of these changes revises `CAC-KERNEL.adoc` in the same step,
+so the normative document never lags the wire. Add frame declarations (at most 64 hypotheses),
 canonical bytes, and `Known` renamed to `Certain`. Add a binary target,
 `enaction-validate`, as the process seam.
 

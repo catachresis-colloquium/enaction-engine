@@ -101,7 +101,7 @@ Detailed, serious, not yet accepted as decisions.
 | enaction-engine
 | Proposed 2026-11-04. Five waves with executable gates, a proof ladder
   (rungs 0-11), owner questions Q1-Q8, and the estate action list. ADRs
-  0022-0024 are drafted from it, not accepted.
+  0022-0024 are planned from it and do not exist yet.
 |===
 
 == Working hypotheses
