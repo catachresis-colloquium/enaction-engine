@@ -81,13 +81,13 @@ authority and pinned by sha256.
 
 | `Bpa` / categorical evidence
 | How an AffineScript mod produces evidence the kernel accepts: sums to T, focal sets inside a declared frame, absorbed in order, never merged
-| `Bpa.new : Frame -> List (Mask, Mass) -> Result Bpa LedgerFault`, which sums masses as widened `Int` (never with `add_sat`, which would hide an over-full input) and rejects any total other than T; `cat : Frame -> Mask -> Result Bpa LedgerFault`, which rejects a mask outside the frame exactly as `Bpa.new` does; `absorb : Ledger -> Bpa -> Ledger` with a recorded remainder
-| `conformance/esm/v1` (plan step 23), plus rejection vectors for the measured donor defects: over-full (8,000 + 8,000) and out-of-frame focal sets
+| `Bpa.new : Frame -> List (Mask, Mass) -> Result Bpa LedgerFault`, which never uses `add_sat` (it would hide an over-full input) and, because `Int` lowers to I32, rejects as soon as the running total exceeds T, before it can grow toward the I32 limit and wrap; it rejects any final total other than T; `cat : Frame -> Mask -> Result Bpa LedgerFault`, which rejects a mask outside the frame exactly as `Bpa.new` does; `absorb : Ledger -> Bpa -> Ledger` with a recorded remainder
+| `conformance/esm/v1` (plan step 23), plus rejection vectors for the measured donor defects: over-full (8,000 + 8,000), out-of-frame focal sets, and a list of individually valid masses whose plain I32 sum would wrap back to exactly 10,000
 
 | `Mulberry32` seeded PRNG, with an affine `Rng`
 | ADR-0015 forbids ambient randomness. The only machine-checked estate RNG is IDApTIK's Creusot-proved one; replays desync unless streams match bit for bit
 | `seeded : U32 -> Rng`; `next_u32 : Rng -> (U32, Rng)`, where `U32` is an opaque 32-bit pattern with unsigned compare and `to_decimal`, because `Int` lowers to I32 and would wrap outputs from 2^31 to 2^32−1 negative. No `range`: the donor (`idaptik-kernel/src/rng.rs`) defines only `new`, `next_u32` and `next_f64`, so a `range` waits for a Rust authority
-| first 1,000 outputs for 5 seeds from `idaptik-kernel/src/rng.rs`, serialised as unsigned decimals, with seeds chosen so the vectors include outputs at or above 2^31
+| first 1,000 outputs for 5 seeds from `idaptik-kernel/src/rng.rs`, serialised as unsigned decimals, with seeds that include high-bit values (`0x80000000` and `0xFFFFFFFF` among them) and outputs at or above 2^31
 
 | Canonical bytes + SHA-256. Conditional on plan Q1: arm A is RFC 8785 JCS over integer-only I-JSON (this row); arm B is deterministically encoded CBOR (RFC 8949 §4.2.1), which keeps full `u64`. Do not build this row until Q1 is answered.
 | Package digests, conformance bytes and preview goldens all hash canonical bytes (estate D306). Building the wrong format would produce digests no kernel accepts

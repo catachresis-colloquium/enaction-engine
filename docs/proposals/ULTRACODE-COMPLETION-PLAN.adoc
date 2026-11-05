@@ -186,7 +186,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   the caller, so no call can skip the status check. A `ProfileRef` alone cannot decide it, because two profiles may
   map one interval to different statuses, and a package that embedded its own
   policy could certify itself. Add `package_fault_coverage`, proving every `rule()` fires on a
-  planted package.
+  planted package. This step only makes the caller-supplied digest mandatory;
+  step 11, once the canonical module exists, removes the parameter so that
+  `validate_package` computes the digest itself and no caller can vouch for
+  a mutated package.
 | `cargo test --locked -p enaction-contracts --test package_fault_coverage && ! rg -q 'computed_digest: Option' crates/enaction-contracts/src/package.rs`
 | A/A
 
@@ -274,10 +277,16 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   sets inside it), else `ConfidenceDisagreesWithPayload`, so a report and the
   replay cannot read different evidence from one valid package. The payload
   also carries `source` and `independence_group` (the ledger design's
-  mechanism against double counting): a second payload from the same group
+  mechanism against double counting): within one reduction scope (one
+  perspective's ledger for one frame), a second payload from the same group
   is refused with `DependentEvidence` unless the profile's policy names a
-  combination rule for that group.
-  Canonical module; Known → Certain.
+  combination rule for that group. Two observers receiving the same report
+  share its group without conflict, because their ledgers are separate.
+  Canonical module; Known → Certain. `validate_package` now computes the
+  digest itself from the canonical bytes (the step-3 parameter is removed).
+  Under Q1 arm A, every `u64` field (ids, ticks, sequences, `valid_from`,
+  fixed seeds) is bounded to 2^53−1 in the contract and refused above it as
+  `IntegerOutOfRange`; under arm B the full range is kept.
   Define the versioned runner-output envelope `enaction-runner-output/1`:
   `{package, world_truth: [atom], ledger_trace?}`. World truth cannot travel
   inside an `EpistemicPackage`, which has no field for it.
@@ -294,7 +303,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   The same change revises `CAC-KERNEL.adoc` (§3 data model, §6 validation,
   §8 open problem 1), which stays the normative authority; no wire change
   lands before the kernel document says it.
-| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected && cargo test --locked -p enaction-contracts conflicting_truth_atoms_are_rejected && cargo test --locked -p enaction-contracts qualified_hypotheses_disambiguate_frames && cargo test --locked -p enaction-contracts runner_cannot_supply_its_own_policies && cargo test --locked -p enaction-contracts ambiguous_frames_are_rejected && cargo test --locked -p enaction-contracts confidence_must_match_payload && cargo test --locked -p enaction-contracts dependent_evidence_is_refused && ! git diff --quiet origin/main -- docs/architecture/CAC-KERNEL.adoc`.
+| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected && cargo test --locked -p enaction-contracts conflicting_truth_atoms_are_rejected && cargo test --locked -p enaction-contracts qualified_hypotheses_disambiguate_frames && cargo test --locked -p enaction-contracts runner_cannot_supply_its_own_policies && cargo test --locked -p enaction-contracts ambiguous_frames_are_rejected && cargo test --locked -p enaction-contracts confidence_must_match_payload && cargo test --locked -p enaction-contracts dependent_evidence_is_refused && cargo test --locked -p enaction-contracts shared_group_across_perspectives_is_admitted && cargo test --locked -p enaction-contracts mutated_package_with_stale_digest_is_rejected && cargo test --locked -p enaction-contracts u64_boundaries_follow_q1 && for t in 'enaction-runner-output/1' policy_digest PolicyDigestMismatch '--policies' 'exit 0' 'exit 1' 'exit 2'; do rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc || exit 1; done`.
+  The boundary test covers 2^53−1, 2^53 and `u64::MAX` (under arm A: accepted,
+  refused, refused). The kernel-document check looks for the contract itself,
+  so an unrelated edit to `CAC-KERNEL.adoc` cannot satisfy it.
   The binary is exercised three ways, through fixtures under
   `tests/fixtures/cli/`: a valid envelope with the matching policy file exits
   0; the same envelope with a policy file whose digest differs exits 1 with
@@ -333,7 +345,9 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   and `Mass::mul_div` (the donor's flooring product, returning the remainder:
   `a * b = q * 10_000 + r`, `0 <= r < 10_000`), StatusPolicy totality
   obligations, and a planted-mutant leg.
-| the workflow concludes success, and the mutant leg concludes failure
+| a single run of the workflow whose `head_sha` equals the reviewed commit
+  concludes success, and its expected-failure mutant job, in that same run,
+  reports the planted mutant as failing verification
 | A/B
 
 | 16 | UMS `dlc/vm` compile gate
@@ -398,9 +412,13 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | A/A
 
 | 21 | Coordinator
-| Swap the stubs for the real binaries; run the preview twice and compare
-  bytes.
-| two `just preview-idaptik` runs hash identically
+| Swap the stubs for the real binaries. Replay identity is enforced inside
+  every preview, not only here: one `ProcessPreviewAdapter` invocation
+  launches the runner as two separate processes, compares their canonical
+  bytes, and refuses the preview with `ReplayMismatch` if they differ.
+| `cargo test --locked -p ums-profile-sdk --test process_preview_replay`,
+  in which a nondeterministic stub runner must be refused with
+  `ReplayMismatch`, and two `just preview-idaptik` runs hash identically
 | n/a
 |===
 
@@ -441,8 +459,12 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   `cargo test --locked -p enaction-contracts --test conformance_esm` passes,
   IDApTIK regenerates every accepted case with `--emit-epistemic` and its
   canonical output equals `expected/` under `cmp`, the UMS adapter test
-  admits every accepted case, and the IDApTIK loader test and the UMS adapter
-  test each reject every `rejected/<rule>/` case with that rule's name
+  admits every accepted case, and every `rejected/<rule>/` case is refused
+  with that rule's name by the component that has the authority and inputs
+  to judge it. Package faults are refused by the IDApTIK loader and the UMS
+  adapter. Policy and envelope faults, such as `PolicyDigestMismatch`, are
+  refused by `enaction-validate`, since the runner never receives the policy
+  document. Each `rejected/<rule>/` directory names its judging component
 | A/A
 
 | 24 | Coordinator: re-affirm
@@ -470,7 +492,8 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   probe in the appendix is recorded T3 evidence, not a design. The replay
   binary refuses an event without an evidence payload with the named fault
   `MissingEvidencePayload`; it never guesses a BPA from a scalar.
-| every `conformance/esm/v1` case replays byte-identically via `cmp`; a
+| every accepted `conformance/esm/v1` case replays byte-identically via
+  `cmp`, and every `rejected/<rule>/` case is refused with its rule; a
   scalar-only package is refused with `MissingEvidencePayload`; the planted
   locality mutant fails; Creusot obligations are stated for the reducer's
   core and gated; the rung-8 `Correspondence` check passes for the reducer's
@@ -485,8 +508,11 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | A/A
 
 | 27 | Slavia second-reasoner parity (owner-gated, A5 sequencing)
-| `slavia-core/tests/esm_kernel_parity.rs`: kernel IdStatus equals Slavia
-  `Read` on all 10 testbed scenarios.
+| `slavia-core/tests/esm_kernel_parity.rs`: on all 10 testbed scenarios the
+  kernel IdStatus maps to Slavia `Read` under the normalised correspondence
+  in the architecture: no candidate ↔ `Contradiction`, one ↔ `Unified(x)` with
+  the same x, several ↔ `Ambiguous` with the same sorted set. Raw labels are
+  not compared.
 | `cargo test --locked -p slavia-core --test esm_kernel_parity`
 | A/B
 

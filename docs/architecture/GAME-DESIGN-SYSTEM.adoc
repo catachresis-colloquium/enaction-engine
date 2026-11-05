@@ -178,7 +178,8 @@ imports the lattice rather than copying it.
 | Slavia ESM parity test
 | chronicles-of-slavia | new, Wave 5, owner-gated
 | The test that one reducer serves a structurally different reasoner: kernel
-IdStatus must equal Slavia `Read` on the 10 testbed scenarios.
+IdStatus must map to Slavia `Read`, under the normalised correspondence
+below, on the 10 testbed scenarios.
 |===
 
 Unchanged and off the route: `enaction-time` (its behaviours become
@@ -202,8 +203,9 @@ Each one is enforced by a gate that can be shown to fail.
   IDApTIK's combine is non-associative in 18,961 of 20,000 measured triples.
   Where an event carries a BPA it is the one authority, and its scalar
   confidence must equal the BPA's belief in the event's proposition. Each BPA
-  names its `independence_group`, and two from one group are not absorbed as
-  independent unless the profile names a rule for that group.
+  names its `independence_group`, and within one ledger (one perspective,
+  one frame) two from one group are not absorbed as independent unless the
+  profile names a rule for that group.
 . **Focal sets are ground** subsets of a declared finite frame. A non-ground
   query denotes the set of its groundings (ADR-0023, Proposed).
 . **Mass is conserved exactly.** Floor-division remainders are recorded:
@@ -257,8 +259,15 @@ whether a Dempster-Shafer focal set may contain a non-ground proposition. It
 resolves through **categorical evidence**. A relational query's answer set S
 over a declared frame is the BPA `cat(S)`. Conjunctive absorption of
 categorical evidence is exact set intersection (`T·T/T = T`, with no
-rounding). `IdStatus(cat S)` coincides with Slavia's `Read` (Unified,
-Ambiguous, Contradiction).
+rounding). `IdStatus(cat S)` coincides with Slavia's `Read`
+(`slavia-core/src/esm/intent.rs`) under one normalised correspondence:
+
+* |S| = 0: `no-candidate` ↔ `Read::Contradiction`;
+* |S| = 1, S = {x}: `identified(x)` ↔ `Read::Unified(x)`;
+* |S| ≥ 2: `unidentified(S)` ↔ `Read::Ambiguous(names)`, compared as sorted
+  sets.
+
+The Wave 5 parity test compares these normalised outcomes, not raw labels.
 
 The two miniKanren engines and IDApTIK's Dempster ledger therefore become one
 structure: one trace, one ledger, many front-end solvers. That is stronger
