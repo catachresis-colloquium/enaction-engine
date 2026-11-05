@@ -279,11 +279,13 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 
 | 12 | Agda theory I: rungs 1-3
 | `Cac/{StatusPolicy,StatusTable,CertainIsNotKnown,ObserverClosure}`. A
-  Rust-generated 231-row status table, checked by `refl`. Reject fixtures
-  must fail at their own declaration. Under Q3 arm A, the same change deletes
-  the template `Properties.agda`, so the Agda gate goes straight from template
-  to real proof without a red window.
-| `bash scripts/check-proofs.sh agda && bash tests/check-agda-rejections.sh && ! rg -n 'postulate\|TERMINATING' verification/proofs/agda/Cac`
+  Rust-generated 231-row status table, checked by `refl`. The gate
+  regenerates the table from the current `StatusPolicy::status` and compares
+  it byte for byte with the committed file, so a `refl` over stale data cannot
+  pass. Reject fixtures must fail at their own declaration. Under Q3 arm A,
+  the same change deletes the template `Properties.agda`, so the Agda gate
+  goes straight from template to real proof without a red window.
+| `cargo run --locked -p enaction-contracts --example gen-status-table > target/StatusTable.agda && cmp target/StatusTable.agda verification/proofs/agda/Cac/StatusTable.agda && bash scripts/check-proofs.sh agda && bash tests/check-agda-rejections.sh && ! rg -n 'postulate\|TERMINATING' verification/proofs/agda/Cac`
 | A/B
 
 | 13 | Agda theory II: rung 4
@@ -456,7 +458,9 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   in CI).
 | each obligation is checked on its own: `bash scripts/check-proofs.sh agda`
   passes with `Cac/Replay`, `Cac/Locality` and the rung-8 `Correspondence`
-  gated, so each of them must typecheck; the Creusot workflow concludes
+  gated, so each of them must typecheck, after the status table (rung 1) and
+  the correspondence table (rung 8) are regenerated from the shipped Rust and
+  match the committed files under `cmp`; the Creusot workflow concludes
   success on the reviewed commit (its `head_sha` equals `git rev-parse
   HEAD`); the Idris2 workflow concludes success on that same commit under
   Idris2 0.8.0 or newer (0.7.0 accepted the wildcard `impossible` case that
@@ -472,14 +476,14 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | Rung | Obligation | Prover | Reuses | Status
 
 | 0 | No proof gate passes vacuously | shell + planted control | rsr-template MANIFEST pattern | Open (Lean passes with zero files today)
-| 1 | `StatusPolicy::status` follows ADR-0016's order | Agda, `refl` over a 231-row Rust-generated table | residual-evidence correspondence pattern | Open
+| 1 | `StatusPolicy::status` follows ADR-0016's order | Agda, `refl` over a 231-row Rust-generated table, regenerated and compared by `cmp` in the gate | residual-evidence correspondence pattern | Open
 | 2 | `Certain` (mass = FULL) does not imply factive `Known`; `Known` is derivable only with world-truth evidence | Agda + reject fixture `CertainIsKnown` | epistemic-types FactiveModality, `BeliefIsKnowledge` | Open
 | 3 | Observer noninterference | proptest (TESTED) + Agda ObserverClosure | secret-types TINI | Open; **violated on main**
 | 4 | Ledger laws: comm; divmod-exact absorb; floor-loss bound; categorical = intersection; non-associativity countermodel | Agda (`Data.Nat.DivMod`) | echo-types no-section; secret-types Countermodels | Open; Partial empirically
 | 5 | Verdict / IdStatus soundness over any finite list | Agda, upstream | residual-evidence Finite/Row | Partial (Int instance landed)
 | 6 | `replay (xs ++ ys) = replay (replay xs) ys`; locality | Agda | echo-types aggregation-as-fold; occupancy cut-factor (shape only) | Open
 | 7 | Creusot on the shipped code: P1-P4, then the ledger laws on the extracted reducer's core | Creusot 0.13 (CI-only) | IDApTIK kernel provisioning | Partial (P1/P2 local only)
-| 8 | Bounded exhaustive Rust ↔ Agda ledger correspondence | Agda `refl` over a generated table | residual-evidence pattern | Open
+| 8 | Bounded exhaustive Rust ↔ Agda ledger correspondence | Agda `refl` over a generated table, regenerated from the shipped reducer and compared by `cmp` in the gate | residual-evidence pattern | Open
 | 9 | Rocq recheck of rungs 1 and 4 | Coq 8.18 | none | Open; Lean ASSUMED until provisioned
 | 10 | ABI-P6 arbitration (a wildcard `impossible` case accepted by Idris2 0.7.0 was rejected by 0.8.0 and repaired with explicit constructor pairs; CI still pins 0.7.0, which cannot detect its return) | Idris2 (CI) | Accelerator.idr | Contested
 | 11 | Per-agent projection soundness for looping protocols | Agda, upstream | choreographic-types K-CUT-LOSS | Deferred: needs μ-recursion
