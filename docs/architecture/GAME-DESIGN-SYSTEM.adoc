@@ -18,15 +18,17 @@ A game takes part by publishing three things:
 
 * a profile descriptor for UMS (vocabularies, edit verbs, constraints);
 * a versioned package contract (`contracts/<game>/v1`);
-* a headless runner that emits kernel-contract data: an `EpistemicPackage`
-  plus world-truth atoms, with no Cargo link to Enaction or UMS.
+* a headless runner that emits kernel-contract data in one versioned
+  envelope, `enaction-runner-output/1`: an `EpistemicPackage` plus
+  world-truth atoms, with no Cargo link to Enaction or UMS.
 
 In return the designer gets six things for any scenario they author:
 
 . **Fail-closed admission.** Every fault carries a stable field path and rule
   name, and nothing is silently skipped.
 . **Content-addressed identity.** The package digest is mandatory and computed
-  over canonical bytes.
+  over the canonical bytes of the package with `manifest.digest` omitted, so
+  the digest never has to hash itself.
 . **Replay identity.** The preview runs twice in separate processes and
   refuses to report if the bytes differ.
 . **A belief report.** Per agent and per theory-of-mind order: status,
@@ -57,7 +59,8 @@ true?" for content that has not shipped yet.
     ▼
  game runner (e.g. IDApTIK examples/package-runner --emit-epistemic)
     │  owns: world truth, perception, game rules, package loading
-    │  data seam: EpistemicPackage + world-truth atoms, canonical JSON
+    │  data seam: enaction-runner-output/1 envelope
+    │             (EpistemicPackage + world-truth atoms), canonical bytes
     ▼
  enaction-validate          (Waves 1-4: contracts + canonical bytes only)
  enaction-replay            (Wave 5: the single CAC reducer, enaction-cognition)
@@ -85,15 +88,17 @@ can be replaced and tested alone.
 trope, so an agent with no observations reads live world truth (probe:
 Sally reads 1000 and 2000 in two runs that differ only in an unobserved
 event). Fix: the baseline becomes a frozen prior (ADR-0022, Proposed). Gate:
-an observer proptest, plus a `planted-omniscience` feature that must make it
-fail.
+an observer proptest, plus a planted mutant patch, applied to a temporary copy
+by a script, that must make it fail. The mutant is not a Cargo feature, so no
+build of the real crate can enable it.
 
 | `enaction-contracts` (EpistemicPackage, validate_package, EpistemicReduce, StatusPolicy)
 | enaction-engine | change
 | The contract authority; it stays behaviour-free (ADR-0019). *Changes:* the
 digest becomes mandatory (today `computed_digest: Option<&str>` skips the
 check on `None`). A stored `Belief.status` must agree with
-`StatusPolicy(interval)`. Add frame declarations (at most 64 hypotheses),
+`StatusPolicy(interval)`, checked against a resolved policy that the package
+embeds or the validator is given; a `ProfileRef` alone cannot decide it. Add frame declarations (at most 64 hypotheses),
 canonical bytes, and `Known` renamed to `Certain`. Add a binary target,
 `enaction-validate`, as the process seam.
 
@@ -135,9 +140,12 @@ fails; it never falls back to a stub.
 
 | `scripts/check-guarantee-evidence.sh`
 | universal-modding-studio | new
-| A descriptor guarantee at `tested` or above must name a recipe or CI job
-that exists. IDApTIK's hard-coded six-row `CacTrace` is labelled `designed`,
-never shown as cognition.
+| A descriptor guarantee at `tested` or above must carry passing evidence:
+a recipe the gate runs and that exits 0, or a CI run id that concluded success
+on the current head. `machine-checked` must name a MANIFEST-gated module that
+passed in that run. A name that merely exists is not evidence. IDApTIK's
+hard-coded six-row `CacTrace` is labelled `designed`, never shown as
+cognition.
 
 | `scripts/check-architecture-boundaries.sh` + weekly workflow
 | universal-modding-studio | change
@@ -174,7 +182,8 @@ Each one is enforced by a gate that can be shown to fail.
 . **Observer noninterference.** For two traces that agree on every event in
   perspective P's observation set and causal closure, every belief P reads is
   byte-identical. The secret-types TINI shape, read per perspective.
-. **The package digest is mandatory** and computed over canonical bytes.
+. **The package digest is mandatory**, computed over canonical bytes with
+  `manifest.digest` omitted.
 . **Evidence is an ordered fold**, in `(tick, sequence)` order, of checked
   basic belief assignments (BPAs) into a ledger. It is never a monoid merge:
   IDApTIK's combine is non-associative in 18,961 of 20,000 measured triples.
@@ -218,8 +227,11 @@ Two smaller labelled choices:
   Arm B: default-Unknown with a secret-types visibility lattice, the later
   generalisation.
 * **Canonical bytes.** Default arm: RFC 8785 JCS over integer-only I-JSON
-  (estate D306). Arm B: canonical CBOR, as ADR-0015 is written today.
-  Experiment E2 decides before any contract change.
+  (estate D306). It requires every `u64` field to be bounded to 2^53−1 or
+  carried as a canonical decimal string, because larger I-JSON integers round
+  in JavaScript consumers such as UMS. Arm B: canonical CBOR, as ADR-0015 is
+  written today, which keeps full `u64`. Experiment E2 decides before any
+  contract change.
 
 == The theory spine
 

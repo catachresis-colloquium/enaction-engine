@@ -79,7 +79,7 @@ authority and pinned by sha256.
 
 | Canonical JSON (RFC 8785 JCS, integer-only I-JSON) + SHA-256
 | Package digests, conformance bytes and preview goldens all hash canonical bytes (estate D306)
-| `encode_canonical : Json -> Result String` (keys sorted by UTF-16 code unit, no whitespace, non-integers rejected); a decoder that rejects duplicate keys; `sha256` (or a Bun-ESM extern)
+| `encode_canonical : Json -> Result String` (keys sorted by UTF-16 code unit, no whitespace, non-integers and integers beyond ±(2^53−1) rejected); a decoder that rejects duplicate keys; `package_digest`, which hashes the canonical bytes with `manifest.digest` omitted; `sha256` (or a Bun-ESM extern)
 | RFC 8785 appendix; the `ijson-jcs` corpus; `conformance/esm/v1/expected`
 
 | `OrdMap` / `OrdSet`

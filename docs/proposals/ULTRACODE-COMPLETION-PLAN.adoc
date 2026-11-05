@@ -66,8 +66,11 @@ These are asked through the selector. The default arm is labelled on each.
 | # | Question | Options, rated (elegance/correctness, then dependability) | Gates
 
 | Q1 | Canonical parity bytes
-| A (default): RFC 8785 JCS over integer-only I-JSON, estate D306; A/A.
-  B: canonical CBOR, as ADR-0015 is written; B/A.
+| A (default): RFC 8785 JCS over integer-only I-JSON, estate D306; A/A,
+  *provided* every `u64` field (event ids, ticks, sequences, `valid_from`,
+  fixed seeds) is bounded to 2^53−1 or encoded as a canonical decimal
+  string, because I-JSON integers beyond that round in JavaScript consumers.
+  B: canonical CBOR, as ADR-0015 is written, which keeps full `u64`; B/A.
   Experiment E2 runs first either way.
 | Steps 11, 23
 
@@ -82,8 +85,11 @@ These are asked through the selector. The default arm is labelled on each.
 | Step 1
 
 | Q4 | ADR-0017 T1
-| Record a dated want for a kernel-owned reducer in IDApTIK and/or Slavia, or
-  decline. Declining keeps the recommended arm permanently.
+| T1 needs a *second* consumer: IDApTIK is the donor and first caller, so its
+  want alone does not satisfy T1. Record a dated want for a kernel-owned
+  reducer in Chronicles of Slavia (or another non-donor consumer) in that
+  consumer's own repository, or decline. Declining keeps the recommended arm
+  permanently.
 | Wave 5
 
 | Q5 | UMS `apps/studio` is TypeScript, against policy
@@ -149,15 +155,26 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | 2 | Observer boundary (enaction-trace)
 | Tests first: the Sally-Anne two-run probe, and a proptest with
   `PROPTEST_CASES=1024` that perturbs only events outside P's closure. Then
-  the baseline becomes a frozen prior (Q2). Add a `planted-omniscience`
-  feature that restores the leak.
-| `cargo test --locked -p enaction-trace observer_` passes, and with
-  `--features planted-omniscience` the output contains `test result: FAILED`
+  the baseline becomes a frozen prior (Q2). Add a planted control that is
+  not a Cargo feature (features unify through `--all-features` and
+  dependents): `tests/mutants/omniscience.patch` plus
+  `scripts/check-observer-mutant.sh`, which applies the patch to a temporary
+  copy of the crate and requires the observer tests to fail there.
+| `cargo test --locked -p enaction-trace observer_` passes, and
+  `bash scripts/check-observer-mutant.sh` exits 0 only when the patched copy
+  reports `test result: FAILED`
 | A/A+
 
 | 3 | Contract fail-closed (enaction-contracts)
-| `computed_digest: &str`. Add `StatusDisagreesWithInterval`. Add
-  `package_fault_coverage`, proving every `rule()` fires on a planted package.
+| `computed_digest: &str`, computed over the canonical bytes of the package
+  with `manifest.digest` omitted (a digest cannot hash itself; the projection
+  rule ships in the conformance vectors). Add `StatusDisagreesWithInterval`,
+  checked only against a resolved policy: either the package embeds a
+  versioned `StatusPolicy`, or `validate_package` takes an
+  `Option<&StatusPolicy>` resolved from the profile. A `ProfileRef` alone
+  cannot decide it, because two profiles may map one interval to different
+  statuses. Add `package_fault_coverage`, proving every `rule()` fires on a
+  planted package.
 | `cargo test --locked -p enaction-contracts --test package_fault_coverage && ! rg -q 'computed_digest: Option' crates/enaction-contracts/src/package.rs`
 | A/A
 
@@ -186,7 +203,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   unrepresentable, and the remainder is recorded. (d) T3 records in
   `ENGINE_EXTRACTION_NOTES.md`.
 | `IDAPTIK_ROOT=… just roundtrip-idaptik` (in UMS), then in IDApTIK
-  `cargo test --locked -p idaptik-core most_likely_ties_resolve_to_first_declared absorb_conserves_mass`;
+  `cargo test --locked -p idaptik-core most_likely_ties_resolve_to_first_declared && cargo test --locked -p idaptik-core absorb_conserves_mass`;
   goldens unchanged
 | A/A
 
@@ -227,12 +244,17 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | 11 | Contract evolution + `enaction-validate` (after Q1 and ADR acceptance)
 | `FrameDecl` (≤ 64), `FrameTooLarge`, `UnknownHypothesis`. Proposition
   strings resolve once to (frame, bit). Canonical module; Known → Certain.
-  Binary: stdin package → canonical faults, exit 0/1/2.
-| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors frame_over_64_is_rejected` and `echo '{}'` into the binary exits 1
+  Define the versioned runner-output envelope `enaction-runner-output/1`:
+  `{package, world_truth: [atom], ledger_trace?}`. World truth cannot travel
+  inside an `EpistemicPackage`, which has no field for it.
+  Binary: stdin envelope → validate the package, check every truth atom names
+  a declared frame and hypothesis, pass the envelope through with canonical
+  faults; exit 0/1/2.
+| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected`, and `echo '{}'` into the binary exits 1
 | A/A
 
 | 12 | Agda theory I: rungs 1-3
-| `Cac/{StatusPolicy,StatusTable,KnownIsNotKnowledge,ObserverClosure}`. A
+| `Cac/{StatusPolicy,StatusTable,CertainIsNotKnown,ObserverClosure}`. A
   Rust-generated 231-row status table, checked by `refl`. Reject fixtures
   must fail at their own declaration.
 | `bash scripts/check-proofs.sh agda && bash tests/check-agda-rejections.sh && ! rg -n 'postulate\|TERMINATING' verification/proofs/agda/Cac`
@@ -279,17 +301,24 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | # | Step | What | done_when | Rating
 
 | 18 | IDApTIK `--emit-epistemic` + esm donor fixtures (owner-gated)
-| Emits an `EpistemicPackage` from the real Ghost Lobby evidence (frames
-  usb/note/unknown and front_door/ventilation/unknown), a canonical ledger
-  trace and world-truth atoms, as data with no enaction dependency. The
-  `CacTrace` is labelled fixture.
+| Emits one `enaction-runner-output/1` envelope: an `EpistemicPackage` from
+  the real Ghost Lobby evidence (frames usb/note/unknown and
+  front_door/ventilation/unknown), a canonical ledger trace and world-truth
+  atoms, as data with no enaction dependency. The `CacTrace` is labelled
+  fixture.
 | `cargo test --locked -p idaptik-core --test esm_conformance_emit`, and the
-  emitted package passes `enaction-validate`
+  emitted envelope passes `enaction-validate`
 | A/A
 
 | 19 | UMS `ProcessPreviewAdapter` + response schema + guarantee gate
-| Pipeline: compile → pre-built runner → `enaction-validate`. Argv only,
-  cleared environment, timeout, stdout cap. A missing binary is a FAIL.
+| Pipeline: compile → pre-built runner (emits the envelope) →
+  `enaction-validate`. The response schema carries the world-truth atoms the
+  explain lens needs. Argv only, cleared environment, timeout, stdout cap. A
+  missing binary is a FAIL. The guarantee gate requires *passing* evidence,
+  not a name that exists: a `tested` label must name a recipe that the gate
+  runs and that exits 0, or a CI run id that concluded success on the current
+  head; `machine-checked` must name a MANIFEST-gated module that passed in
+  that run.
   Write the stub-binary protocol test first so this runs in parallel with
   step 18.
 | `cargo test --locked -p ums-profile-sdk --test process_preview && bash scripts/check-guarantee-evidence.sh && ! bash scripts/check-guarantee-evidence.sh --descriptor tests/fixtures/unbacked-machine-checked.json`
@@ -382,7 +411,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 
 | 0 | No proof gate passes vacuously | shell + planted control | rsr-template MANIFEST pattern | Open (Lean passes with zero files today)
 | 1 | `StatusPolicy::status` follows ADR-0016's order | Agda, `refl` over a 231-row Rust-generated table | residual-evidence correspondence pattern | Open
-| 2 | Computed `Known` is not knowledge | Agda + reject fixture | epistemic-types FactiveModality, `BeliefIsKnowledge` | Open
+| 2 | `Certain` (mass = FULL) does not imply factive `Known`; `Known` is derivable only with world-truth evidence | Agda + reject fixture `CertainIsKnown` | epistemic-types FactiveModality, `BeliefIsKnowledge` | Open
 | 3 | Observer noninterference | proptest (TESTED) + Agda ObserverClosure | secret-types TINI | Open; **violated on main**
 | 4 | Ledger laws: comm; divmod-exact absorb; floor-loss bound; categorical = intersection; non-associativity countermodel | Agda (`Data.Nat.DivMod`) | echo-types no-section; secret-types Countermodels | Open; Partial empirically
 | 5 | Verdict / IdStatus soundness over any finite list | Agda, upstream | residual-evidence Finite/Row | Partial (Int instance landed)
@@ -399,7 +428,9 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 * **E1, seam (step 4).** Trace store to package to validator, two-run byte
   identity. Every mismatch becomes a T3 candidate.
 * **E2, canonical bytes (step 4).** Sorted serde_json versus RFC 8785 JCS on
-  kernel types. This decides Q1 with evidence rather than taste.
+  kernel types, including `u64` values at 2^53−1, 2^53 and `u64::MAX`
+  round-tripped through a Bun consumer. This decides Q1 with evidence rather
+  than taste.
 * **B1, ledger representation (bench).** u64 bitset versus `Vec<String>`
   focal sets. Measured 48 vs 563 ns per combine at frame size 2. Before
   ADR-0023 is accepted, re-run on frame sizes 2, 8, 32 and 64 under
@@ -416,17 +447,19 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 The parallel session owns the language. This plan needs one specific,
 bounded deliverable from it: compile UMS `dlc/vm` (28 `.affine` files, never
 compiled) and report per instruction whether every-instruction-has-an-inverse
-holds. That deliverable, plus six stdlib libraries with conformance vectors
-generated from the Rust authorities, is set out in
+holds. That deliverable, plus seven stdlib libraries with conformance
+vectors generated from the Rust authorities, is set out in
 link:AFFINESCRIPT-SESSION-BRIEF.adoc[the brief]. The libraries are Mass,
-Bpa, Mulberry32, canonical JSON with SHA-256, OrdMap and the event log.
+Bpa, Mulberry32, canonical JSON with SHA-256, OrdMap, the event log and the
+`Diagnostic` envelope.
 Nothing else in this plan waits on AffineScript.
 
 == What else must be created
 
 * *Enaction:*
 ** `tests/check-proofs-vacuous.sh` and `tests/check-agda-rejections.sh`
-** `crates/enaction-trace/tests/observer.rs`
+** `crates/enaction-trace/tests/observer.rs`, `tests/mutants/omniscience.patch` and `scripts/check-observer-mutant.sh`
+** the `enaction-runner-output/1` envelope schema
 ** `crates/enaction-contracts/{tests/package_fault_coverage.rs, src/canonical.rs, src/bin/enaction-validate.rs}`
 ** `conformance/{time,esm}/v1`
 ** `verification/proofs/agda/Cac/*` and `verification/proofs/coq/Cac.v`
