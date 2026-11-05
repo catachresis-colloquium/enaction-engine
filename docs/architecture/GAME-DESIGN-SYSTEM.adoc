@@ -27,7 +27,8 @@ A game takes part by publishing three things:
   runner also implements `enaction-counterfactual/1`, a separate versioned
   document beside the runner output: it reports world events
   and their causal edges, and it replays with chosen hidden events perturbed.
-  A runner without that seam gets the verdict `unverified`. Each world event
+  A runner without that seam, or whose counterfactual document fails
+  validation (checked in every preview), gets the verdict `unverified`. Each world event
   declares a finite value domain; `no-leak` is reported only when every
   low-equivalent assignment within a pinned bound was run, and otherwise the
   verdict is `no-leak-observed`.
@@ -260,7 +261,9 @@ Two smaller labelled choices:
   generalisation.
 * **Canonical bytes.** Default arm: RFC 8785 JCS over integer-only I-JSON
   (estate D306), chosen by the owner on 2026-11-05 (Q1). It bounds every
-  `u64` field to 2^53−1 and refuses larger values as `IntegerOutOfRange`,
+  integer-valued wire and policy field (not only `u64` ones; `usize` fields
+  such as `DepthPolicy.max_order` too) to 2^53−1 and refuses larger values
+  as `IntegerOutOfRange`,
   with no decimal-string escape, because larger I-JSON integers round
   in JavaScript consumers such as UMS. Arm B: canonical CBOR, as ADR-0015 is
   written today, which keeps full `u64`. Experiment E2 decides before any

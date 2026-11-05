@@ -68,8 +68,8 @@ These are asked through the selector. The default arm is labelled on each.
 
 | Q1 | Canonical parity bytes
 | A (default): RFC 8785 JCS over integer-only I-JSON, estate D306; A/A,
-  *provided* every `u64` field (event ids, ticks, sequences, `valid_from`,
-  fixed seeds) is bounded to 2^53−1 and refused above it, with no
+  *provided* every integer-valued field (event ids, ticks, sequences,
+  `valid_from`, fixed seeds, and `usize` policy fields such as `max_order`) is bounded to 2^53−1 and refused above it, with no
   decimal-string escape, because I-JSON integers beyond that round in
   JavaScript consumers.
   B: canonical CBOR, as ADR-0015 is written, which keeps full `u64`; B/A.
@@ -112,8 +112,12 @@ These are asked through the selector. The default arm is labelled on each.
   non-donor consumer's repository (Chronicles of Slavia);
   (2) a person other than the owner, named by the owner, has written a set of
   scenarios with expected beliefs (`conformance/esm/v1/independent/`),
-  committed under that person's authorship with a commit date earlier than
-  the first reducer-design commit.
+  merged before the first reducer-design PR is opened. Git author names and
+  dates are self-asserted, so provenance comes from the forge, not from
+  `git log`: the set lands through a reviewed PR opened by that person's own
+  forge account, and the chronology compares that PR's merge time with the
+  creation time of the first reducer-design PR, both read from the forge
+  API.
   Independence then comes from a specification the owner did not write, not
   from a whole second game, so it can be scheduled. ADR-0025 amends ADR-0017
   to say so, and step 25's gate requires the reducer to pass that set.
@@ -244,7 +248,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   unrepresentable, and the remainder is recorded. (d) T3 records in
   `ENGINE_EXTRACTION_NOTES.md`.
 | `IDAPTIK_ROOT=… just roundtrip-idaptik` (in UMS), then in IDApTIK
-  `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core most_likely_ties_resolve_to_first_declared && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_conserves_mass && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_over_full && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_out_of_frame_focal_set`;
+  `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core most_likely_ties_resolve_to_first_declared && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_conserves_mass && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_over_full && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_out_of_frame_focal_set && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_under_full`;
   goldens unchanged
 | A/A
 
@@ -316,9 +320,11 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   a 64-hypothesis frame stays within Q1's integer bound.
   Canonical module; Known → Certain. `validate_package` now computes the
   digest itself from the canonical bytes (the step-3 parameter is removed).
-  Under Q1 arm A, every `u64` field (ids, ticks, sequences, `valid_from`,
-  fixed seeds) is bounded to 2^53−1 in the contract and refused above it as
-  `IntegerOutOfRange`; under arm B the full range is kept.
+  Under Q1 arm A, every integer-valued field on the wire and in a policy
+  document, not only `u64` ones (ids, ticks, sequences, `valid_from`, fixed
+  seeds, and also `DepthPolicy.max_order`, a `usize`), is bounded to
+  2^53−1 and refused above it as `IntegerOutOfRange`. The canonical decoder
+  enforces this generically. Under arm B the full range is kept.
   Define the versioned runner-output envelope `enaction-runner-output/1`:
   `{package, world_truth: [atom], ledger_trace?}`. World truth cannot travel
   inside an `EpistemicPackage`, which has no field for it.
@@ -353,7 +359,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   The same change revises `CAC-KERNEL.adoc` (§3 data model, §6 validation,
   §8 open problem 1), which stays the normative authority; no wire change
   lands before the kernel document says it.
-| `for t in canonical_bytes_match_jcs_vectors frame_over_64_is_rejected frame_of_64_with_bit_63_is_admitted conflicting_truth_atoms_are_rejected qualified_hypotheses_disambiguate_frames runner_cannot_supply_its_own_policies profile_mismatch_is_refused unknown_fields_are_rejected_before_hashing ambiguous_frames_are_rejected confidence_must_match_payload dependent_evidence_is_refused shared_group_across_perspectives_is_admitted mutated_package_with_stale_digest_is_rejected u64_boundaries_follow_q1 counterfactual_envelope_is_validated_strictly independence_group_must_match_source focal_sets_are_id_arrays_on_the_wire; do if ! bash scripts/cargo-test-exact.sh enaction-contracts "$t"; then exit 1; fi; done && for t in 'enaction-runner-output/1' 'enaction-counterfactual/1' policy_digest PolicyDigestMismatch ProfileMismatch '--policies' '--expect-profile' 'exit 0' 'exit 1' 'exit 2'; do if ! rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc; then exit 1; fi; done`.
+| `for t in canonical_bytes_match_jcs_vectors frame_over_64_is_rejected frame_of_64_with_bit_63_is_admitted conflicting_truth_atoms_are_rejected qualified_hypotheses_disambiguate_frames runner_cannot_supply_its_own_policies profile_mismatch_is_refused unknown_fields_are_rejected_before_hashing ambiguous_frames_are_rejected confidence_must_match_payload dependent_evidence_is_refused shared_group_across_perspectives_is_admitted mutated_package_with_stale_digest_is_rejected u64_boundaries_follow_q1 every_integer_field_is_bounded_including_max_order counterfactual_envelope_is_validated_strictly independence_group_must_match_source focal_sets_are_id_arrays_on_the_wire; do if ! bash scripts/cargo-test-exact.sh enaction-contracts "$t"; then exit 1; fi; done && for t in 'enaction-runner-output/1' 'enaction-counterfactual/1' policy_digest PolicyDigestMismatch ProfileMismatch '--policies' '--expect-profile' 'exit 0' 'exit 1' 'exit 2'; do if ! rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc; then exit 1; fi; done`.
   The boundary test covers 2^53−1, 2^53 and `u64::MAX` (under arm A: accepted,
   refused, refused). The kernel-document check looks for the contract itself,
   so an unrelated edit to `CAC-KERNEL.adoc` cannot satisfy it.
@@ -461,19 +467,25 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   run.
   Write the stub-binary protocol test first so this runs in parallel with
   step 18.
-| `cargo test --locked -p ums-profile-sdk --test process_preview && bash scripts/check-guarantee-evidence.sh && ! bash scripts/check-guarantee-evidence.sh --descriptor tests/fixtures/unbacked-machine-checked.json && ! bash scripts/check-guarantee-evidence.sh --descriptor tests/fixtures/tested-names-true.json`,
-  where the last fixture labels a guarantee `tested` with the recipe `true`
-  and no registry entry
+| `cargo test --locked -p ums-profile-sdk --test process_preview && bash scripts/check-guarantee-evidence.sh && bash tests/check-guarantee-negatives.sh`, where that script runs the
+  checker on two fixtures. `unbacked-machine-checked.json` must exit 1 and
+  print the rule `UnbackedMachineChecked`. `tested-names-true.json`, which
+  labels a guarantee `tested` with the recipe `true` and no registry entry,
+  must exit 1 and print `TestedWithoutRegistryEntry`. Any other exit code or
+  diagnostic, including a missing fixture, fails the gate
 | A/A
 
 | 20 | Rocq recheck (rung 9)
 | Hand re-proof of rungs 1 and 4 in `verification/proofs/coq/Cac.v`. Under Q3
   arm A, the same change deletes the template `TypeSafety.v`.
-| `verification/proofs/coq/MANIFEST` lists the exported theorem names (at
-  least one per re-proved rung 1 and rung 4 obligation, so never empty). For
+| `verification/proofs/coq/MANIFEST` keeps its one-module-per-line format (source root, module, status and
+  note, pipe-separated, which `check-proofs.sh coq` parses, with an entry
+  for `Cac.v`), and a separate `verification/proofs/coq/OBLIGATIONS` lists the
+  exported theorem names (at least one per re-proved rung 1 and rung 4
+  obligation, so never empty). `bash scripts/check-proofs.sh coq` passes. For
   each listed name, `Cac.v` contains a `Print Assumptions <name>` whose
   `coqc` output is "Closed under the global context". The number of such
-  lines equals the MANIFEST count, and the count is checked to be positive.
+  lines equals the OBLIGATIONS count, and that count is checked to be positive.
   `! rg -n -e Admitted -e 'admit\.' -e Axiom -e Parameter -e Hypothesis verification/proofs/coq`, with one `-e` per banned token (ripgrep reads an escaped pipe as a literal)
 | A/A
 
@@ -511,7 +523,12 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   and `causal_edges`, perturbs only events outside that closure, and drives
   the runs through `--perturb`
   (`enaction-counterfactual/1`, step 18). A runner that does not implement
-  that seam gets the verdict `unverified`, never `no-leak`.
+  that seam gets the verdict `unverified`, never `no-leak`. Every preview
+  validates the counterfactual document it receives with
+  `enaction-validate --counterfactual` before using it, checking also that
+  every referenced event exists and every domain is finite and non-empty. A
+  document that fails validation yields `unverified` with the validation
+  fault, never a verdict computed from it.
   One perturbation cannot establish a universal property, so the seam also
   declares each world event's finite admissible value domain. When the
   low-equivalent assignments outside the closure number at most a pinned
@@ -523,8 +540,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   `leak`; a planted reasoner that consults a hidden event only when its value
   is one specific domain member must also be reported `leak` (the exhaustive
   case catches it); the honest reasoner gets `no-leak`; a domain above the
-  bound gets `no-leak-observed`; and a runner without the seam gets
-  `unverified`. The paired runs go through the real IDApTIK runner, not only
+  bound gets `no-leak-observed`; a runner without the seam gets
+  `unverified`; and a malformed counterfactual document (a dangling event
+  reference, an empty domain, an unknown field) yields `unverified` with its
+  validation fault. The paired runs go through the real IDApTIK runner, not only
   a stub, and the demo output contains `replay-identical: ok`
 | B+/A
 
@@ -533,9 +552,11 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   authoritative corpus digest (the sha256 of the corpus's canonical
   `SHA256SUMS`) is published in Enaction as `conformance/esm/v1/CORPUS.sha256`
   and vendored by that value into IDApTIK and UMS.
-| the corpus digest computed in each of the three repositories equals the
-  value in Enaction's `CORPUS.sha256` (a local `SHA256SUMS` updated alongside
-  a changed corpus would otherwise pass), `sha256sum -c` succeeds in all
+| in each of the three repositories, `SHA256SUMS` regenerated from the
+  complete, sorted set of corpus files equals the committed `SHA256SUMS`
+  (so an unlisted extra file fails; `sha256sum -c` alone checks only listed
+  paths), with an omitted-file negative control. The digest of that manifest
+  equals Enaction's `CORPUS.sha256`, and `sha256sum -c` succeeds in all
   three,
   `cargo test --locked -p enaction-contracts --test conformance_esm` passes,
   IDApTIK regenerates every accepted case with `--emit-epistemic` and its
@@ -579,8 +600,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | every accepted `conformance/esm/v1` case replays byte-identically via
   `cmp`, and every `rejected/<rule>/` case is refused with its rule; every
   scenario in the independent specification (`conformance/esm/v1/independent/`,
-  Q4) yields its expected beliefs, and `git log` shows that set was
-  committed by its named author before the first reducer-design commit; a
+  Q4) yields its expected beliefs, and the forge API shows that set merged
+  through a reviewed PR opened by its named author's account before the
+  first reducer-design PR was created (never `git log`, whose authors and
+  dates are self-asserted); a
   scalar-only package is refused with `MissingEvidencePayload`; the planted
   locality mutant fails; Creusot obligations are stated for the reducer's
   core and gated; the rung-8 `Correspondence` check passes for the reducer's
@@ -817,8 +840,9 @@ nothing without the owner. Do not start a step whose owner question
 (Q1-Q8) is unanswered; do every other step. Stop before Wave 5 unless all
 three ADR-0017 triggers are on record: T1 (the owner's dated want in a
 second, non-donor consumer's repository, and the independent specification
-in conformance/esm/v1/independent/ committed by its named non-owner author
-before any reducer-design commit, per ADR-0025), T2 (step 23 merged, with every
+in conformance/esm/v1/independent/ merged through a reviewed PR opened by its
+named non-owner author's own forge account before any reducer-design PR was
+created, checked through the forge API, per ADR-0025), T2 (step 23 merged, with every
 repository's digest check passing) and T3 (the recorded surprises from steps
 4 and 6 merged).
 ----
