@@ -225,7 +225,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   stable id (`T3-E1-<field>`), to `target/e1-mismatches.txt`, and each id
   must have its own DEFECTS record. E2: check whether sorted serde_json bytes
   equal RFC 8785 JCS for kernel types, against ijson-jcs vectors.
-| `cargo test --locked -p enaction-contracts --test trace_package_seam --test canonical_bytes && while read -r id; do grep -qF "$id" docs/status/DEFECTS.adoc \|\| exit 1; done < target/e1-mismatches.txt`
+| `cargo test --locked -p enaction-contracts --test trace_package_seam --test canonical_bytes && while read -r id; do if ! grep -qF "$id" docs/status/DEFECTS.adoc; then exit 1; fi; done < target/e1-mismatches.txt`
 | A/B
 
 | 5 | UMS boundary gate and honesty (UMS)
@@ -244,7 +244,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   unrepresentable, and the remainder is recorded. (d) T3 records in
   `ENGINE_EXTRACTION_NOTES.md`.
 | `IDAPTIK_ROOT=… just roundtrip-idaptik` (in UMS), then in IDApTIK
-  `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core most_likely_ties_resolve_to_first_declared && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_conserves_mass`;
+  `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core most_likely_ties_resolve_to_first_declared && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_conserves_mass && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_over_full && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_out_of_frame_focal_set`;
   goldens unchanged
 | A/A
 
@@ -323,7 +323,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   `{package, world_truth: [atom], ledger_trace?}`. World truth cannot travel
   inside an `EpistemicPackage`, which has no field for it.
   Define a second, separately versioned envelope, `enaction-counterfactual/1`:
-  `{world_events: [(id, value)], causal_edges: [(cause id, effect id)], observations: [(perspective, world-event id)]}`,
+  `{world_events: [(id, value, domain)], causal_edges: [(cause id, effect id)], observations: [(perspective, world-event id)]}`,
   validated by `enaction-validate --counterfactual` with the same strict
   parsing. It stays separate so that `enaction-runner-output/1` never grows
   optional fields that strict parsing would refuse.
@@ -353,7 +353,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   The same change revises `CAC-KERNEL.adoc` (§3 data model, §6 validation,
   §8 open problem 1), which stays the normative authority; no wire change
   lands before the kernel document says it.
-| `for t in canonical_bytes_match_jcs_vectors frame_over_64_is_rejected frame_of_64_with_bit_63_is_admitted conflicting_truth_atoms_are_rejected qualified_hypotheses_disambiguate_frames runner_cannot_supply_its_own_policies profile_mismatch_is_refused unknown_fields_are_rejected_before_hashing ambiguous_frames_are_rejected confidence_must_match_payload dependent_evidence_is_refused shared_group_across_perspectives_is_admitted mutated_package_with_stale_digest_is_rejected u64_boundaries_follow_q1 counterfactual_envelope_is_validated_strictly independence_group_must_match_source focal_sets_are_id_arrays_on_the_wire; do bash scripts/cargo-test-exact.sh enaction-contracts "$t" \|\| exit 1; done && for t in 'enaction-runner-output/1' 'enaction-counterfactual/1' policy_digest PolicyDigestMismatch ProfileMismatch '--policies' '--expect-profile' 'exit 0' 'exit 1' 'exit 2'; do rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc \|\| exit 1; done`.
+| `for t in canonical_bytes_match_jcs_vectors frame_over_64_is_rejected frame_of_64_with_bit_63_is_admitted conflicting_truth_atoms_are_rejected qualified_hypotheses_disambiguate_frames runner_cannot_supply_its_own_policies profile_mismatch_is_refused unknown_fields_are_rejected_before_hashing ambiguous_frames_are_rejected confidence_must_match_payload dependent_evidence_is_refused shared_group_across_perspectives_is_admitted mutated_package_with_stale_digest_is_rejected u64_boundaries_follow_q1 counterfactual_envelope_is_validated_strictly independence_group_must_match_source focal_sets_are_id_arrays_on_the_wire; do if ! bash scripts/cargo-test-exact.sh enaction-contracts "$t"; then exit 1; fi; done && for t in 'enaction-runner-output/1' 'enaction-counterfactual/1' policy_digest PolicyDigestMismatch ProfileMismatch '--policies' '--expect-profile' 'exit 0' 'exit 1' 'exit 2'; do if ! rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc; then exit 1; fi; done`.
   The boundary test covers 2^53−1, 2^53 and `u64::MAX` (under arm A: accepted,
   refused, refused). The kernel-document check looks for the contract itself,
   so an unrelated edit to `CAC-KERNEL.adoc` cannot satisfy it.
@@ -374,7 +374,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   pass. Reject fixtures must fail at their own declaration. Under Q3 arm A,
   the same change deletes the template `Properties.agda`, so the Agda gate
   goes straight from template to real proof without a red window.
-| `cargo run --locked -p enaction-contracts --example gen-status-table > target/StatusTable.agda && cmp target/StatusTable.agda verification/proofs/agda/Cac/StatusTable.agda && bash scripts/check-proofs.sh agda && bash tests/check-agda-rejections.sh && ! rg -n 'postulate\|TERMINATING' verification/proofs/agda/Cac`
+| `mkdir -p target && cargo run --locked -p enaction-contracts --example gen-status-table > target/StatusTable.agda && cmp target/StatusTable.agda verification/proofs/agda/Cac/StatusTable.agda && bash scripts/check-proofs.sh agda && bash tests/check-agda-rejections.sh && ! rg -n -e postulate -e TERMINATING verification/proofs/agda/Cac`
 | A/B
 
 | 13 | Agda theory II: rung 4
@@ -437,7 +437,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   fixture. The runner also implements the counterfactual seam the leak
   verdict needs. On `--emit-counterfactual` it writes a separate document in
   the `enaction-counterfactual/1` envelope that step 11 defines,
-  `{world_events: [(id, value)], causal_edges: [(cause id, effect id)], observations: [(perspective, world-event id)]}`, so
+  `{world_events: [(id, value, domain)], causal_edges: [(cause id, effect id)], observations: [(perspective, world-event id)]}`, so
   the strict `enaction-runner-output/1` envelope is never extended. It
   accepts `--perturb FILE` (world-event ids with replacement values) and
   replays with those values substituted.
@@ -474,7 +474,7 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   each listed name, `Cac.v` contains a `Print Assumptions <name>` whose
   `coqc` output is "Closed under the global context". The number of such
   lines equals the MANIFEST count, and the count is checked to be positive.
-  No `Admitted\|admit.\|Axiom\|Parameter\|Hypothesis` anywhere
+  `! rg -n -e Admitted -e 'admit\.' -e Axiom -e Parameter -e Hypothesis verification/proofs/coq`, with one `-e` per banned token (ripgrep reads an escaped pipe as a literal)
 | A/A
 
 | 21 | Coordinator
@@ -512,11 +512,20 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   the runs through `--perturb`
   (`enaction-counterfactual/1`, step 18). A runner that does not implement
   that seam gets the verdict `unverified`, never `no-leak`.
+  One perturbation cannot establish a universal property, so the seam also
+  declares each world event's finite admissible value domain. When the
+  low-equivalent assignments outside the closure number at most a pinned
+  bound (4,096), the adapter runs every one and may report `no-leak`
+  (exhaustive over the declared domains). Otherwise it runs a seeded sample
+  and reports `no-leak-observed (n of N)`, never `no-leak`.
 | `cargo test --locked -p ums-profile-sdk --test explain_golden && cargo test --locked -p ums-profile-sdk --test leak_verdict_paired`,
   where a planted reasoner that reads an unobserved event must be reported
-  `leak`, the honest reasoner `no-leak`, and a runner without the seam
-  `unverified`; the paired runs go through the real IDApTIK runner, not only
-  a stub; and the demo output contains `replay-identical: ok`
+  `leak`; a planted reasoner that consults a hidden event only when its value
+  is one specific domain member must also be reported `leak` (the exhaustive
+  case catches it); the honest reasoner gets `no-leak`; a domain above the
+  bound gets `no-leak-observed`; and a runner without the seam gets
+  `unverified`. The paired runs go through the real IDApTIK runner, not only
+  a stub, and the demo output contains `replay-identical: ok`
 | B+/A
 
 | 23 | `conformance/esm/v1` bidirectional (T2)

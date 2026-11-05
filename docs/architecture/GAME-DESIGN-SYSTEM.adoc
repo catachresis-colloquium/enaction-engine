@@ -27,7 +27,10 @@ A game takes part by publishing three things:
   runner also implements `enaction-counterfactual/1`, a separate versioned
   document beside the runner output: it reports world events
   and their causal edges, and it replays with chosen hidden events perturbed.
-  A runner without that seam gets the verdict `unverified`.
+  A runner without that seam gets the verdict `unverified`. Each world event
+  declares a finite value domain; `no-leak` is reported only when every
+  low-equivalent assignment within a pinned bound was run, and otherwise the
+  verdict is `no-leak-observed`.
 
 In return the designer gets six things for any scenario they author:
 
