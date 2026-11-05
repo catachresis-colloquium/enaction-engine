@@ -19,9 +19,10 @@ A game takes part by publishing three things:
 * a profile descriptor for UMS (vocabularies, edit verbs, constraints);
 * a versioned package contract (`contracts/<game>/v1`);
 * a headless runner that emits kernel-contract data in one versioned
-  envelope, `enaction-runner-output/1`: an `EpistemicPackage`, world-truth
-  atoms (at most one per exclusive frame), and the profile's resolved depth
-  and status policies, with no Cargo link to Enaction or UMS.
+  envelope, `enaction-runner-output/1`: an `EpistemicPackage` and
+  world-truth atoms (at most one per exclusive frame), with no Cargo link to
+  Enaction or UMS. The runner never supplies the depth and status policies:
+  they come from the profile, bound to `ProfileRef` by digest.
 
 In return the designer gets six things for any scenario they author:
 
@@ -98,8 +99,10 @@ build of the real crate can enable it.
 | The contract authority; it stays behaviour-free (ADR-0019). *Changes:* the
 digest becomes mandatory (today `computed_digest: Option<&str>` skips the
 check on `None`). A stored `Belief.status` must agree with
-`StatusPolicy(interval)`, checked against a resolved policy that the package
-embeds or the validator is given; a `ProfileRef` alone cannot decide it.
+`StatusPolicy(interval)`, checked against the profile's policy document,
+which the profile side passes to the validator and which must match
+`ProfileRef.policy_digest`. A `ProfileRef` alone cannot decide it, and a
+producer-supplied policy could certify itself.
 Hypotheses are identified by (frame id, hypothesis id), because bare names
 repeat across frames. Events gain an optional checked evidence payload, a
 BPA over focal masks, so multi-focal and categorical evidence can reach a

@@ -173,11 +173,11 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | `computed_digest: &str`, computed over the canonical bytes of the package
   with `manifest.digest` omitted (a digest cannot hash itself; the projection
   rule ships in the conformance vectors). Add `StatusDisagreesWithInterval`,
-  checked only against a resolved policy: either the package embeds a
-  versioned `StatusPolicy`, or `validate_package` takes an
-  `Option<&StatusPolicy>` resolved from the profile. A `ProfileRef` alone
-  cannot decide it, because two profiles may map one interval to different
-  statuses. Add `package_fault_coverage`, proving every `rule()` fires on a
+  checked only against a policy resolved from the profile, never from the
+  producer: `validate_package` takes an `Option<&StatusPolicy>` supplied by
+  the caller. A `ProfileRef` alone cannot decide it, because two profiles may
+  map one interval to different statuses, and a package that embedded its own
+  policy could certify itself. Add `package_fault_coverage`, proving every `rule()` fires on a
   planted package.
 | `cargo test --locked -p enaction-contracts --test package_fault_coverage && ! rg -q 'computed_digest: Option' crates/enaction-contracts/src/package.rs`
 | A/A
@@ -257,18 +257,22 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   and categorical evidence; the scalar `confidence` alone cannot carry it.
   Canonical module; Known → Certain.
   Define the versioned runner-output envelope `enaction-runner-output/1`:
-  `{package, world_truth: [atom], resolved: {depth, status_policy}, ledger_trace?}`.
-  World truth cannot travel inside an `EpistemicPackage`, which has no field
-  for it, and the validator needs the profile's resolved depth and status
-  policies, which a `ProfileRef` alone does not carry.
-  Binary: stdin envelope → validate the package against the resolved
-  policies, check every truth atom names a declared qualified hypothesis,
+  `{package, world_truth: [atom], ledger_trace?}`. World truth cannot travel
+  inside an `EpistemicPackage`, which has no field for it.
+  The depth and status policies never come from the runner, which could
+  otherwise choose thresholds that legitimise its own beliefs. `ProfileRef`
+  gains a `policy_digest`. The profile side (UMS, from the compiled profile)
+  passes the policy document as a separate argument, `--policies FILE`, and
+  the validator refuses with `PolicyDigestMismatch` unless the file's
+  canonical digest equals `ProfileRef.policy_digest`.
+  Binary: stdin envelope plus `--policies` → validate the package against
+  those policies, check every truth atom names a declared qualified hypothesis,
   reject a second truth atom for an exclusive frame, pass the envelope
   through with canonical faults; exit 0/1/2.
   The same change revises `CAC-KERNEL.adoc` (§3 data model, §6 validation,
   §8 open problem 1), which stays the normative authority; no wire change
   lands before the kernel document says it.
-| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected && cargo test --locked -p enaction-contracts conflicting_truth_atoms_are_rejected && cargo test --locked -p enaction-contracts qualified_hypotheses_disambiguate_frames && ! git diff --quiet origin/main -- docs/architecture/CAC-KERNEL.adoc`, and `echo '{}'` into the binary exits 1
+| `cargo test --locked -p enaction-contracts canonical_bytes_match_jcs_vectors && cargo test --locked -p enaction-contracts frame_over_64_is_rejected && cargo test --locked -p enaction-contracts conflicting_truth_atoms_are_rejected && cargo test --locked -p enaction-contracts qualified_hypotheses_disambiguate_frames && cargo test --locked -p enaction-contracts runner_cannot_supply_its_own_policies && ! git diff --quiet origin/main -- docs/architecture/CAC-KERNEL.adoc`, and `echo '{}'` into the binary exits 1
 | A/A
 
 | 12 | Agda theory I: rungs 1-3
@@ -332,7 +336,8 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 
 | 19 | UMS `ProcessPreviewAdapter` + response schema + guarantee gate
 | Pipeline: compile → pre-built runner (emits the envelope) →
-  `enaction-validate`. The response schema carries the world-truth atoms the
+  `enaction-validate --policies <profile policy file>`; the adapter takes the
+  policy file from the profile it compiled against, never from the runner. The response schema carries the world-truth atoms the
   explain lens needs. Argv only, cleared environment, timeout, stdout cap. A
   missing binary is a FAIL. The guarantee gate requires *passing* evidence,
   not a name that exists: a `tested` label must name a recipe that the gate
