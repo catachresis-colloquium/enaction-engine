@@ -42,12 +42,19 @@ depends on it:
 . Rung 0, gate honesty: no vacuous pass.
 . Rung 3, observer noninterference: the fog-of-war guarantee.
 . Rung 2, `Certain` is not `Known`.
-. Rung 1, status order.
+. Rung 1, status order: an engineering obligation on `StatusPolicy::status`,
+  proved with Creusot (Pearlite contract) and scoped for Verus.
 . Rung 4, ledger laws: mass conserved; non-associativity recorded as a
   countermodel.
 . Rung 5, generic verdict soundness, upstream.
-. Rung 7, Creusot in CI.
-. Rung 9, Rocq recheck.
+. Rung 7, Creusot and Verus in CI.
+. Rung 9, Rocq and Lean rechecks of every theory rung.
+
+The ladder follows standards PROOF-POLICY as amended 2026-11-01 to 2026-11-08
+(see <<policy-conformance>>): theory in Agda under the canonical invocation,
+rechecked in Rocq and Lean with recorded statement correspondence and a
+Proof Witness Grade; first-party Rust verified with Creusot (Pearlite
+contracts) and Verus; interfaces in Idris2.
 
 Rungs 6 and 8 (replay and locality, model-to-code correspondence) bind the
 Wave 5 reducer.
@@ -86,10 +93,11 @@ These are asked through the selector. The default arm is labelled on each.
   must keep step 2's observer tests and planted mutant passing.
 | Step 2
 
-| Q3 | Template proofs (`Properties.agda`, `TypeSafety.v`)
+| Q3 | Template proofs (`Properties.agda`, `TypeSafety.v`, the quarantined `ApiTypes.lean`)
 | A (default): delete each template in the same change that gates its first
-  real replacement (Agda in step 12, Coq in step 20), so no gate is ever red
-  in between; A/A.
+  real replacement (Agda in step 12, Coq and Lean in step 20), so no gate is
+  ever red in between; the Coq `OBLIGATIONS` entry for the template's
+  `type_soundness` is replaced in that change; A/A.
   B: keep them gated and label them scaffold in words; C/B.
 | Steps 12, 20
 
@@ -186,7 +194,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | 1 | Proof-gate honesty (enaction)
 | Add `scripts/cargo-test-exact.sh` (see the Waves preamble). `check-proofs.sh` FAILs when a MANIFEST gates zero modules; today Lean passes
   vacuously. Add a planted negative control, and fix EXPLAINME's stale "lists
-  only enaction-time". Never quarantine a compiling template: in this script
+  only enaction-time". Already landed (2026-11-09): the canonical Agda
+  invocation, rejection of an unknown MANIFEST status, the Coq
+  `Print Assumptions` gate, their both-ways tests, and the
+  `proof-gates.yml` workflow that runs the Agda and Coq gates in CI. Never quarantine a compiling template: in this script
   that is an UNEXPECTED-pass FAIL. Templates are not deleted here (see Q3).
   The Lean gate, which gates zero modules and has no toolchain in agent
   containers, turns red by design; that is the one expected red.
@@ -244,11 +255,15 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | (a) `examples/package-runner.rs`: six lines, probe-proven byte-identical
   across two processes. (b) First-max `most_likely`. (c) A checked
   `Bpa::new -> Result<_, LedgerFault>`: sums to T, focal sets inside the
-  frame. `absorb(Ledger, Bpa)` makes prior-conflict double counting
-  unrepresentable, and the remainder is recorded. (d) T3 records in
+  frame. A ledger is built only by `Ledger::vacuous(frame)` (mass T on the
+  whole frame, remainder 0, the identity for absorption) or
+  `Ledger::from_bpa(bpa)` (the donor's `EvidenceLedger::from_evidence`).
+  `absorb(Ledger, Bpa) -> Result<Ledger, LedgerFault>` refuses a BPA over a
+  different frame, makes prior-conflict double counting unrepresentable, and
+  records the remainder. (d) T3 records in
   `ENGINE_EXTRACTION_NOTES.md`.
 | `IDAPTIK_ROOT=… just roundtrip-idaptik` (in UMS), then in IDApTIK
-  `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core most_likely_ties_resolve_to_first_declared && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_conserves_mass && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_over_full && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_out_of_frame_focal_set && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_under_full`;
+  `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core most_likely_ties_resolve_to_first_declared && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_conserves_mass && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_over_full && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_out_of_frame_focal_set && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_under_full && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_into_vacuous_is_from_bpa && bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_rejects_frame_mismatch`;
   goldens unchanged
 | A/A
 
@@ -372,12 +387,18 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   exits 2
 | A/A
 
-| 12 | Agda theory I: rungs 1-3
-| `Cac/{StatusPolicy,StatusTable,CertainIsNotKnown,ObserverClosure}`. A
-  Rust-generated 231-row status table, checked by `refl`. The gate
-  regenerates the table from the current `StatusPolicy::status` and compares
-  it byte for byte with the committed file, so a `refl` over stale data cannot
-  pass. Reject fixtures must fail at their own declaration. Under Q3 arm A,
+| 12 | Agda theory I: rungs 2-3, and the rung-1 cross-check
+| `Cac/{CertainIsNotKnown,ObserverClosure}` are theory (rungs 2 and 3).
+  `Cac/{StatusPolicy,StatusTable}` is an engineering cross-check of rung 1: a
+  Rust-generated 231-row table (a grid of belief and plausibility in steps of
+  500, belief at most plausibility, one policy) checked by `refl`. Those 231
+  rows sample about 5 x 10^7 possible interval pairs, so the check is recorded
+  `TESTED` with its bounds in the table header, never `PROVEN`; the proof of rung 1 is the
+  Creusot contract of step 15. The gate regenerates the table from the
+  current `StatusPolicy::status` and compares it byte for byte with the
+  committed file, so a `refl` over stale data cannot pass. Reject fixtures
+  must fail at their own declaration. Each theory theorem gets a PWG record
+  (`pwg: 3` once checked, rechecks owed in step 20). Under Q3 arm A,
   the same change deletes the template `Properties.agda`, so the Agda gate
   goes straight from template to real proof without a red window.
 | `mkdir -p target && cargo run --locked -p enaction-contracts --example gen-status-table > target/StatusTable.agda && cmp target/StatusTable.agda verification/proofs/agda/Cac/StatusTable.agda && bash scripts/check-proofs.sh agda && bash tests/check-agda-rejections.sh && ! rg -n -e postulate -e TERMINATING verification/proofs/agda/Cac`
@@ -386,11 +407,17 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | 13 | Agda theory II: rung 4
 | `Cac/{Frame,Ledger,Categorical,Countermodel}`: commutativity; divmod-exact
   absorb; floor-loss bound; categorical intersection; the two probe
-  countermodels as `refl`; first-max argmax.
-| `bash scripts/check-proofs.sh agda` with all four of `Cac/Frame`,
-  `Cac/Ledger`, `Cac/Categorical` and `Cac/Countermodel` listed in the proof
-  MANIFEST (Agda checks only transitive imports, so gating one module does
-  not check the others)
+  countermodels as `refl`; first-max argmax; the vacuous-ledger identity
+  `absorb (vacuous f) b ≡ fromBpa b`.
+| `bash scripts/check-proofs.sh agda`, and each of `Cac/Frame.agda`,
+  `Cac/Ledger.agda`, `Cac/Categorical.agda` and `Cac/Countermodel.agda` has a
+  MANIFEST entry whose status field is exactly `gated`, asserted per module by
+  `for m in Frame Ledger Categorical Countermodel; do if ! awk -F '\174' -v m="Cac/$m.agda" '$2 == m && $3 == "gated" { found = 1 } END { exit !found }' verification/proofs/agda/MANIFEST; then exit 1; fi; done`
+  (`\174` is the octal escape for the MANIFEST field separator, which an
+  AsciiDoc table cell cannot hold literally). Being listed is not enough: a
+  `quarantine` entry that fails to typecheck is an expected success for
+  `check-proofs.sh`, and Agda checks only transitive imports, so gating one
+  module does not check the others
 | A/A
 
 | 14 | Upstream rung 5 (residual-evidence-types)
@@ -398,14 +425,21 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | `just check` (9 expected rejections still fire)
 | A/A
 
-| 15 | Creusot in CI (RUST-G2)
+| 15 | Creusot and Verus in CI (RUST-G2)
 | Copy IDApTIK's `creusot-proof.yml` provisioning. Add Mass saturating ops
   and `Mass::mul_div` (the donor's flooring product, returning the remainder:
-  `a * b = q * 10_000 + r`, `0 <= r < 10_000`), StatusPolicy totality
-  obligations, and a planted-mutant leg.
+  `a * b = q * 10_000 + r`, `0 <= r < 10_000`), the rung-1 Pearlite contract
+  that `StatusPolicy::status` returns exactly ADR-0016's ordered cascade for
+  every interval and policy, and a planted-mutant leg. Per PROOF-POLICY §1.2,
+  scope Verus for the same Mass and status obligations, and record for each
+  obligation its entrypoint, verifier, specification, assumptions and result,
+  and how the Pearlite and Verus statements correspond. Verus is not
+  provisioned in agent containers or CI today; until it is, each Verus row is
+  `OPEN` with that reason, never omitted.
 | a single run of the workflow whose `head_sha` equals the reviewed commit
   concludes success, and its expected-failure mutant job, in that same run,
-  reports the planted mutant as failing verification
+  reports the planted mutant as failing verification; PROOF-STATUS has one
+  Creusot row and one Verus row (or its `OPEN` reason) per obligation
 | A/B
 
 | 16 | UMS `dlc/vm` compile gate
@@ -475,18 +509,33 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   diagnostic, including a missing fixture, fails the gate
 | A/A
 
-| 20 | Rocq recheck (rung 9)
-| Hand re-proof of rungs 1 and 4 in `verification/proofs/coq/Cac.v`. Under Q3
-  arm A, the same change deletes the template `TypeSafety.v`.
-| `verification/proofs/coq/MANIFEST` keeps its one-module-per-line format (source root, module, status and
-  note, pipe-separated, which `check-proofs.sh coq` parses, with an entry
-  for `Cac.v`), and a separate `verification/proofs/coq/OBLIGATIONS` lists the
-  exported theorem names (at least one per re-proved rung 1 and rung 4
-  obligation, so never empty). `bash scripts/check-proofs.sh coq` passes. For
-  each listed name, `Cac.v` contains a `Print Assumptions <name>` whose
-  `coqc` output is "Closed under the global context". The number of such
-  lines equals the OBLIGATIONS count, and that count is checked to be positive.
-  `! rg -n -e Admitted -e 'admit\.' -e Axiom -e Parameter -e Hypothesis verification/proofs/coq`, with one `-e` per banned token (ripgrep reads an escaped pipe as a literal)
+| 20 | Rocq and Lean rechecks (rung 9)
+| Recheck every theory theorem of rungs 2, 3, 4 and 6 in Rocq and in Lean
+  (PROOF-POLICY §2). Rungs 1 and 8 are engineering and are not rechecked;
+  rungs 5 and 11 are rechecked in their upstream repositories. Try transport
+  through Dedukti first. Re-prove by hand, in
+  `verification/proofs/coq/Cac.v` and `verification/proofs/lean4/Cac.lean`,
+  any construct Agda2Dedukti does not cover and any target the pinned
+  Lambdapi release has no exporter for (Lean, today). Lean uses its core
+  library only, no Mathlib. Each theorem gets a §2.2 correspondence record
+  (proposition, assumptions, route `transported`, `re-proved` or
+  `unavailable`, how the statements were compared, versions, invocation,
+  observed result) and a §8.5 PWG record derived from receipts, never
+  written by hand above them. Under Q3 arm A the same change deletes the
+  templates `TypeSafety.v` and `ApiTypes.lean`.
+| `bash scripts/check-proofs.sh coq && bash scripts/check-coq-assumptions.sh`.
+  The assumptions gate already exists (with `tests/check_coq_assumptions_test.sh`,
+  which shows it failing on an imported axiom and on an empty or missing
+  list); `verification/proofs/coq/OBLIGATIONS` must name at least one theorem
+  per rechecked obligation, each closed under the global context.
+  `! rg -n -e Admitted -e 'admit\.' -e Axiom -e Parameter -e Hypothesis verification/proofs/coq`, with one `-e` per banned token (ripgrep reads an escaped pipe as a literal).
+  For Lean: `bash scripts/check-proofs.sh lean4` with `Cac.lean` gated, a
+  `scripts/check-lean-axioms.sh` written in this step with its own both-ways
+  test (`#print axioms` reports none for each listed theorem), and
+  `! rg -n -e sorry -e 'import Mathlib' verification/proofs/lean4`. If Lean
+  cannot be provisioned where the step runs, the Lean leg is recorded `OPEN`
+  with that reason and the theorem stays at `pwg: 3` or `2i`; it is never
+  recorded `ASSUMED` or as a pass
 | A/A
 
 | 21 | Coordinator
@@ -516,7 +565,16 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   each perspective, re-run with world events perturbed only outside that
   perspective's observation set *and its causal closure*, holding the observed
   projection fixed (the low-equivalence condition of invariant 2), and require
-  identical beliefs. An event that causally changes something the perspective
+  identical beliefs. The closure is only as good as the runner's
+  `causal_edges`, and structural validation cannot show the graph is
+  complete. So every perturbed run also returns the perspective's observed
+  projection (the post-replay values of the world events it observed), and
+  the adapter compares it with the baseline's. A pair whose projections
+  differ is not low-equivalent: it is discarded, never scored as a leak, and
+  counted. If any pair is discarded the verdict is
+  `unverified (causal graph incomplete: k pairs)`, so an honest reasoner is
+  never reported as leaking because of a missing edge, and `no-leak` is
+  never computed over pairs that were not low-equivalent. An event that causally changes something the perspective
   observes is never perturbed, since an honest reasoner may then legitimately
   change its mind. The adapter computes each perspective's closure from the
   runner's `observations` (which world events each perspective observed)
@@ -543,7 +601,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   bound gets `no-leak-observed`; a runner without the seam gets
   `unverified`; and a malformed counterfactual document (a dangling event
   reference, an empty domain, an unknown field) yields `unverified` with its
-  validation fault. The paired runs go through the real IDApTIK runner, not only
+  validation fault; a planted runner that omits one causal edge, so that a
+  perturbation outside the computed closure changes an observed event,
+  yields `unverified (causal graph incomplete)` for the honest reasoner,
+  never `leak`. The paired runs go through the real IDApTIK runner, not only
   a stub, and the demo output contains `replay-identical: ok`
 | B+/A
 
@@ -646,23 +707,74 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 
 == Proof ladder
 
-[cols="1,4,2,3,2",options="header"]
-|===
-| Rung | Obligation | Prover | Reuses | Status
+*Kind* applies the PROOF-POLICY §1 test: a statement that names a type,
+function or wire format of this repository is *engineering* (Creusot and
+Verus for the Rust, Idris2 for interfaces), and is never given a Proof
+Witness Grade. A statement true of any implementation is *theory* (Agda,
+rechecked in Rocq and Lean, graded on the PWG ladder). Status uses the closed
+§5 vocabulary.
 
-| 0 | No proof gate passes vacuously | shell + planted control | rsr-template MANIFEST pattern | Open (Lean passes with zero files today)
-| 1 | `StatusPolicy::status` follows ADR-0016's order | Agda, `refl` over a 231-row Rust-generated table, regenerated and compared by `cmp` in the gate | residual-evidence correspondence pattern | Open
-| 2 | `Certain` (mass = FULL) does not imply factive `Known`; `Known` is derivable only with world-truth evidence | Agda + reject fixture `CertainIsKnown` | epistemic-types FactiveModality, `BeliefIsKnowledge` | Open
-| 3 | Observer noninterference | proptest (TESTED) + Agda ObserverClosure | secret-types TINI | Open; **violated on main**
-| 4 | Ledger laws: comm; divmod-exact absorb; floor-loss bound; categorical = intersection; non-associativity countermodel | Agda (`Data.Nat.DivMod`) | echo-types no-section; secret-types Countermodels | Open; Partial empirically
-| 5 | Verdict / IdStatus soundness over any finite list | Agda, upstream | residual-evidence Finite/Row | Partial (Int instance landed)
-| 6 | `replay (xs ++ ys) = replay (replay xs) ys`; locality | Agda | echo-types aggregation-as-fold; occupancy cut-factor (shape only) | Open
-| 7 | Creusot on the shipped code: P1-P4, then the ledger laws on the extracted reducer's core | Creusot 0.13 (CI-only) | IDApTIK kernel provisioning | Partial (P1/P2 local only)
-| 8 | Bounded exhaustive Rust ↔ Agda ledger correspondence | Agda `refl` over a generated table, regenerated from the shipped reducer and compared by `cmp` in the gate. The bounds are pinned in the generator and in the table header (frame sizes, mass granularity, ledger length). The gate checks the row count against the count those bounds imply, requires the boundary rows (full mass, all-conflict, one-hypothesis frame), and requires a planted Rust-side discrepancy to make the Agda check fail | residual-evidence pattern | Open
-| 9 | Rocq recheck of rungs 1 and 4 | Coq 8.18 | none | Open; Lean ASSUMED until provisioned
-| 10 | ABI-P6 arbitration (a wildcard `impossible` case accepted by Idris2 0.7.0 was rejected by 0.8.0 and repaired with explicit constructor pairs; CI still pins 0.7.0, which cannot detect its return) | Idris2 (CI) | Accelerator.idr | Contested
-| 11 | Per-agent projection soundness for looping protocols | Agda, upstream | choreographic-types K-CUT-LOSS | Deferred: needs μ-recursion
+[cols="1,4,1,3,3,3",options="header"]
 |===
+| Rung | Obligation | Kind | Prover | Reuses | Status
+
+| 0 | No proof gate passes vacuously | engineering | shell + planted controls | rsr-template MANIFEST pattern | `OPEN`. Landed 2026-11-09: canonical Agda flags, MANIFEST status validation, Coq `Print Assumptions` gate, each with a both-ways test, run in CI by `proof-gates.yml`. Still open: a MANIFEST that gates zero modules passes (Lean today)
+| 1 | `StatusPolicy::status` returns ADR-0016's ordered cascade | engineering | Creusot (Pearlite contract), Verus scope; Agda `refl` over the 231-row grid as a cross-check | residual-evidence correspondence pattern | `OPEN`. The grid cross-check, once landed, is `TESTED` (step 500, one policy), not a proof
+| 2 | `Certain` (mass = FULL) does not imply factive `Known`; `Known` is derivable only with world-truth evidence | theory | Agda + reject fixture `CertainIsKnown`; Rocq and Lean rechecks | epistemic-types `FactiveModality` (`Base.agda`); the `BeliefIsKnowledge` reject fixture as a pattern only (it refutes Kripke frame reflexivity and does not use `FactiveModality`) | `OPEN`; `ungraded`
+| 3 | Observer noninterference | theory, with an engineering test | Agda ObserverClosure; Rocq and Lean rechecks; proptest on the shipped code (`TESTED`, 1,024 cases) | secret-types TINI | `OPEN`; `ungraded`; **violated on main**
+| 4 | Ledger laws: comm; divmod-exact absorb; floor-loss bound; categorical = intersection; vacuous identity; non-associativity countermodel | theory | Agda (`Data.Nat.DivMod`); Rocq and Lean rechecks | echo-types `no-section-of-collapsing-map`; secret-types `Countermodels` as a pattern only (it refutes TINI lattice laws and has no non-associativity countermodel, so ours is new work) | `OPEN`; `ungraded`; partial empirical evidence
+| 5 | Verdict / IdStatus soundness over any finite list | theory, upstream | Agda in residual-evidence-types; its Rocq and Lean legs are owed there | residual-evidence Finite/Row | `OPEN` (Int instance landed); `ungraded`
+| 6 | `replay (xs ++ ys) = replay (replay xs) ys`; locality | theory | Agda; Rocq and Lean rechecks | echo-types aggregation-as-fold; occupancy cut-factor (shape only) | `OPEN`; `ungraded`
+| 7 | P1-P4 on the shipped code, then the ledger laws on the extracted reducer's core | engineering | Creusot 0.13 (Pearlite) in CI; Verus scoped per §1.2 | IDApTIK kernel provisioning | `OPEN`. P1 and P2 discharged locally only, no CI receipt; Verus not provisioned
+| 8 | Bounded exhaustive Rust ↔ Agda ledger correspondence | engineering | Agda `refl` over a generated table, regenerated from the shipped reducer and compared by `cmp` in the gate. The bounds are pinned in the generator and in the table header (frame sizes, mass granularity, ledger length). The gate checks the row count against the count those bounds imply, requires the boundary rows (full mass, all-conflict, one-hypothesis frame), and requires a planted Rust-side discrepancy to make the Agda check fail | residual-evidence pattern | `OPEN`; `TESTED` with its bounds when landed, never `PROVEN`. Aeneas (§4.1) would add only an `ASSUMED` correspondence row while no backend qualifies
+| 9 | Rocq and Lean rechecks of rungs 2, 3, 4 and 6, each with a §2.2 correspondence record | theory | Coq 8.18 (`coqc`, `Print Assumptions` gate); Lean core library, no Mathlib | none | `OPEN`. Lean has no toolchain in agent containers; its leg stays `OPEN` with that reason until provisioned
+| 10 | ABI-P6 arbitration (a wildcard `impossible` case accepted by Idris2 0.7.0 was rejected by 0.8.0 and repaired with explicit constructor pairs; CI still pins 0.7.0, which cannot detect its return) | engineering | Idris2 (CI) | Accelerator.idr | Contested
+| 11 | Per-agent projection soundness for looping protocols | theory, upstream | Agda in choreographic-types | choreographic-types K-CUT-LOSS | Deferred: needs μ-recursion
+|===
+
+[[policy-conformance]]
+=== Conformance with PROOF-POLICY (2026-11 amendments)
+
+Checked against `metadatastician/standards` `3-practice/PROOF-POLICY.adoc` at
+`9bdf864` (2026-11-08).
+
+* *§2.1, canonical Agda invocation.* `scripts/check-proofs.sh` now runs
+  `agda --safe --without-K --cubical-compatible`. Before 2026-11-09 it ran
+  `agda --safe` alone, under which a module that needs axiom K typechecks.
+  `tests/check_proofs_gate_test.sh` plants such a module and a `--with-K`
+  pragma, and both must fail. Every Agda receipt records the Agda version and
+  the standard-library commit.
+* *§1.2, Creusot, Pearlite and Verus.* Every Rust obligation (rungs 1 and 7,
+  and the Mass operations of step 15) names both verifiers. A Verus row that
+  has not run is `OPEN` with its reason, never omitted.
+* *§2 and §2.2, rechecks and correspondence.* Every theory theorem owes a
+  Rocq leg and a Lean leg. Each leg records its route, its §5 token and its
+  §2.2 correspondence state (`AGDA-VERIFIED`, `COQ-CHECKED`, `LEAN-CHECKED`,
+  `BRIDGE-PENDING`, `RECONCILED` and so on). A leg that has not been compared
+  with the Agda statement does not count.
+* *§8, Proof Witness Grades.* Each theory theorem carries `pwg`,
+  `foundation_diverse` and per-leg records in PROOF-STATUS (§8.5). Grades are
+  derived from receipts, published as a census with the denominator, and never
+  given to engineering rows. A theorem at `pwg: 3` or `2i` still owes its
+  missing legs.
+* *§5, status vocabulary.* An unfinished leg is `OPEN`. `ASSUMED` is kept for
+  stated hypotheses and unchecked transcriptions. This corrects the earlier
+  "Lean ASSUMED until provisioned".
+* *Upstream reuse, checked 2026-11-09.* Each reused artefact in the
+  ladder exists and typechecks under the canonical invocation with Agda 2.6.3
+  and agda-stdlib 2.3, with no postulate, `TERMINATING`, `believe_me` or
+  `primTrustMe` in its import cone. Three caveats: the secret-types,
+  residual-evidence-types, choreographic-types and occupancy-types sources
+  declare only `--safe --without-K` and pass `--cubical-compatible` from the
+  command line with `UnsupportedIndexedMatch` warnings; their CI pins Agda
+  2.6.4.3, which was not run here; and choreographic-types and
+  occupancy-types pin different resource-algebra commits (`b2c9f1f`, under
+  which occupancy's `Reclaim.agda` fails, and `0b338c9`), so any module that
+  imports both needs one pin first.
+* *Mathesis.* Proofs and receipts stay here. `hyperpolymath/mathesis`
+  catalogues them and derives grades from the receipts (§2.2, §8.5); it never
+  assigns them. Its census currently, and correctly, counts Enaction's three
+  template proofs as template boilerplate, not as Enaction proofs.
 
 == Empirical experiments before bigger work
 
@@ -749,8 +861,8 @@ Nothing else in this plan waits on AffineScript.
 
 A new Idris2 model of the JSON preview protocol is a deliberate departure
 from the letter of PROOF-POLICY ("APIs → Idris2"). Arm A (chosen): JSON
-schema plus fixtures plus Creusot on the reducer, because no C-ABI seam
-exists. Arm B (deferred, not refused): an Idris2 wire model with a `Dec`
+schema plus fixtures plus Creusot and Verus on the reducer, because no C-ABI
+seam exists. Arm B (deferred, not refused): an Idris2 wire model with a `Dec`
 admission decider, the day the reducer gains a C ABI.
 
 == Tropes, types and logics worth pursuing

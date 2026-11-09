@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# One fully qualified theorem per line, relative to verification/proofs/coq.
+# scripts/check-coq-assumptions.sh requires each to be closed under the global
+# context (Print Assumptions). TypeSafety.v is the RSR template proof (plan
+# question Q3); this entry is replaced when Cac.v lands (plan step 20).
+TypeSafety.type_soundness
