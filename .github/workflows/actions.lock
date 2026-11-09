@@ -41,6 +41,8 @@ workflows:
         - 'actions/configure-pages@v6.0.0'
         - 'actions/deploy-pages@v5.0.1'
         - 'actions/upload-pages-artifact@v5.0.0'
+    '.github/workflows/proof-gates.yml':
+        - 'actions/checkout@v7.0.1'
     '.github/workflows/proven-tests-gate.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/quality.yml':

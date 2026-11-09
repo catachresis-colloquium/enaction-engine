@@ -14,9 +14,16 @@ import Data.List
 import Data.Maybe
 import Data.String
 import Data.Vect
+
 import ProvenTests.Classification
 import ProvenTests.Framework
 import ProvenTests.Types
+
+-- Vect is needed only for its Foldable instance (`toList` on layout fields).
+-- Hide its list-literal constructors so `[...]` always means List; otherwise
+-- every bare literal is ambiguous between List and Vect.
+%hide Data.Vect.Nil
+%hide Data.Vect.(::)
 
 %default total
 
@@ -132,9 +139,12 @@ versionTruthTable =
   && not (acceptsVersion 1 0 1 1)
   && not (acceptsVersion 1 0 2 0)
   && not (acceptsVersion 1 0 0 0)
-  && acceptsCurrentVersion
-  && rejectsWrongMajor
-  && rejectsNewerMinor
+  -- The compile-time proofs acceptsCurrentVersion, rejectsWrongMajor and
+  -- rejectsNewerMinor in Abi.Accelerator are equalities, not Bools; their
+  -- runtime counterparts are checked here.
+  && acceptsVersion abiMajor abiMinor 1 0
+  && not (acceptsVersion abiMajor abiMinor 2 0)
+  && not (acceptsVersion abiMajor abiMinor 1 1)
 
 private
 fieldAligned : Field -> Bool
@@ -143,7 +153,7 @@ fieldAligned field =
 
 private
 fieldWithinBounds : Nat -> Field -> Bool
-fieldWithinBounds total field = field.offset + field.size <= total
+fieldWithinBounds limit field = field.offset + field.size <= limit
 
 private
 layoutCalculations : Bool

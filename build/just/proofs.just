@@ -9,7 +9,7 @@
 # `just proof-check-all` for the full sweep.
 
 # Check all formal proofs (production Idris2 ABI + proof manifests + Rust/Creusot)
-proof-check-all: proof-check-idris2-abi proof-check-idris2 proof-check-lean4 proof-check-agda proof-check-coq proof-check-creusot proof-scan-dangerous
+proof-check-all: proof-check-idris2-abi proof-check-idris2 proof-check-lean4 proof-check-agda proof-check-coq proof-check-coq-assumptions proof-check-creusot proof-scan-dangerous
     @echo "=== All proof checks complete ==="
 
 # Each proof-check-<prover> delegates to scripts/check-proofs.sh, the single
@@ -39,6 +39,16 @@ proof-check-agda:
 # Check Coq proofs (per MANIFEST; fatal if coqc absent)
 proof-check-coq:
     @bash scripts/check-proofs.sh coq
+
+# Require every theorem in verification/proofs/coq/OBLIGATIONS to be closed
+# under the global context (Print Assumptions). Empty or missing list = FAIL.
+proof-check-coq-assumptions:
+    @bash scripts/check-coq-assumptions.sh
+
+# Both-ways tests: each proof gate must be seen to fail on a planted violation.
+proof-gate-tests:
+    @bash tests/check_proofs_gate_test.sh
+    @bash tests/check_coq_assumptions_test.sh
 
 # Check the exact production Rust modules admitted by the narrow Creusot
 # harness. Tool/version/prover absence is fatal; scaffolding cannot pass.

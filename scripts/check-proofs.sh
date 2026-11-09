@@ -74,6 +74,17 @@ case "$PROVER" in
   coq)    CMD=coqc;   EXT=v;    ERROR_RE=''        ;;
 esac
 
+# Canonical Agda entrypoint invocation, standards PROOF-POLICY §2.1
+# (2026-11-01): `agda --safe --without-K --cubical-compatible`. Do not weaken
+# these flags to make a check green; a theory proof that needs other options
+# needs a separately reviewed proof profile (§2.1), not an edit here.
+AGDA_FLAGS=(--safe --without-K --cubical-compatible)
+
+# Coq modules compile under the logical prefix `Enaction`, the same one
+# scripts/check-coq-assumptions.sh uses, so a local import is written
+# `From Enaction Require …` and resolves identically in both gates. Modules
+# are compiled in MANIFEST order: list a local dependency before its users.
+
 check_one() {
   # $1 source-root (rel to ROOT), $2 module (rel to source-root).
   # Sets LAST_OUT to the tool output on failure; returns 0 iff the module compiles.
@@ -82,8 +93,8 @@ check_one() {
   case "$PROVER" in
     idris2) out="$(cd "$ROOT/$root" && idris2 --check "$rel" 2>&1)"; rc=$? ;;
     lean4)  out="$(cd "$ROOT/$root" && lean          "$rel" 2>&1)"; rc=$? ;;
-    agda)   out="$(cd "$ROOT/$root" && agda --safe    "$rel" 2>&1)"; rc=$? ;;
-    coq)    out="$(cd "$ROOT/$root" && coqc           "$rel" 2>&1)"; rc=$? ;;
+    agda)   out="$(cd "$ROOT/$root" && agda "${AGDA_FLAGS[@]}" "$rel" 2>&1)"; rc=$? ;;
+    coq)    out="$(cd "$ROOT/$root" && coqc -Q . Enaction "$rel" 2>&1)"; rc=$? ;;
   esac
   set -e
   if [ "$rc" -eq 0 ] && { [ -z "$ERROR_RE" ] || ! grep -qE "$ERROR_RE" <<<"$out"; }; then
@@ -131,6 +142,14 @@ while IFS='|' read -r root rel status note; do
   case "${root#"${root%%[![:space:]]*}"}" in \#*) continue ;; esac
   printf '  %-30s %-24s ' "$root" "$rel"
   echo "$root/$rel" >>"$listed_tmp"
+  # Any status other than the two defined ones is an error. Without this a
+  # typo such as `gate` fell through to the quarantine branch, so a broken
+  # module that was meant to be gated passed as an expected failure.
+  if [ "$status" != gated ] && [ "$status" != quarantine ]; then
+    echo "FAIL -- unknown status '$status' (must be 'gated' or 'quarantine')"
+    fails=$((fails + 1))
+    continue
+  fi
   if check_one "$root" "$rel"; then
     if [ "$status" = gated ]; then
       echo "PASS"

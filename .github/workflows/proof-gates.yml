@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+name: Agda and Coq proof gates
+
+# Runs the Agda and Coq legs of scripts/check-proofs.sh, which until now ran
+# only through `just`, plus the Coq Print Assumptions gate and the both-ways
+# tests that prove each gate can fail. A missing toolchain is a failure in
+# every script, never a skip. Agda is invoked with the canonical flags of
+# standards PROOF-POLICY §2.1; the versions in force are printed so each run
+# is a receipt of what was checked.
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proof-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  agda:
+    name: Agda proofs (canonical flags)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Agda
+        run: |
+          set -euo pipefail
+          sudo apt-get update -q
+          sudo apt-get install -y -q agda-bin
+          agda --version
+
+      - name: Fetch and verify the pinned Agda standard library (v2.3)
+        env:
+          STDLIB_COMMIT: 8326c7475af1fa456ca04a0203c168d5d7ff842b
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/agda-stdlib"
+          git init -q "$dir"
+          git -C "$dir" remote add origin https://github.com/agda/agda-stdlib.git
+          git -C "$dir" fetch -q --depth 1 origin "$STDLIB_COMMIT"
+          git -C "$dir" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$dir" rev-parse HEAD)" = "$STDLIB_COMMIT"
+          mkdir -p "$HOME/.agda"
+          printf 'name: standard-library\ninclude: %s/src\n' "$dir" > "$RUNNER_TEMP/standard-library.agda-lib"
+          printf '%s\n' "$RUNNER_TEMP/standard-library.agda-lib" > "$HOME/.agda/libraries"
+          printf 'standard-library\n' > "$HOME/.agda/defaults"
+          echo "agda-stdlib commit: $STDLIB_COMMIT"
+
+      - name: Prove the Agda gate can fail (planted K, --with-K, bad status)
+        run: bash tests/check_proofs_gate_test.sh
+
+      - name: Typecheck every gated Agda module
+        run: bash scripts/check-proofs.sh agda
+
+  coq:
+    name: Coq proofs and Print Assumptions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Coq
+        run: |
+          set -euo pipefail
+          sudo apt-get update -q
+          sudo apt-get install -y -q coq
+          coqc --version
+
+      - name: Prove the assumptions gate can fail (imported Axiom, empty list)
+        run: bash tests/check_coq_assumptions_test.sh
+
+      - name: Typecheck every gated Coq module
+        run: bash scripts/check-proofs.sh coq
+
+      - name: Require every listed obligation closed under the global context
+        run: bash scripts/check-coq-assumptions.sh
