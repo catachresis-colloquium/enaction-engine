@@ -99,6 +99,7 @@ These are asked through the selector. The default arm is labelled on each.
   ever red in between; the Coq `OBLIGATIONS` entry for the template's
   `type_soundness` is replaced in that change; A/A.
   B: keep them gated and label them scaffold in words; C/B.
+  *Ruled 2026-11-09: A.*
 | Steps 12, 20
 
 | Q4 | ADR-0017 T1
@@ -135,6 +136,9 @@ These are asked through the selector. The default arm is labelled on each.
 | A: port to affinescript-tea once the explain lens exists.
   B: record an exemption with an unblock condition.
   C: leave it unflagged (not offered).
+  *Ruled 2026-11-09: A.* The port waits for the explain lens (step 22); the
+  AffineScript brief's conditional `fetch_json` binding and `view` become
+  required.
 | none on the critical path
 
 | Q6 | Cross-repo PRs into IDApTIK and Slavia
@@ -147,12 +151,28 @@ These are asked through the selector. The default arm is labelled on each.
 | Q7 | Canonical forge
 | The real remotes are `catachresis-colloquium/*`; the docs say
   `metadatastician/*` (54 references in Enaction). Rule before any sweep.
+  *Ruled 2026-11-09: both names, with the identity on the real remote.* No
+  reference sweep. The registry rule derives the repo UUID from
+  `github.com/<owner>/<name>` for the owner that is true today, so the
+  identity moves from `e5a96521-5d5a-5fc1-946b-b12a79f3f173`
+  (`metadatastician`) to `6efa5af4-8140-5ca8-ad3b-57e72c7ea4d4`
+  (`catachresis-colloquium`; method checked against the registry's
+  januskey worked example), and `metadatastician/enaction-engine` is kept as
+  an alias. That is an identifier change, so it is its own per-repo
+  migration (D305, ADR-008 phase P3), never a hand edit inside another
+  change: the deed's `:repo-uuid` literal, a `(forges :github …)` clause and
+  `(status :aliases (…))` per the `clade-to-repo-deed` mapping, the
+  gv-clade-index registration, and the mathesis census (which already uses
+  the `catachresis-colloquium` name). UMS, IDApTIK and Slavia carry the same
+  owner mismatch and get the same treatment when their owners rule.
 | none
 
 | Q8 | 2026-11-30 identity review
 | Write `docs/theory/ENACTIVE-COMMITMENTS.adoc`, or execute the pre-agreed
   rename (ADR-0018/0021). Nothing in this plan is evidence for the enactive
-  claim.
+  claim. *Ruled 2026-11-09: write the commitments document*, stating each
+  enactivist commitment the engine makes and what would falsify it, before
+  the 2026-11-30 review.
 | none
 |===
 
