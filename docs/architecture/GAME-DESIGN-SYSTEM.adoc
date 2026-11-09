@@ -245,7 +245,9 @@ Each one is enforced by a gate that can be shown to fail.
 Default arm (most elegant and correct long term): the kernel owns one CAC
 reducer, `enaction-cognition`. It folds checked BPAs into per-perspective
 ledgers over ground focal sets. Its laws are proved in Agda (rechecked in
-Rocq and Lean) and, by Creusot and Verus, on the production code that ships. Its internal design waits for T1. UMS
+Rocq and Lean) and, by Creusot, on the production code that ships. Verus is
+scoped beside Creusot and stays an `OPEN` obligation, with its reason, until
+it is provisioned and run. Its internal design waits for T1. UMS
 reaches it through three processes over canonical data.
 
 Recommended arm: the same destination, sequenced holes-first and

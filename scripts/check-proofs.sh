@@ -80,6 +80,11 @@ esac
 # needs a separately reviewed proof profile (§2.1), not an edit here.
 AGDA_FLAGS=(--safe --without-K --cubical-compatible)
 
+# Coq modules compile under the logical prefix `Enaction`, the same one
+# scripts/check-coq-assumptions.sh uses, so a local import is written
+# `From Enaction Require …` and resolves identically in both gates. Modules
+# are compiled in MANIFEST order: list a local dependency before its users.
+
 check_one() {
   # $1 source-root (rel to ROOT), $2 module (rel to source-root).
   # Sets LAST_OUT to the tool output on failure; returns 0 iff the module compiles.
@@ -89,7 +94,7 @@ check_one() {
     idris2) out="$(cd "$ROOT/$root" && idris2 --check "$rel" 2>&1)"; rc=$? ;;
     lean4)  out="$(cd "$ROOT/$root" && lean          "$rel" 2>&1)"; rc=$? ;;
     agda)   out="$(cd "$ROOT/$root" && agda "${AGDA_FLAGS[@]}" "$rel" 2>&1)"; rc=$? ;;
-    coq)    out="$(cd "$ROOT/$root" && coqc           "$rel" 2>&1)"; rc=$? ;;
+    coq)    out="$(cd "$ROOT/$root" && coqc -Q . Enaction "$rel" 2>&1)"; rc=$? ;;
   esac
   set -e
   if [ "$rc" -eq 0 ] && { [ -z "$ERROR_RE" ] || ! grep -qE "$ERROR_RE" <<<"$out"; }; then

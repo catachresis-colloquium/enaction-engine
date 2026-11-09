@@ -42,14 +42,21 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 cp -R "$PROOF_DIR/." "$work/"
 
-# Compile each module that an obligation names, in dependency order as given
-# by the names (coqc resolves Require against already-built .vo files).
+# Every obligation must name a module that exists.
 mapfile -t modules < <(printf '%s\n' "${names[@]}" | sed 's/\.[^.]*$//' | awk '!seen[$0]++')
 for m in "${modules[@]}"; do
-  src="$work/${m//.//}.v"
-  [ -f "$src" ] || { echo "FAIL: obligation module $m has no source ${m//.//}.v" >&2; exit 1; }
-  if ! out="$(cd "$work" && coqc -Q . Enaction "${m//.//}.v" 2>&1)"; then
-    echo "FAIL: module $m does not compile:" >&2
+  [ -f "$work/${m//.//}.v" ] || { echo "FAIL: obligation module $m has no source ${m//.//}.v" >&2; exit 1; }
+done
+
+# Compile the whole local closure in dependency order (coqdep -sort), so a
+# module that imports an unlisted helper still builds. The logical prefix is
+# `Enaction`, the same one check-proofs.sh coq uses, so a local import is
+# written `From Enaction Require …` and resolves identically in both gates.
+mapfile -t sources < <(cd "$work" && find . -name '*.v' -printf '%P\n' | sort)
+mapfile -t ordered < <(cd "$work" && coqdep -sort -Q . Enaction "${sources[@]}" | tr ' ' '\n' | grep -v '^$')
+for src in "${ordered[@]}"; do
+  if ! out="$(cd "$work" && coqc -Q . Enaction "$src" 2>&1)"; then
+    echo "FAIL: $src does not compile:" >&2
     printf '%s\n' "$out" | sed 's/^/  /' >&2
     exit 1
   fi

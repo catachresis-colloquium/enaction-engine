@@ -8,7 +8,8 @@
 #      `--without-K` flag (standards PROOF-POLICY §2.1) is actually in force;
 #   3. a gated module that needs a non-cubical-compatible feature FAILS, which
 #      proves `--cubical-compatible` is in force;
-#   4. a MANIFEST status other than gated|quarantine FAILS, so a typo cannot
+#   4. a MANIFEST status other than gated|quarantine FAILS (on a broken
+#      module, and for that reason), so a typo cannot
 #      turn a broken module into an "expected" quarantine failure.
 #
 # Each case runs the real script against a throwaway repository layout, so
@@ -79,7 +80,13 @@ AGDA
 )"
 expect fail with-k-pragma-fails "$cub_dir"
 
-typo_dir="$(make_repo typo Ok.agda gate <"$ok_dir/verification/proofs/agda/Ok.agda")"
+# A BROKEN module under a misspelt status: without status validation it would
+# fall through to the quarantine branch and count as an expected failure
+# (exit 0). With a compiling module the typo would still fail as an unexpected
+# quarantine pass, so that fixture could not detect the regression.
+typo_dir="$(make_repo typo UsesK.agda gate <"$k_dir/verification/proofs/agda/UsesK.agda")"
 expect fail unknown-status-fails "$typo_dir"
+grep -q "unknown status 'gate'" "$work/unknown-status-fails.log" \
+  || { echo "FAIL unknown-status-fails: failed for a reason other than the unknown status" >&2; exit 1; }
 
 echo "PASS: check-proofs.sh agda leg enforces the canonical flags and status set"

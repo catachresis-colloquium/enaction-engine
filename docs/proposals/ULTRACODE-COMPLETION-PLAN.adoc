@@ -435,7 +435,8 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | `Cac/{Frame,Ledger,Categorical,Countermodel}`: commutativity; divmod-exact
   absorb; floor-loss bound; categorical intersection; the two probe
   countermodels as `refl`; first-max argmax; the vacuous-ledger identity
-  `absorb (vacuous f) b ≡ fromBpa b`.
+  `absorb (vacuous f) b ≡ fromBpa b` for every `b : Bpa f` (the BPA type
+  is indexed by its frame, so a mismatched frame does not typecheck).
 | `bash scripts/check-proofs.sh agda`, and each of `Cac/Frame.agda`,
   `Cac/Ledger.agda`, `Cac/Categorical.agda` and `Cac/Countermodel.agda` has a
   MANIFEST entry whose status field is exactly `gated`, asserted per module by
@@ -537,8 +538,10 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | A/A
 
 | 20 | Rocq and Lean rechecks (rung 9)
-| Recheck every theory theorem of rungs 2, 3, 4 and 6 in Rocq and in Lean
-  (PROOF-POLICY §2). Rungs 1 and 8 are engineering and are not rechecked;
+| Recheck every theory theorem of rungs 2, 3 and 4 in Rocq and in Lean
+  (PROOF-POLICY §2). Rung 6's theorems (`Cac/Replay`, `Cac/Locality`) are
+  only written in Wave 5, so their rechecks are owed by step 28, against the
+  final statements. Rungs 1 and 8 are engineering and are not rechecked;
   rungs 5 and 11 are rechecked in their upstream repositories. Try transport
   through Dedukti first. Re-prove by hand, in
   `verification/proofs/coq/Cac.v` and `verification/proofs/lean4/Cac.lean`,
@@ -662,8 +665,9 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 
 | 24 | Coordinator: re-affirm
 | Refresh AFFIRMATION and PROOF-STATUS (Enaction) and ROUNDTRIP-STATUS and
-  EXPLAINME (UMS), anchored at HEAD. Label every leg not run as CI-only or
-  ASSUMED.
+  EXPLAINME (UMS), anchored at HEAD. Record every leg not run as `OPEN`,
+  with the reason (for example, CI-only or toolchain absent), never as
+  `ASSUMED` (PROOF-POLICY §5).
 | in each repository, the AFFIRMATION records the source commit S the gates
   ran on (an attestation commit cannot name itself); S is an ancestor of
   HEAD, and `git diff --name-only S HEAD` lists only the re-affirmation files
@@ -728,7 +732,12 @@ as parallel agents on disjoint files. One coordinator owns the shared files
   settle ABI-P6); PROOF-STATUS records S and each run id. As in step 24,
   recording the run ids advances HEAD, so the gate requires S to be an
   ancestor of HEAD and `git diff --name-only S HEAD` to list only the
-  attestation files
+  attestation files. Rung 6 is rechecked here, against the final
+  statements: `Cac/Replay` and `Cac/Locality` each have a Rocq leg named in
+  `verification/proofs/coq/OBLIGATIONS` (so `bash
+  scripts/check-coq-assumptions.sh` passes over them) and a Lean leg, each
+  with its §2.2 correspondence record. A Lean leg that cannot run is `OPEN`
+  with its reason, as in step 20
 | n/a
 |===
 
@@ -754,9 +763,9 @@ rechecked in Rocq and Lean, graded on the PWG ladder). Status uses the closed
 | 6 | `replay (xs ++ ys) = replay (replay xs) ys`; locality | theory | Agda; Rocq and Lean rechecks | echo-types aggregation-as-fold; occupancy cut-factor (shape only) | `OPEN`; `ungraded`
 | 7 | P1-P4 on the shipped code, then the ledger laws on the extracted reducer's core | engineering | Creusot 0.13 (Pearlite) in CI; Verus scoped per §1.2 | IDApTIK kernel provisioning | `OPEN`. P1 and P2 discharged locally only, no CI receipt; Verus not provisioned
 | 8 | Bounded exhaustive Rust ↔ Agda ledger correspondence | engineering | Agda `refl` over a generated table, regenerated from the shipped reducer and compared by `cmp` in the gate. The bounds are pinned in the generator and in the table header (frame sizes, mass granularity, ledger length). The gate checks the row count against the count those bounds imply, requires the boundary rows (full mass, all-conflict, one-hypothesis frame), and requires a planted Rust-side discrepancy to make the Agda check fail | residual-evidence pattern | `OPEN`; `TESTED` with its bounds when landed, never `PROVEN`. Aeneas (§4.1) would add only an `ASSUMED` correspondence row while no backend qualifies
-| 9 | Rocq and Lean rechecks of rungs 2, 3, 4 and 6, each with a §2.2 correspondence record | theory | Coq 8.18 (`coqc`, `Print Assumptions` gate); Lean core library, no Mathlib | none | `OPEN`. Lean has no toolchain in agent containers; its leg stays `OPEN` with that reason until provisioned
-| 10 | ABI-P6 arbitration (a wildcard `impossible` case accepted by Idris2 0.7.0 was rejected by 0.8.0 and repaired with explicit constructor pairs; CI still pins 0.7.0, which cannot detect its return) | engineering | Idris2 (CI) | Accelerator.idr | Contested
-| 11 | Per-agent projection soundness for looping protocols | theory, upstream | Agda in choreographic-types | choreographic-types K-CUT-LOSS | Deferred: needs μ-recursion
+| 9 | Rocq and Lean rechecks of rungs 2, 3, 4 and 6, each with a §2.2 correspondence record | theory | Coq 8.18 (`coqc`, `Print Assumptions` gate); Lean core library, no Mathlib | none | `OPEN`. Rungs 2-4 in step 20; rung 6 in step 28, after its statements are final. Lean has no toolchain in agent containers; its leg stays `OPEN` with that reason until provisioned
+| 10 | ABI-P6 arbitration (a wildcard `impossible` case accepted by Idris2 0.7.0 was rejected by 0.8.0 and repaired with explicit constructor pairs; CI still pins 0.7.0, which cannot detect its return) | engineering | Idris2 (CI) | Accelerator.idr | `OPEN`: contested between Idris2 versions until CI runs 0.8.0 or newer
+| 11 | Per-agent projection soundness for looping protocols | theory, upstream | Agda in choreographic-types | choreographic-types K-CUT-LOSS | `OPEN`; deferred because the fragment needs μ-recursion
 |===
 
 [[policy-conformance]]
