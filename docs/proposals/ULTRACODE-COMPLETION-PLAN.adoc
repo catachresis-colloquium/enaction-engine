@@ -166,7 +166,14 @@ Why3 and provers, Lean, Nickel, gnatprove, wasmtime, and the aarch64 and
 wasm32 Rust targets.
 
 Every gate on an absent tool FAILs locally and is reported CI-only or
-ASSUMED. A SessionStart provisioning script would let them run instead; the
+`OPEN` with its reason, never `ASSUMED` (PROOF-POLICY §5). Observed
+2026-11-09: Idris2 0.7.0 and 0.8.0 both build from source in an agent
+container (`apt-get install chezscheme`, then `make bootstrap
+SCHEME=chezscheme`, about ten minutes each, cloning `idris-lang/idris2` by
+tag through the git proxy, since release tarballs are refused). The Lean
+installer (`elan-init.sh` piped to `sh`) was refused by the session's
+permission classifier, so Lean stays absent until a setup script provides
+it. A SessionStart provisioning script would let them run instead; the
 precedent is echo-types `scripts/provision-agda.sh`. It is a cross-repo item.
 
 Environment variables used in the gates below: `ENACTION_ROOT`, `UMS_ROOT`,
