@@ -101,7 +101,32 @@ Detailed, serious, not yet accepted as decisions.
 | enaction-engine
 | Proposed 2026-11-04. Five waves with executable gates, a proof ladder
   (rungs 0-11), owner questions Q1-Q8, and the estate action list. ADRs
-  0022-0025 are planned from it and do not exist yet.
+  0022 and 0024 now exist (Proposed); 0023 and 0025 are reserved by its
+  step 8 and are not written.
+
+| `docs/proposals/WEEVIL-HOST-ROUTE.adoc`
+| enaction-engine
+| Proposed 2026-11-14. Selects a route through the completion plan with the
+  Evil Weevil kernel as first host. Does not replace the plan.
+
+| `docs/decisions/0022-baseline-is-a-frozen-prior.adoc`
+| enaction-engine
+| Proposed 2026-11-14. A prior is frozen at registration; closes the
+  `BeliefStore` observer leak (pull request 102).
+
+| `docs/decisions/0024-canonical-bytes-jcs.adoc`
+| enaction-engine
+| Proposed 2026-11-14. Canonical parity bytes are RFC 8785 JCS over
+  integer-only I-JSON (owner ruling Q1); amends the reading of ADR-0015.
+
+| `docs/decisions/0026-evil-weevil-is-the-first-host.adoc`
+| enaction-engine
+| Proposed 2026-11-14. Evil Weevil as the first host under ADR-0010.
+
+| `docs/decisions/0027-mind-trace-contract.adoc`
+| enaction-engine
+| Proposed 2026-11-14. The mind-trace contract; a partial answer to the
+  affect-as-state-or-annotation open problem in `CAC-KERNEL.adoc` section 8.
 |===
 
 == Working hypotheses
@@ -126,13 +151,15 @@ Explicitly not accepted architecture.
 
 | `docs/theory/ENACTIVE-COMMITMENTS.adoc`
 | enaction-engine
-| **Does not exist.** Required by ADR-0018 with a review date; the name changes
-  if it is missing.
+| Draft for the identity review of 2026-11-30, written 2026-11-14. Required by
+  ADR-0018; states each commitment and what would falsify it. The owner decides
+  whether the name fits.
 |===
 
 == Implementations
 
-Where the code actually is. None of it is in this repository.
+Where the code actually is. Most of it is not in this repository; the rows
+for this repository say what it holds.
 
 |===
 | Code | Repository | State
@@ -169,6 +196,19 @@ Where the code actually is. None of it is in this repository.
   cognition, which is why ADR-0017 renamed it from `enaction-cognition`: under
   ADR-0011 a name describes implemented responsibility, and the old one was a
   namespace reservation for work not done.
+
+| `conformance/mind/v1`
+| enaction-engine
+| The corpus for `enaction-mind-trace/1` (with `enaction-runner-output/1` and
+  `enaction-policies/1`), checked by the `enaction-validate` binary in
+  `enaction-contracts`. Contract and fixtures only; no affect or conation
+  implementation here.
+
+| Evil Weevil kernel (ABI 1.1) and `idaptik-weevil-replay`
+| IDApTIK
+| The first host (ADR-0026, Proposed) and the first implementation of affect
+  and conation on this contract (its ADR-0013, Proposed there). The replay tool
+  emits both documents. No game links an `enaction-*` crate.
 
 | `crates/ums-ai-edit/src/microkanren.rs`
 | idaptik-ums
