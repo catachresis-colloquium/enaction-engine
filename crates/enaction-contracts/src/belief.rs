@@ -46,6 +46,7 @@ pub struct Proposition(pub String);
 /// (deliberately) not its contents; this is the minimum that lets a reviewer
 /// ask "who said so, over what channel" without inventing a provenance theory.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Provenance {
     /// The producing source — an agent name, a sensor, a scenario author.
     pub origin: String,
@@ -62,6 +63,7 @@ pub struct Provenance {
 /// buys attention, never belief** — so the rule is enforced by construction
 /// rather than by review.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AffectAnnotation {
     /// The argmax over the profile's declared affect vocabulary.
     pub token: String,
@@ -76,6 +78,7 @@ pub struct AffectAnnotation {
 /// never leave the conative layer — so there is no utility field here to leak
 /// one through.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConativeAnnotation {
     /// The selected option, by the profile's declared tie-break.
     pub selected: String,
@@ -83,6 +86,7 @@ pub struct ConativeAnnotation {
 
 /// One epistemic event: evidence arriving, with provenance (CAC-KERNEL §3).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EpistemicEvent {
     pub event_id: EventId,
     /// Order within a tick. `(tick, sequence)` is the total reduction order.
@@ -113,6 +117,7 @@ impl EpistemicEvent {
 
 /// A belief: the durable output of reduction (CAC-KERNEL §3).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Belief {
     pub belief_id: BeliefId,
     /// The ascription path, outermost first — the SAME representation as
@@ -155,6 +160,7 @@ impl Belief {
 /// (ADR-0015). The default is the trace crate's declaration, one authority
 /// for the number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DepthPolicy {
     pub max_order: usize,
 }
@@ -199,6 +205,7 @@ pub struct BeliefInterval {
 
 /// The unvalidated wire shape of an interval.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RawInterval {
     belief: Mass,
     plausibility: Mass,
@@ -296,6 +303,7 @@ impl BeliefInterval {
 /// record *which* policy performed the mapping — the lossy step stays
 /// auditable.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StatusPolicy {
     /// Versioned policy identifier, recorded wherever the mapping is applied.
     pub id: String,

@@ -259,3 +259,69 @@ statements live in IDApTIK's `esm-contract-and-repo-boundaries.md` §9.
   and may be a deep result or a frozen accident.
 * **Nothing has been benchmarked.** No measurement exists for a solver query, a
   ledger combine, or a tick of affect.
+
+== 9. The runner seam: `enaction-runner-output/1` and `enaction-validate`
+
+A game runner hands its output to Enaction as a versioned document, through a
+process. No runner links Enaction as a library. The document is an envelope
+because world truth cannot travel inside an `EpistemicPackage`, which has no
+field for it.
+
+[source]
+----
+RunnerOutput {                       // contract "enaction-runner-output/1"
+  contract: "enaction-runner-output/1",
+  package: EpistemicPackage,         // §3 and §6
+  world_truth: [Proposition]         // opaque atoms; a set, no duplicates
+}
+
+Policies {                           // contract "enaction-policies/1"
+  contract: "enaction-policies/1",
+  status: StatusPolicy,              // ADR-0016
+  depth: DepthPolicy                 // { max_order }
+}
+----
+
+=== Rules
+
+* **Strict parsing.** The bytes MUST be integer-only I-JSON (§6). The
+  envelope and every nested contract type reject an unknown member
+  (`UnknownField`, with its path) before anything is canonicalised or
+  hashed, so a digest always covers every member that was supplied. A
+  missing member or a wrong type is `BadShape`.
+* **The contract tag.** A `contract` other than `enaction-runner-output/1` is
+  refused as `UnknownField` at `contract`.
+* **The package** is validated by every §6 rule, with the digest computed by
+  the validator. Its fault paths are prefixed `package.`.
+* **World truth** is a set: a repeated atom is refused as
+  `DuplicateTruthAtom`.
+* **Policies come from the caller.** The status and depth policies are the
+  caller's, resolved from the compiled profile, and are passed as a separate
+  file. The envelope has no member for them, so a runner that tries to supply
+  its own is refused as `UnknownField`.
+
+=== The binary
+
+[source,text]
+----
+enaction-validate --policies FILE < runner-output.json
+----
+
+* `exit 0`: valid. Stdout is the canonical bytes of the envelope and a
+  newline.
+* `exit 1`: a validation fault in the input. Stdout has one line per fault:
+  `<rule>` TAB `<path>` TAB `<detail>`.
+* `exit 2`: an invocation or operational failure: a missing or unknown
+  argument, a missing, unreadable or invalid `--policies` file, or unreadable
+  stdin. A message goes to stderr and nothing goes to stdout. An adapter can
+  therefore tell a bad package from a broken call.
+
+=== Deferred
+
+These parts of completion-plan step 11 are not in `enaction-runner-output/1`.
+Each arrives as a new contract version or a separate envelope, never as an
+optional member of this one: frame declarations and qualified hypotheses,
+evidence payloads (BPA), independence groups, a `policy_digest` on
+`ProfileRef` with `--expect-profile`, and the `enaction-counterfactual/1`
+envelope. Until frame declarations exist, the validator cannot check a truth
+atom against a declared hypothesis.

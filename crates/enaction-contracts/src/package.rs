@@ -29,6 +29,7 @@ pub enum SeedPolicy {
 
 /// Everything a package MUST declare (CAC-KERNEL §6).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PackageManifest {
     pub kernel_version: ContractVersion,
     pub profile: ProfileRef,
@@ -52,6 +53,7 @@ pub struct PackageManifest {
 
 /// A validated unit of epistemic content: manifest, events, beliefs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EpistemicPackage {
     pub manifest: PackageManifest,
     pub events: Vec<EpistemicEvent>,

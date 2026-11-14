@@ -587,11 +587,9 @@ pub fn decode_value<T: DeserializeOwned>(value: &Value) -> Result<T, CanonicalFa
             }
         }
         let message = e.into_inner().to_string();
+        // The path already ends at the unknown member's name.
         let kind = match unknown_field_name(&message) {
-            Some(name) => {
-                path = push_key(&path, &name);
-                FaultKind::UnknownField(name)
-            }
+            Some(name) => FaultKind::UnknownField(name),
             None => FaultKind::BadShape(message),
         };
         CanonicalFault::new(path, kind)
