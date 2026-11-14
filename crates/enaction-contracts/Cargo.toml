@@ -12,12 +12,19 @@ repository.workspace = true
 creusot-std.workspace = true
 serde.workspace = true
 enaction-trace.workspace = true
+# Stage 2 of WEEVIL-HOST-ROUTE A2 (ADR-0024): the package digest is SHA-256
+# over canonical JCS bytes, computed here so no caller can vouch for a
+# mutated package.
+sha2 = "0.10"
+# Typed decoding of the strict, already-validated wire documents (the
+# envelope, the policy file and the mind trace) for enaction-validate.
+# Promoted from a dev-dependency.
+serde_json = "1"
+# Reports the stable field path of a typed decoding fault (UnknownField).
+serde_path_to_error = "0.1"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(creusot)'] }
 
 [dev-dependencies]
-# Test-only: serde round-trips and the proofs that invalid values cannot
-# deserialize. Creusot's proof annotations are a normal dependency so the
-# checked contract stays on the production function.
-serde_json = "1"
+# serde_json is now a normal dependency (above); tests use it too.

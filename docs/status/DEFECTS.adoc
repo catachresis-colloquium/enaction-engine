@@ -118,3 +118,63 @@ Recorded as a defect rather than a naming preference because this repository's
 own standard — `EXPLAINME.adoc`'s claim-to-evidence map, and AGENTS.md's *"no
 fake checks"* — applies to ideas as well as code. See ADR-0018, which sets a
 review date and pre-agrees the consequence of missing it.
+
+== D4: agents read live world truth through the baseline (soundness hole, **FIXED on branch `marina/weevil-a1-observer`, 2026-11-14; not yet merged**)
+
+`BeliefStore::belief` answered a perspective that had no delta by reading
+`trace.latest_value` of the baseline trope. That trope is the world's ground
+truth, so an agent with no observations read the world as it is *now*. The
+completion plan's probe showed Sally reading 1000 and then 2000 in two runs
+that differed only in an event she never observed. This broke
+GAME-DESIGN-SYSTEM invariant 2 (observer noninterference), and it made every
+false-belief scenario omniscient for any subject the agent had not yet
+asserted about.
+
+None of the 48 existing tests caught it. Each one read its fall-through with
+the world unmoved since registration, where the live read and a sound read
+agree.
+
+.Resolution
+ADR-0022 (Proposed), owner ruling Q2 arm A: the baseline is a frozen prior.
+`register_baseline` freezes the trope's value at registration. A perspective
+with no delta reads that prior, and only the empty perspective (the world)
+reads live truth. `rebuild` takes the priors instead of recapturing them.
+
+.Checks (each was shown to fail before the fix)
+* `bash scripts/cargo-test-exact.sh enaction-trace observer_sally_anne_two_run_probe`
+* `bash scripts/cargo-test-exact.sh enaction-trace observer_proptest_perturbs_outside_closure`
+  (at least 1024 cases)
+* `bash scripts/check-observer-mutant.sh`, which exits 0 only when
+  `tests/mutants/omniscience.patch` makes both observer tests fail in a
+  temporary copy
+
+The store test that pinned the fall-through with an unmoved world was
+corrected, not deleted, to move the world first. Against the mutant it now
+fails too.
+
+.Residual
+Registration order is semantic. A world event already in the trace when a
+subject is registered becomes part of every perspective's prior, so a host
+that registers late reintroduces the leak for that event. ADR-0022 records
+this. Arm B (default-Unknown with a visibility lattice) would remove it and
+remains open.
+
+== D5: the Lean proof gate passed while gating nothing (open — red by design since 2026-11-14)
+
+`verification/proofs/lean4/MANIFEST` lists one module, the quarantined
+template `ApiTypes.lean`, which still fails. A quarantined module that fails is
+"expected", so `scripts/check-proofs.sh lean4` reported PASS having checked
+no proof.
+
+.Resolution of the gate
+`check-proofs.sh` now FAILs any MANIFEST that gates zero modules, for any
+prover. `tests/check-proofs-vacuous.sh` proves this both ways (lean4, agda,
+coq) with a stub prover, because no prover is installed in the agent
+container. The lean4 gate is therefore red, which is expected. It stays red
+until a real Lean proof is gated (completion plan step 20). The template was
+neither deleted nor quarantined further (ruling Q3).
+
+.Still open
+No Lean toolchain is provisioned, so the real lean4 leg has not been run here.
+`build/just/proofs.just` (`just proof-check-lean4`) will now fail wherever it
+runs. No CI workflow runs the lean4 leg today.

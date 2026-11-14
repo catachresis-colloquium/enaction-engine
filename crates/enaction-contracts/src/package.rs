@@ -11,9 +11,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::DepthPolicy;
-use crate::belief::{Belief, BeliefId, EpistemicEvent, EventId};
+use crate::belief::{Belief, BeliefId, BeliefStatus, EpistemicEvent, EventId};
+use crate::canonical::{self, CanonicalFault, Value};
 use crate::version::{ContractVersion, ProfileRef};
+use crate::{DepthPolicy, StatusPolicy};
 
 /// How a package obtains its deterministic seed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -28,16 +29,18 @@ pub enum SeedPolicy {
 
 /// Everything a package MUST declare (CAC-KERNEL §6).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PackageManifest {
     pub kernel_version: ContractVersion,
     pub profile: ProfileRef,
     pub schema_version: ContractVersion,
     /// Source provenance: where this package was compiled from.
     pub source: String,
-    /// Content digest, hex-encoded. The caller computes the digest over the
-    /// package contents — this crate deliberately takes no hashing
-    /// dependency, so [`validate_package`] *compares* a supplied digest
-    /// rather than computing one.
+    /// Content digest: lowercase hex SHA-256 over the canonical bytes
+    /// (RFC 8785 JCS, ADR-0024) of the package with this one field omitted
+    /// — a digest cannot hash itself. [`validate_package`] computes it from
+    /// the package and compares; no caller can vouch for a mutated package.
+    /// See [`package_digest`].
     pub digest: String,
     /// The oldest declared version this package can migrate from.
     pub migration_from: ContractVersion,
@@ -50,6 +53,7 @@ pub struct PackageManifest {
 
 /// A validated unit of epistemic content: manifest, events, beliefs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EpistemicPackage {
     pub manifest: PackageManifest,
     pub events: Vec<EpistemicEvent>,
@@ -95,6 +99,19 @@ pub enum PackageFault {
         declared: String,
         computed: String,
     },
+    /// The producer's status for a belief is not the status the caller's
+    /// profile policy derives from that belief's interval (ADR-0016). The
+    /// policy comes from the caller, never from the package, so a producer
+    /// cannot certify its own beliefs.
+    StatusDisagreesWithInterval {
+        belief: BeliefId,
+        declared: BeliefStatus,
+        derived: BeliefStatus,
+    },
+    /// The package has no canonical bytes, so it has no digest. A typed
+    /// package can fail only one way: an integer above `2^53 − 1`
+    /// (`IntegerOutOfRange`, owner ruling Q1).
+    NotCanonical(CanonicalFault),
 }
 
 impl PackageFault {
@@ -121,8 +138,31 @@ impl PackageFault {
             PackageFault::SupersedesUnknownBelief { belief, .. } => {
                 format!("beliefs[belief_id={}].supersedes", belief.0)
             }
+            PackageFault::StatusDisagreesWithInterval { belief, .. } => {
+                format!("beliefs[belief_id={}].status", belief.0)
+            }
+            PackageFault::NotCanonical(fault) => fault.path().to_string(),
         }
     }
+
+    /// Every rule name [`PackageFault::rule`] can return, in declaration
+    /// order. Pinned to the variants by an exhaustive match in this crate's
+    /// tests, and to planted packages by `tests/package_fault_coverage.rs`.
+    pub const RULES: &'static [&'static str] = &[
+        "kernel-version-compatible",
+        "event-id-unique",
+        "belief-id-unique",
+        "events-monotonic",
+        "nesting-bounded",
+        "belief-has-provenance",
+        "source-events-present",
+        "supersedes-present",
+        "supersession-acyclic",
+        "ascription-names-nonempty",
+        "digest-matches",
+        "status-agrees-with-interval",
+        "IntegerOutOfRange",
+    ];
 
     /// The contract rule that failed, by stable name.
     #[must_use]
@@ -139,8 +179,32 @@ impl PackageFault {
             PackageFault::SupersessionCycle(_) => "supersession-acyclic",
             PackageFault::EmptyNameInAscriptionPath(_) => "ascription-names-nonempty",
             PackageFault::DigestMismatch { .. } => "digest-matches",
+            PackageFault::StatusDisagreesWithInterval { .. } => "status-agrees-with-interval",
+            PackageFault::NotCanonical(fault) => fault.rule(),
         }
     }
+}
+
+/// The content digest of a package: lowercase hex SHA-256 over the RFC 8785
+/// canonical bytes of the package with `manifest.digest` omitted.
+///
+/// The bytes are those of the package's typed form, so an absent optional
+/// member is omitted rather than written as `null`, and an empty `holders`
+/// is omitted. A producer in another language must hash that same form; the
+/// conformance vectors pin it.
+///
+/// # Errors
+///
+/// `IntegerOutOfRange` if any integer exceeds `2^53 − 1`.
+pub fn package_digest(package: &EpistemicPackage) -> Result<String, CanonicalFault> {
+    let mut value = canonical::to_value(package)?;
+    if let Value::Object(members) = &mut value
+        && let Some((_, Value::Object(manifest))) =
+            members.iter_mut().find(|(k, _)| k == "manifest")
+    {
+        manifest.retain(|(k, _)| k != "digest");
+    }
+    Ok(canonical::sha256_hex(&canonical::to_jcs(&value)))
 }
 
 /// Validate a package against a host, collecting **every** fault rather than
@@ -148,9 +212,14 @@ impl PackageFault {
 /// producer fixing one fault at a time from single-fault reports is a
 /// miserable loop.
 ///
-/// `computed_digest` is the digest the caller computed over the package
-/// contents; `None` skips the digest check (this crate takes no hashing
-/// dependency, so it can compare but not compute).
+/// The digest is computed here, by [`package_digest`], and compared with
+/// `manifest.digest`. No call skips it and no caller supplies it.
+///
+/// `status` is the caller's profile policy (ADR-0016). Every belief's
+/// declared status must equal the status that policy derives from the
+/// belief's interval. The policy is a required argument, resolved by the
+/// caller from the profile, never read from the package: a package that
+/// carried its own policy could certify itself.
 ///
 /// # Errors
 ///
@@ -159,7 +228,7 @@ pub fn validate_package(
     package: &EpistemicPackage,
     host: ContractVersion,
     depth: &DepthPolicy,
-    computed_digest: Option<&str>,
+    status: &StatusPolicy,
 ) -> Result<(), Vec<PackageFault>> {
     let mut faults = Vec::new();
 
@@ -170,13 +239,13 @@ pub fn validate_package(
             host,
         });
     }
-    if let Some(computed) = computed_digest
-        && computed != package.manifest.digest
-    {
-        faults.push(PackageFault::DigestMismatch {
+    match package_digest(package) {
+        Ok(computed) if computed == package.manifest.digest => {}
+        Ok(computed) => faults.push(PackageFault::DigestMismatch {
             declared: package.manifest.digest.clone(),
-            computed: computed.to_string(),
-        });
+            computed,
+        }),
+        Err(fault) => faults.push(PackageFault::NotCanonical(fault)),
     }
 
     // Events: unique ids, strictly increasing (tick, sequence). Equal stamps
@@ -219,6 +288,14 @@ pub fn validate_package(
         }
         if belief.source_events.is_empty() {
             faults.push(PackageFault::MissingProvenance(belief.belief_id));
+        }
+        let derived = status.status(belief.confidence);
+        if derived != belief.status {
+            faults.push(PackageFault::StatusDisagreesWithInterval {
+                belief: belief.belief_id,
+                declared: belief.status,
+                derived,
+            });
         }
         for source in &belief.source_events {
             if !event_ids.contains(source) {
@@ -360,20 +437,104 @@ mod tests {
     /// A small valid Ghost-Lobby-shaped package: two events, the guard's own
     /// belief, and one order-1 ascription of it.
     fn ghost_lobby() -> EpistemicPackage {
-        EpistemicPackage {
+        sealed(EpistemicPackage {
             manifest: manifest(),
             events: vec![event(1, 1, 1), event(2, 1, 2)],
             beliefs: vec![belief(1, &[], &[1]), belief(2, &["observer"], &[2])],
+        })
+    }
+
+    fn policy() -> StatusPolicy {
+        StatusPolicy {
+            id: "test/status/v1".into(),
+            rejected_ceiling: Mass::new(1_000).unwrap(),
+            unknown_band: Mass::new(6_000).unwrap(),
+            believed_floor: Mass::new(7_000).unwrap(),
+            suspected_floor: Mass::new(5_000).unwrap(),
         }
     }
 
+    /// Validate after resealing, so each test sees only the fault it
+    /// planted. The digest test below calls `validate_package` directly.
     fn validate(package: &EpistemicPackage) -> Result<(), Vec<PackageFault>> {
         validate_package(
-            package,
+            &sealed(package.clone()),
             KERNEL_CONTRACT_VERSION,
             &DepthPolicy::default(),
-            None,
+            &policy(),
         )
+    }
+
+    fn sealed(mut package: EpistemicPackage) -> EpistemicPackage {
+        package.manifest.digest = package_digest(&package).unwrap();
+        package
+    }
+
+    #[test]
+    fn rules_lists_every_variant_exactly_once() {
+        // Exhaustive on purpose: a new variant fails to compile here until it
+        // is given a representative, and then fails the assertion until its
+        // rule is in RULES.
+        fn representative(f: &PackageFault) -> PackageFault {
+            match f {
+                PackageFault::IncompatibleKernel { .. }
+                | PackageFault::DuplicateEventId(_)
+                | PackageFault::DuplicateBeliefId(_)
+                | PackageFault::NonMonotonicOrder { .. }
+                | PackageFault::NestingBeyondDeclaredMax { .. }
+                | PackageFault::MissingProvenance(_)
+                | PackageFault::UnknownSourceEvent { .. }
+                | PackageFault::SupersedesUnknownBelief { .. }
+                | PackageFault::SupersessionCycle(_)
+                | PackageFault::EmptyNameInAscriptionPath(_)
+                | PackageFault::DigestMismatch { .. }
+                | PackageFault::StatusDisagreesWithInterval { .. }
+                | PackageFault::NotCanonical(_) => f.clone(),
+            }
+        }
+        let b = BeliefId(1);
+        let e = EventId(1);
+        let all = [
+            PackageFault::IncompatibleKernel {
+                declared: KERNEL_CONTRACT_VERSION,
+                host: KERNEL_CONTRACT_VERSION,
+            },
+            PackageFault::DuplicateEventId(e),
+            PackageFault::DuplicateBeliefId(b),
+            PackageFault::NonMonotonicOrder {
+                at: e,
+                prev: (0, 0),
+                this: (0, 0),
+            },
+            PackageFault::NestingBeyondDeclaredMax {
+                belief: b,
+                order: 0,
+                max: 0,
+            },
+            PackageFault::MissingProvenance(b),
+            PackageFault::UnknownSourceEvent {
+                belief: b,
+                event: e,
+            },
+            PackageFault::SupersedesUnknownBelief {
+                belief: b,
+                superseded: b,
+            },
+            PackageFault::SupersessionCycle(b),
+            PackageFault::EmptyNameInAscriptionPath(b),
+            PackageFault::DigestMismatch {
+                declared: String::new(),
+                computed: String::new(),
+            },
+            PackageFault::StatusDisagreesWithInterval {
+                belief: b,
+                declared: BeliefStatus::Certain,
+                derived: BeliefStatus::Certain,
+            },
+            PackageFault::NotCanonical(canonical::to_value(&u64::MAX).expect_err("out of range")),
+        ];
+        let rules: Vec<_> = all.iter().map(|f| representative(f).rule()).collect();
+        assert_eq!(rules, PackageFault::RULES);
     }
 
     #[test]
@@ -504,22 +665,15 @@ mod tests {
     }
 
     #[test]
-    fn the_digest_is_compared_when_supplied_and_skipped_when_not() {
-        let package = ghost_lobby();
-        assert_eq!(
-            validate_package(
-                &package,
-                KERNEL_CONTRACT_VERSION,
-                &DepthPolicy::default(),
-                Some("abc123"),
-            ),
-            Ok(())
-        );
+    fn the_digest_is_always_compared() {
+        let mut package = ghost_lobby();
+        assert_eq!(validate(&package), Ok(()));
+        package.manifest.digest = "something-else".into();
         let faults = validate_package(
             &package,
             KERNEL_CONTRACT_VERSION,
             &DepthPolicy::default(),
-            Some("something-else"),
+            &policy(),
         )
         .unwrap_err();
         assert!(matches!(faults[0], PackageFault::DigestMismatch { .. }));
