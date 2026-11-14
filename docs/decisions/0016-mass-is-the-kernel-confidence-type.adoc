@@ -129,3 +129,9 @@ Real-game status:: `Mass` does not exist as a Rust type in this repository. The
 fixed-point ledger it describes runs in IDApTIK, on a branch, with one caller
 and its own scale confusion still present. This ADR settles the type; it does
 not report an implementation.
+
+== Amendment, 2026-11-14
+
+The status this record calls `Known` is named `Certain` in `enaction-contracts`
+since pull request 103, because mass certainty is not factive knowledge. The
+semantics of the status cascade did not change. The body above is unchanged.
