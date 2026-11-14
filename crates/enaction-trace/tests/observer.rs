@@ -474,8 +474,12 @@ fn op() -> impl Strategy<Value = Op> {
 
 proptest! {
     // At least 1024 cases; PROPTEST_CASES may raise it, never lower it.
+    // No regression file: a failure prints its shrunk input, and a file
+    // written beside this test would land unreviewed in the crate (and in
+    // the mutant script's copy).
     #![proptest_config(ProptestConfig {
         cases: ProptestConfig::default().cases.max(1024),
+        failure_persistence: None,
         ..ProptestConfig::default()
     })]
 

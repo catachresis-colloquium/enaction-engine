@@ -7,6 +7,15 @@
 //! perspective's delta map, and a query falls through to the baseline when no
 //! delta exists.
 //!
+//! # The baseline is a frozen prior
+//!
+//! What a perspective falls through to is the subject's [`Prior`]: the ground
+//! trope's value *at registration*, frozen, not the trope's current value. A
+//! perspective with no observations therefore reads what the game declared
+//! common knowledge, plus its own deltas, and nothing the world did since
+//! (ADR-0022, Proposed). Only the empty perspective, the world itself, reads
+//! live ground truth.
+//!
 //! # Keyed by perspective path, not by bearer
 //!
 //! Deltas are keyed by the **full ascription path** — [`Perspective`] is
@@ -90,8 +99,8 @@ pub struct Belief {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BeliefView {
     pub value_milli: i32,
-    /// `Some` for a held delta; `None` for a baseline fall-through — ground
-    /// truth is a fact, not a graded belief.
+    /// `Some` for a held delta; `None` for a prior or ground-truth read — a
+    /// registered fact is not a graded belief.
     pub confidence: Option<Mass>,
     /// The supporting event, where the view came from a delta.
     pub source: Option<u64>,
@@ -362,8 +371,12 @@ impl BeliefStore {
     /// The query the store exists for: what does `perspective` currently
     /// believe about `subject`?
     ///
-    /// A held delta answers first. With no delta at all, the registered
-    /// baseline answers through the trace. A **retracted** delta answers
+    /// A held delta answers first. With no delta at all, the subject's
+    /// [`Prior`] answers: the value frozen at registration, never the ground
+    /// trope's current value, so a world event the perspective never
+    /// observed cannot reach it (observer noninterference, ADR-0022). The
+    /// empty perspective is the Global Baseline — the world itself — and is
+    /// the one reader of live ground truth. A **retracted** delta answers
     /// `None` — a withdrawn belief is absence of belief, not a silent revert
     /// to the baseline: reverting without an event would be a belief change
     /// that leaves no trace, and re-learning requires a fresh assertion with
@@ -384,8 +397,19 @@ impl BeliefStore {
             Some(_) => None, // retracted: absence, reported as such
             None => {
                 let prior = self.baseline.get(subject)?;
+                let value_milli = if perspective.0.is_empty() {
+                    // The world reads its own live truth.
+                    trace.latest_value(prior.trope)?
+                } else {
+                    // Everyone else reads the frozen prior. Reading the ground
+                    // trope here leaks every later world event to agents that
+                    // never observed it (the Sally-Anne probe in
+                    // tests/observer.rs; the planted mutant restores exactly
+                    // this read).
+                    prior.value_milli
+                };
                 Some(BeliefView {
-                    value_milli: trace.latest_value(prior.trope)?,
+                    value_milli,
                     confidence: None,
                     source: None,
                 })
@@ -644,6 +668,22 @@ mod tests {
             .assert_belief(&mut trace, &guard, &marble, 2, 2_000, mass(7_000), vec![1])
             .unwrap();
 
+        // Corrected for ADR-0022 (frozen prior). This test used to read Anya's
+        // fall-through with the world unmoved since registration, where the
+        // old live-truth read and the frozen prior both give 1_000, so it
+        // could not tell an omniscient store from a sound one. The world now
+        // moves first, in an event Anya never observes.
+        let moved = next_event_id(&trace);
+        trace.events.push(TraceEvent {
+            id: moved,
+            tick: 3,
+            trope: TropeId(1),
+            value_milli: 3_000,
+            confidence: None,
+            revision: Revision::Assert,
+            caused_by: vec![],
+        });
+
         let guards = store.belief(&trace, &guard, &marble).unwrap();
         assert_eq!(guards.value_milli, 2_000, "his delta, not the baseline");
         assert_eq!(guards.confidence, Some(mass(7_000)));
@@ -651,9 +691,18 @@ mod tests {
         let anyas = store.belief(&trace, &anya, &marble).unwrap();
         assert_eq!(
             anyas.value_milli, 1_000,
-            "no delta of her own: baseline fall-through"
+            "no delta of her own: the prior frozen at registration, not the moved world"
         );
-        assert_eq!(anyas.confidence, None, "ground truth is not graded");
+        assert_eq!(anyas.confidence, None, "a registered fact is not graded");
+
+        assert_eq!(
+            store
+                .belief(&trace, &perspective(&[]), &marble)
+                .unwrap()
+                .value_milli,
+            3_000,
+            "the world itself still reads live ground truth"
+        );
     }
 
     #[test]
