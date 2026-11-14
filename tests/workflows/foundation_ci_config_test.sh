@@ -165,10 +165,10 @@ mapfile -t codeql_refs < <(action_refs github/codeql-action "$CODEQL")
 assert_eq 'CodeQL has one init and one analysis action step' '2' "${#codeql_refs[@]}"
 codeql_init_ref="$(action_refs github/codeql-action/init "$CODEQL")"
 codeql_analyze_ref="$(action_refs github/codeql-action/analyze "$CODEQL")"
-assert_eq 'CodeQL init uses the locked immutable release tag' 'v4.39.0' "$codeql_init_ref"
-assert_eq 'CodeQL analysis uses the locked immutable release tag' 'v4.39.0' "$codeql_analyze_ref"
+assert_eq 'CodeQL init uses the locked immutable release tag' 'v4.39.3' "$codeql_init_ref"
+assert_eq 'CodeQL analysis uses the locked immutable release tag' 'v4.39.3' "$codeql_analyze_ref"
 assert_eq 'CodeQL release tag resolves to the locked commit' \
-  '6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee' "$(locked_commit github/codeql-action@v4.39.0)"
+  '33d7b85da1a04171e211befe2c739303b9a4c066' "$(locked_commit github/codeql-action@v4.39.3)"
 
 governance_ref="$(action_refs hyperpolymath/standards/.github/workflows/governance-reusable.yml "$GOVERNANCE")"
 hypatia_ref="$(action_refs hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml "$HYPATIA")"
