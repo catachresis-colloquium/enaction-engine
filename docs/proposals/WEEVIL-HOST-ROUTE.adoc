@@ -48,9 +48,17 @@ These facts were measured on 2026-11-14.
   `crates/enaction-contracts/src/package.rs:162`.
 * Evil Weevil has a frozen C ABI (1.0), an integer kernel and 3 injection
   modes. Its kernel passes 32 of 32 tests with Zig 0.16.0.
-* IDApTIK already runs its guard on that kernel (`crates/idaptik-weevil`). It
-  also has a headless runner, `idaptik-weevil-replay`, with a deterministic
-  corridor world and a JSON replay.
+* IDApTIK has an adapter for that kernel (`crates/idaptik-weevil`) and a
+  headless runner, `idaptik-weevil-replay`, with a deterministic corridor
+  world and a JSON replay.
++
+*Correction, 2026-11-14.* The first version of this line said that IDApTIK
+"already runs its guard on that kernel". That was an overclaim, taken from
+documents and not from a build. Work package B1 found that the adapter crate
+did not compile on IDApTIK `main` (17 errors) and that no CI job built it.
+B1 repaired the crate; with the repair, 581 tests pass with the kernel
+linked. Until that repair is merged, the kernel has an adapter and no
+running host.
 * IDApTIK has no `package-runner`. The supervisor ledger that the earlier plan
   reports on does not drive the guard. The six-stage `CacTrace` is 6
   constants.
@@ -59,7 +67,8 @@ These facts were measured on 2026-11-14.
 * Evil Weevil does not mention Enaction anywhere.
 
 Conclusion: Enaction has a mind contract and no body. Evil Weevil has a body
-and a thin mind. One real host already carries that body.
+and a thin mind. One game has an adapter for that body (see the correction
+above).
 
 == Architecture
 

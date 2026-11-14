@@ -295,6 +295,16 @@ Policies {                           // contract "enaction-policies/1"
   the validator. Its fault paths are prefixed `package.`.
 * **World truth** is a set: a repeated atom is refused as
   `DuplicateTruthAtom`.
+* **World truth is closed over the stated propositions.** The list holds
+  every proposition that is true in the run's world, among the propositions
+  that a belief or an event in the package states. A stated proposition that
+  is absent from the list is false in that world. A reader therefore marks a
+  held belief as divergent when its proposition is absent. The list says
+  nothing about a proposition that the package does not state. A runner that
+  cannot decide the truth of a proposition it states MUST NOT emit the
+  envelope. The validator cannot check this rule, because it has no world; a
+  runner's own tests carry it. (Clarified 2026-11-14 after the first real
+  producer, the IDApTIK corridor runner, met the question.)
 * **Policies come from the caller.** The status and depth policies are the
   caller's, resolved from the compiled profile, and are passed as a separate
   file. The envelope has no member for them, so a runner that tries to supply
