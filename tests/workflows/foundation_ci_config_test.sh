@@ -111,16 +111,20 @@ locked_commit() {
   ' "$lock_file"
 }
 
-# Tags the lock records for an action, one per line (entries are keyed
-# 'owner/repo@tag').
+# Tags the lock records for an action in one workflow's own entry (the
+# `workflows:` list for that file), one per line. Other workflows' entries and
+# transitive dependency keys are deliberately not consulted.
 locked_tags() {
   local action="$1"
-  local lock_file="${2:-$ACTION_LOCK}"
+  local lock_file="$2"
+  local workflow_key="$3"
 
-  awk -v prefix="    '$action@" '
-    index($0, prefix) == 1 {
+  awk -v header="    '$workflow_key':" -v prefix="        - '$action@" '
+    $0 == header { in_entry = 1; next }
+    in_entry && substr($0, 1, 8) != "        " { exit }
+    in_entry && index($0, prefix) == 1 {
       value = substr($0, length(prefix) + 1)
-      sub(/\047:.*$/, "", value)
+      sub(/\047.*$/, "", value)
       print value
     }
   ' "$lock_file"
@@ -196,9 +200,9 @@ codeql_tag_problem_locked() {
   local init recorded
 
   init="$(action_refs github/codeql-action/init "$workflow")"
-  recorded="$(locked_tags github/codeql-action "$lock_file" | paste -sd, -)"
+  recorded="$(locked_tags github/codeql-action "$lock_file" .github/workflows/codeql.yml | paste -sd, -)"
   if [ -z "$init" ] || [ "$init" != "$recorded" ]; then
-    printf "codeql.yml uses '%s' but the lock records '%s'" "${init:-<empty>}" "${recorded:-<none>}"
+    printf "codeql.yml uses '%s' but its lock entry records '%s'" "${init:-<empty>}" "${recorded:-<none>}"
   fi
 }
 
@@ -271,7 +275,16 @@ assert_codeql_pin_plant_rejected 'plant: init and analysis at different tags is 
 
 sed "s#codeql-action/\\(init\\|analyze\\)@$codeql_tag#codeql-action/\\1@v0.0.1#" "$CODEQL" >"$plant_dir/unlocked.yml"
 assert_codeql_pin_plant_rejected 'plant: tag absent from actions.lock is rejected' \
-  'but the lock records' "$plant_dir/unlocked.yml" "$ACTION_LOCK"
+  'but its lock entry records' "$plant_dir/unlocked.yml" "$ACTION_LOCK"
+
+# Scoping, both ways: another workflow pinning a different CodeQL tag must not
+# matter; a stale codeql.yml entry must not be masked by another workflow.
+sed "/'.github\\/workflows\\/oikosbot.yml':/,/hyperpolymath/s#codeql-action@$codeql_tag'#codeql-action@v0.0.1'#" "$ACTION_LOCK" >"$plant_dir/other-workflow.lock"
+assert_no_problem 'plant control: a different tag in another workflow'"'"'s lock entry is ignored' \
+  "$(codeql_tag_problem_locked "$CODEQL" "$plant_dir/other-workflow.lock")"
+sed "/'.github\\/workflows\\/codeql.yml':/,/hyperpolymath\\|oikosbot/s#codeql-action@$codeql_tag'#codeql-action@v0.0.1'#" "$ACTION_LOCK" >"$plant_dir/stale.lock"
+assert_codeql_pin_plant_rejected 'plant: stale codeql.yml lock entry is rejected despite a matching global key' \
+  'but its lock entry records' "$CODEQL" "$plant_dir/stale.lock"
 
 sed "/codeql-action@$codeql_tag':/,/commit:/s/sha1-[0-9a-f]*/sha1-${codeql_commit:0:7}/" "$ACTION_LOCK" >"$plant_dir/short.lock"
 assert_codeql_pin_plant_rejected 'plant: short commit in actions.lock is rejected' \
