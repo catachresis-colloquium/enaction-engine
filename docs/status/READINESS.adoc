@@ -25,12 +25,22 @@ or certify a grade.
 
 | `enaction-trace`
 | Typed trace events and belief/ascription/retraction queries.
-| Game-neutral data and query primitives; no game consumes the seam yet.
+| Game-neutral data and query primitives; no game consumes the seam yet. The
+  observer leak is closed (pull request 102, ADR-0022, Proposed): a planted
+  mutant fails both observer tests. One limit stands: a prior is frozen at
+  registration.
 
 | `enaction-contracts`
 | Versioned package-contract values and validation.
 | Primitives only; not a complete package protocol, content pipeline, or UMS
-  dependency.
+  dependency. Now also has a binary, `enaction-validate`, and two documents:
+  `enaction-runner-output/1` with `enaction-policies/1`, and
+  `enaction-mind-trace/1` with the corpus `conformance/mind/v1` (pull request
+  103, ADR-0024, Proposed). The digest is mandatory and computed by the
+  validator; canonical bytes are RFC 8785 JCS. The belief status `Known` was
+  renamed `Certain`. The documents have a producer (IDApTIK's
+  `idaptik-weevil-replay`) and a reader (Universal Modding Studio) in other
+  repositories; the crate itself has no game consumer.
 
 | `enaction-accelerator`
 | Operation-first capability planning and CPU reference kernels.
@@ -69,7 +79,25 @@ it with evidence.
 
 == Current integration and assurance limits
 
-* No game or executable host currently consumes the workspace as a whole.
+* No game links any `enaction-*` crate. That is unchanged. The contract's
+  documents have a producer and a reader in other repositories (see the
+  `enaction-contracts` row); on the real chain the decoy run has 36 beliefs and
+  all 36 diverge from the world, and the grudge run has commitment override on
+  37 of 200 ticks (20 to 56) while its control has 0. `enaction-trace` and
+  `enaction-time` still have no consumer.
+* On 2026-11-14, `cargo test --locked` on `main` at 03cb27b passed 162 tests
+  with 0 failures on the default members. `enaction-accelerator-native` was not
+  built (it needs Zig and is outside the default members).
+* Not run in this work: the `just` recipes and the Agda, Coq, Lean and Idris2
+  gates of this repository. The Lean proof gate is red by design, because it
+  gates zero modules.
+* Five CI checks are red on `main` for reasons outside this work: the CodeQL
+  pin test, the lock sync tool, the SonarQube Cloud attestation, the Hypatia
+  scan and the findings deposit.
+* Affect and conation: this repository holds only the contract and fixtures.
+  The first implementation is in the Evil Weevil kernel (its ADR-0013,
+  Proposed there). ADR-0017's refusal of `enaction-affect` and
+  `enaction-conation` stands.
 * The Zig-linked native adapter requires its separately pinned Zig toolchain;
   ordinary default-member Rust commands do not build it.
 * Formal proof sources require their language-specific provers. A missing
