@@ -310,8 +310,13 @@ enaction-validate --policies FILE [--mind-trace FILE] < runner-output.json
 * `exit 0`: valid. Stdout is the canonical bytes of the envelope and a
   newline, then, with `--mind-trace`, the canonical bytes of the mind trace
   (§10) and a newline.
-* `exit 1`: a validation fault in the input. Stdout has one line per fault:
-  `<rule>` TAB `<path>` TAB `<detail>`.
+* `exit 1`: a validation fault in the input. Stdout is exactly one line: the
+  canonical (RFC 8785) JSON object
+  `{"faults":[{"detail":"…","path":"…","rule":"…"}]}`, with every fault in
+  the order the validator reports it. `rule` and `path` are the stable rule
+  name and field path; `detail` is prose. Stderr repeats each fault as a
+  line `<rule>` TAB `<path>` TAB `<detail>` for a human reader. An adapter
+  reads stdout only.
 * `exit 2`: an invocation or operational failure: a missing or unknown
   argument, a missing, unreadable or invalid `--policies` file, a missing or
   unreadable `--mind-trace` file, or unreadable stdin. A message goes to stderr and nothing goes to stdout. An adapter can

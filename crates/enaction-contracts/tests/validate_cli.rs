@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Drives the built `enaction-validate` binary (WEEVIL-HOST-ROUTE A2).
 //!
-//! Exit 0: valid. Exit 1: a validation fault in the input, printed as one
-//! `<rule>\t<path>\t<detail>` line per fault on stdout. Exit 2: an invocation
-//! or operational failure, on stderr.
+//! Exit 0: valid. Exit 1: a validation fault in the input; stdout is exactly
+//! one line, the canonical JSON object
+//! `{"faults":[{"detail":..,"path":..,"rule":..}]}`, and stderr repeats each
+//! fault as a `<rule>\t<path>\t<detail>` line for a human. Exit 2: an
+//! invocation or operational failure, on stderr.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -126,12 +128,39 @@ fn validate(stdin: &[u8]) -> Output {
     run(&["--policies", policies.to_str().unwrap()], stdin)
 }
 
-/// The rule names printed on stdout, one per fault line.
-fn rules(out: &Output) -> Vec<String> {
-    String::from_utf8_lossy(&out.stdout)
-        .lines()
-        .filter_map(|l| l.split('\t').next().map(str::to_string))
+/// The `(rule, path)` of every fault in the one-line JSON refusal on stdout.
+fn faults(out: &Output) -> Vec<(String, String)> {
+    let stdout = std::str::from_utf8(&out.stdout).expect("UTF-8 stdout");
+    let line = stdout
+        .strip_suffix('\n')
+        .unwrap_or_else(|| panic!("one line ending in a newline: {stdout:?}"));
+    assert!(!line.contains('\n'), "exactly one line: {stdout:?}");
+    let value: serde_json::Value = serde_json::from_str(line).expect("JSON");
+    let object = value.as_object().expect("an object");
+    assert_eq!(object.len(), 1, "only `faults`: {line}");
+    value["faults"]
+        .as_array()
+        .expect("faults is an array")
+        .iter()
+        .map(|f| {
+            let f = f.as_object().expect("a fault object");
+            assert_eq!(f.len(), 3, "rule, path, detail: {f:?}");
+            assert!(f["detail"].is_string());
+            (
+                f["rule"].as_str().unwrap().to_string(),
+                f["path"].as_str().unwrap().to_string(),
+            )
+        })
         .collect()
+}
+
+/// The rule names of the refusal on stdout, in reported order.
+fn rules(out: &Output) -> Vec<String> {
+    faults(out).into_iter().map(|(rule, _)| rule).collect()
+}
+
+fn fault(rule: &str, path: &str) -> (String, String) {
+    (rule.to_string(), path.to_string())
 }
 
 fn show(out: &Output) -> String {
@@ -168,13 +197,12 @@ fn a_mutated_package_with_a_stale_digest_exits_1() {
     p.events[0].confidence = mass(8_001);
     let out = validate(envelope(&p).to_string().as_bytes());
     assert_eq!(out.status.code(), Some(1), "{}", show(&out));
-    let stdout = String::from_utf8_lossy(&out.stdout);
-    assert!(
-        stdout.starts_with("digest-matches\tpackage.manifest.digest\t"),
+    assert_eq!(
+        faults(&out),
+        [fault("digest-matches", "package.manifest.digest")],
         "{}",
         show(&out)
     );
-    assert_eq!(rules(&out).len(), 1);
 }
 
 #[test]
@@ -217,11 +245,11 @@ fn unknown_fields_are_rejected_before_hashing() {
     env["package"]["manifest"]["comment"] = "trust me".into();
     let out = validate(env.to_string().as_bytes());
     assert_eq!(out.status.code(), Some(1), "{}", show(&out));
-    assert_eq!(rules(&out), ["UnknownField"], "{}", show(&out));
-    let stdout = String::from_utf8_lossy(&out.stdout);
-    assert!(
-        stdout.starts_with("UnknownField\tpackage.manifest.comment\t"),
-        "{stdout}"
+    assert_eq!(
+        faults(&out),
+        [fault("UnknownField", "package.manifest.comment")],
+        "{}",
+        show(&out)
     );
 
     // Every nested contract type is strict, not only the top.
@@ -250,8 +278,9 @@ fn the_contract_tag_must_match() {
     env["contract"] = "enaction-runner-output/2".into();
     let out = validate(env.to_string().as_bytes());
     assert_eq!(out.status.code(), Some(1), "{}", show(&out));
-    assert!(
-        String::from_utf8_lossy(&out.stdout).starts_with("UnknownField\tcontract\t"),
+    assert_eq!(
+        faults(&out),
+        [fault("UnknownField", "contract")],
         "{}",
         show(&out)
     );
@@ -264,9 +293,9 @@ fn integers_and_floats_on_the_wire_follow_q1() {
     assert_ne!(big, env);
     let out = validate(big.as_bytes());
     assert_eq!(out.status.code(), Some(1), "{}", show(&out));
-    assert!(
-        String::from_utf8_lossy(&out.stdout)
-            .starts_with("IntegerOutOfRange\tpackage.events[0].tick\t"),
+    assert_eq!(
+        faults(&out),
+        [fault("IntegerOutOfRange", "package.events[0].tick")],
         "{}",
         show(&out)
     );
@@ -333,10 +362,10 @@ fn each_rejected_mind_case_exits_1_and_prints_exactly_its_rule() {
         let out = run_mind(&case);
         assert_eq!(out.status.code(), Some(1), "{rule}: {}", show(&out));
         assert_eq!(rules(&out), [rule.as_str()], "{rule}: {}", show(&out));
-        let stdout = String::from_utf8_lossy(&out.stdout);
+        let (_, path) = &faults(&out)[0];
         assert!(
-            stdout.split('\t').nth(1).unwrap().starts_with("mind_trace"),
-            "{rule}: the path names the mind trace: {stdout}"
+            path.starts_with("mind_trace"),
+            "{rule}: the path names the mind trace: {path}"
         );
         count += 1;
     }
@@ -375,4 +404,44 @@ fn a_missing_mind_trace_file_exits_2() {
         &runner,
     );
     assert_eq!(out.status.code(), Some(2), "{}", show(&out));
+}
+
+#[test]
+fn a_refusal_is_one_canonical_json_line_and_the_human_lines_go_to_stderr() {
+    // Two faults at once: a stale digest and a repeated truth atom.
+    let mut p = package();
+    p.events[0].confidence = mass(8_001);
+    let mut env = envelope(&p);
+    env["world_truth"] = serde_json::json!(["a", "a"]);
+    let out = validate(env.to_string().as_bytes());
+    assert_eq!(out.status.code(), Some(1), "{}", show(&out));
+    assert_eq!(
+        faults(&out),
+        [
+            fault("digest-matches", "package.manifest.digest"),
+            fault("DuplicateTruthAtom", "world_truth[1]"),
+        ],
+        "every fault, in reported order: {}",
+        show(&out)
+    );
+    // Re-canonicalising the line gives the same bytes: it is canonical.
+    let line = out.stdout.strip_suffix(b"\n").unwrap();
+    assert_eq!(
+        enaction_contracts::canonical::canonicalize(line).unwrap(),
+        line,
+        "stdout is canonical JCS"
+    );
+    // stderr carries the same faults as tab-separated lines, in order.
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    let human: Vec<_> = stderr
+        .lines()
+        .map(|l| {
+            let mut parts = l.split('\t');
+            (
+                parts.next().unwrap().to_string(),
+                parts.next().unwrap_or_default().to_string(),
+            )
+        })
+        .collect();
+    assert_eq!(human, faults(&out), "{stderr}");
 }

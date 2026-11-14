@@ -14,8 +14,11 @@
 //!
 //! Exit 0: valid; stdout is the envelope's canonical bytes and a newline,
 //! then, with `--mind-trace`, the mind trace's canonical bytes and a newline.
-//! Exit 1: a validation fault in the input; stdout has one
-//! `<rule>\t<path>\t<detail>` line per fault.
+//! Exit 1: a validation fault in the input. Stdout is exactly one line: the
+//! canonical (RFC 8785) JSON object
+//! `{"faults":[{"detail":"..","path":"..","rule":".."}]}`, every fault in
+//! reported order. Stderr repeats each fault as a `<rule>\t<path>\t<detail>`
+//! line for a human reader.
 //! Exit 2: an invocation or operational failure (a missing argument, an
 //! unknown argument, an unreadable or invalid policies file, an unreadable
 //! mind-trace file, unreadable stdin); a message on stderr, nothing on stdout.
@@ -71,12 +74,26 @@ fn fail(message: &str) -> ExitCode {
 }
 
 fn refuse(faults: &[Fault]) -> ExitCode {
-    let mut out = std::io::stdout().lock();
+    let report = serde_json::json!({
+        "faults": faults
+            .iter()
+            .map(|f| serde_json::json!({"rule": f.rule, "path": f.path, "detail": f.detail}))
+            .collect::<Vec<_>>(),
+    });
+    // Strings only: canonicalisation cannot fail on this value.
+    let Ok(mut line) = canonical::canonical_bytes(&report) else {
+        return fail("cannot canonicalise the fault report");
+    };
+    line.push(b'\n');
+    let mut human = String::new();
     for fault in faults {
-        if writeln!(out, "{fault}").is_err() {
-            return ExitCode::from(2);
-        }
+        human.push_str(&format!("{fault}\n"));
     }
+    if std::io::stdout().lock().write_all(&line).is_err() {
+        return ExitCode::from(2);
+    }
+    // A human copy only; a closed stderr does not change the verdict.
+    let _ = std::io::stderr().lock().write_all(human.as_bytes());
     ExitCode::from(1)
 }
 
