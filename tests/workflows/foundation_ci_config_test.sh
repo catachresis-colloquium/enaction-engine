@@ -95,6 +95,7 @@ action_refs() {
 
 locked_commit() {
   local dependency="$1"
+  local lock_file="${2:-$ACTION_LOCK}"
 
   awk -v wanted="    '$dependency':" '
     $0 == wanted { in_entry = 1; next }
@@ -107,7 +108,22 @@ locked_commit() {
       print value
       exit
     }
-  ' "$ACTION_LOCK"
+  ' "$lock_file"
+}
+
+# Tags the lock records for an action, one per line (entries are keyed
+# 'owner/repo@tag').
+locked_tags() {
+  local action="$1"
+  local lock_file="${2:-$ACTION_LOCK}"
+
+  awk -v prefix="    '$action@" '
+    index($0, prefix) == 1 {
+      value = substr($0, length(prefix) + 1)
+      sub(/\047:.*$/, "", value)
+      print value
+    }
+  ' "$lock_file"
 }
 
 checkout_persist_credentials() {
@@ -161,14 +177,114 @@ fi
 assert_eq 'CodeQL checkout does not persist repository credentials' \
   'false' "$(checkout_persist_credentials)"
 
+# CodeQL pin contract: the pin lives in actions.lock; codeql.yml must agree
+# with it. Each check prints a reason when violated and nothing when it holds.
+codeql_tag_problem_same() {
+  local workflow="$1"
+  local init analyze
+
+  init="$(action_refs github/codeql-action/init "$workflow")"
+  analyze="$(action_refs github/codeql-action/analyze "$workflow")"
+  if [ -z "$init" ] || [ "$init" != "$analyze" ]; then
+    printf "init uses '%s' but analyze uses '%s'" "${init:-<empty>}" "${analyze:-<empty>}"
+  fi
+}
+
+codeql_tag_problem_locked() {
+  local workflow="$1"
+  local lock_file="$2"
+  local init recorded
+
+  init="$(action_refs github/codeql-action/init "$workflow")"
+  recorded="$(locked_tags github/codeql-action "$lock_file" | paste -sd, -)"
+  if [ -z "$init" ] || [ "$init" != "$recorded" ]; then
+    printf "codeql.yml uses '%s' but the lock records '%s'" "${init:-<empty>}" "${recorded:-<none>}"
+  fi
+}
+
+codeql_tag_problem_resolution() {
+  local workflow="$1"
+  local lock_file="$2"
+  local init commit
+
+  init="$(action_refs github/codeql-action/init "$workflow")"
+  commit="$(locked_commit "github/codeql-action@$init" "$lock_file")"
+  if [[ ! "$init" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    printf "'%s' is not an immutable release tag (vMAJOR.MINOR.PATCH)" "${init:-<empty>}"
+  elif [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+    printf "lock resolves '%s' to '%s', not a 40-character commit SHA" "$init" "${commit:-<empty>}"
+  fi
+}
+
+assert_no_problem() {
+  local label="$1"
+  local problem="$2"
+
+  if [ -z "$problem" ]; then
+    pass "$label"
+  else
+    fail "$label" "$problem"
+  fi
+}
+
+# Both-ways check: a deliberately broken copy of codeql.yml/actions.lock must
+# be rejected, naming the expected reason. Plants live in a temporary
+# directory only.
+assert_codeql_pin_plant_rejected() {
+  local label="$1"
+  local expected="$2"
+  local workflow="$3"
+  local lock_file="$4"
+  local problems
+
+  problems="$(
+    codeql_tag_problem_same "$workflow"
+    printf '\n'
+    codeql_tag_problem_locked "$workflow" "$lock_file"
+    printf '\n'
+    codeql_tag_problem_resolution "$workflow" "$lock_file"
+  )"
+  if [[ "$problems" == *"$expected"* ]]; then
+    pass "$label"
+  else
+    fail "$label" "expected a rejection containing '$expected', got '${problems//$'\n'/ }'"
+  fi
+}
+
 mapfile -t codeql_refs < <(action_refs github/codeql-action "$CODEQL")
 assert_eq 'CodeQL has one init and one analysis action step' '2' "${#codeql_refs[@]}"
-codeql_init_ref="$(action_refs github/codeql-action/init "$CODEQL")"
-codeql_analyze_ref="$(action_refs github/codeql-action/analyze "$CODEQL")"
-assert_eq 'CodeQL init uses the locked immutable release tag' 'v4.39.3' "$codeql_init_ref"
-assert_eq 'CodeQL analysis uses the locked immutable release tag' 'v4.39.3' "$codeql_analyze_ref"
-assert_eq 'CodeQL release tag resolves to the locked commit' \
-  '33d7b85da1a04171e211befe2c739303b9a4c066' "$(locked_commit github/codeql-action@v4.39.3)"
+assert_no_problem 'CodeQL init and analysis use the same release tag' \
+  "$(codeql_tag_problem_same "$CODEQL")"
+assert_no_problem 'CodeQL release tag is the tag recorded in actions.lock' \
+  "$(codeql_tag_problem_locked "$CODEQL" "$ACTION_LOCK")"
+assert_no_problem 'CodeQL release tag resolves to a full locked commit' \
+  "$(codeql_tag_problem_resolution "$CODEQL" "$ACTION_LOCK")"
+
+plant_dir="$(mktemp -d)"
+trap 'rm -rf "$plant_dir"' EXIT
+codeql_tag="$(action_refs github/codeql-action/init "$CODEQL")"
+codeql_commit="$(locked_commit "github/codeql-action@$codeql_tag")"
+
+sed '/codeql-action\/analyze@/s/@[^[:space:]]*/@v0.0.1/' "$CODEQL" >"$plant_dir/split.yml"
+assert_codeql_pin_plant_rejected 'plant: init and analysis at different tags is rejected' \
+  'but analyze uses' "$plant_dir/split.yml" "$ACTION_LOCK"
+
+sed "s#codeql-action/\\(init\\|analyze\\)@$codeql_tag#codeql-action/\\1@v0.0.1#" "$CODEQL" >"$plant_dir/unlocked.yml"
+assert_codeql_pin_plant_rejected 'plant: tag absent from actions.lock is rejected' \
+  'but the lock records' "$plant_dir/unlocked.yml" "$ACTION_LOCK"
+
+sed "/codeql-action@$codeql_tag':/,/commit:/s/sha1-[0-9a-f]*/sha1-${codeql_commit:0:7}/" "$ACTION_LOCK" >"$plant_dir/short.lock"
+assert_codeql_pin_plant_rejected 'plant: short commit in actions.lock is rejected' \
+  'not a 40-character commit SHA' "$CODEQL" "$plant_dir/short.lock"
+
+sed "/codeql-action@$codeql_tag':/,/commit:/s/commit:.*/commit: ''/" "$ACTION_LOCK" >"$plant_dir/empty.lock"
+assert_codeql_pin_plant_rejected 'plant: empty commit in actions.lock is rejected' \
+  'not a 40-character commit SHA' "$CODEQL" "$plant_dir/empty.lock"
+
+sed "s#codeql-action/\\(init\\|analyze\\)@$codeql_tag#codeql-action/\\1@main#" "$CODEQL" >"$plant_dir/branch.yml"
+sed "s/codeql-action@$codeql_tag/codeql-action@main/; /codeql-action@main':/,/ref:/s/ref: .*/ref: 'main'/" "$ACTION_LOCK" >"$plant_dir/branch.lock"
+assert_codeql_pin_plant_rejected 'plant: branch name instead of a tag is rejected even if the lock agrees' \
+  'not an immutable release tag' "$plant_dir/branch.yml" "$plant_dir/branch.lock"
 
 governance_ref="$(action_refs hyperpolymath/standards/.github/workflows/governance-reusable.yml "$GOVERNANCE")"
 hypatia_ref="$(action_refs hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml "$HYPATIA")"
