@@ -2,7 +2,13 @@
   "models": [
     {
       "belief_id": 1,
-      "verdict": "agrees"
+      "timeline": [
+        {
+          "from_tick": 2,
+          "verdict": "agrees"
+        }
+      ],
+      "stale_divergent": false
     }
   ]
 }
