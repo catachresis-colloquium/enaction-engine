@@ -1,0 +1,115 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Architecture Decision Record: 0028-models-are-compared-with-minds
+
+Date: 2026-11-14
+
+== Status
+
+Proposed
+
+Extends ADR-0016 (confidence types) and ADR-0019 (the contract as types and
+validators). It gives a partial answer to one open problem in
+`CAC-KERNEL.adoc` section 8: theory-of-mind depth accounting. It is the
+contract change of `docs/proposals/WEEVIL-SLICE-2-IT-MODELS-YOU.adoc`, work
+package C0.
+
+== Context
+
+The contract already carries nested belief. In a `Belief`, `bearer` is the
+agent whose belief it is, and `holders` is the ascription path, outermost
+first. With `holders = ["guard-0"]` and `bearer = "contact-21"`, the belief
+is guard-0's model of what contact-21 believes. The depth policy bounds the
+order, and the validator refuses a package that exceeds it
+(`nesting-bounded`).
+
+Nothing said what a reader compares such a belief with. The closed-world
+rule for world truth (CAC-KERNEL section 9) applied to every belief. A
+reader therefore compared guard-0's model of contact-21 with the world. That
+is wrong for a model. "contact-21 does not know where I am" is a claim about
+contact-21's mind. Where guard-0 is in the world does not decide it.
+
+Slice 2 needs this to be right. Its effect is an agent that holds a model of
+the player's knowledge and can be wrong about it. The two false cases,
+false exposure and false concealment, are the point. A reader that compares
+with the world calls a false exposure right whenever the agent is in fact
+where the target once saw it.
+
+== Decision
+
+. *World truth applies to order 0 only.* A belief of order 1 or more is a
+  model. It is never compared with world truth.
+. *A model is compared with a mind.* For a model with
+  `holders = [h1, …, hn]` and `bearer = b`, the compared belief has
+  `holders = [h2, …, hn]`, `bearer = b`, the same proposition, in the same
+  package. For order 1 it is b's own belief. This is the reading of
+  `enaction_trace::Trope::is_ascription_of`; the two crates agree on what
+  nesting is.
+. *Agrees, diverges, no claim.* A belief holds its proposition when its
+  status is `certain`, `believed` or `suspected`. A model agrees when the
+  compared belief holds the proposition and the model says that it does, or
+  when neither holds it. It diverges otherwise. A model with status
+  `rejected` says that the bearer does not hold it. A model with status
+  `unknown` makes no claim.
+. *At the model's tick, under supersession.* A model is compared at its
+  `valid_from`. A belief holds at tick `t` when its `valid_from` is at most
+  `t` and no belief that supersedes it has a `valid_from` of at most `t`.
+. *Closed over stated models.* For each proposition that a model states
+  about b, the package states b's compared belief when b holds it. A missing
+  belief means that b does not hold the proposition.
+. *Refuse what the rules cannot decide.* When more than one compared belief
+  holds at the model's tick, the reader refuses with
+  `model-counterpart-unique` and does not choose.
+. *Derived, not asserted.* The reader derives the verdict
+  (`enaction_contracts::tom::model_agreements`, in belief-id order). The
+  function takes a package and no world truth. The producer does not assert
+  the verdict, and no document gains a member for it.
+. *No new document and no new field.* A profile that uses models declares a
+  depth `max_order` of 1 or more. `enaction-validate` gains no flag.
+
+The normative statement is in `CAC-KERNEL.adoc` section 9, "Models are
+compared with minds". The fixtures in `conformance/tom/v1` are the currency.
+
+== Consequences
+
+=== Positive
+
+* A designer can see four separate facts for one proposition: what the world
+  is, what the target believes, what the agent thinks the target believes,
+  and whether the agent is right about the target.
+* False exposure and false concealment become checkable. The corpus holds a
+  model that diverges in each, and a reader that compared with the world
+  would get three of its four cases wrong.
+* The rule is a pure function of one package. It needs no world, no clock
+  and no host.
+
+=== Negative
+
+* A reader in another repository, such as the UMS explain lens, implements
+  the same derivation in its own code. Only the corpus `conformance/tom/v1`
+  keeps the two equal. A case that the corpus does not hold can differ
+  between them unseen.
+* The closed-world rule cannot be checked by the validator. A missing own
+  belief and an own belief that the bearer does not hold look the same. A
+  producer that forgets to state an own belief makes every model of it read
+  as "the bearer does not hold it". The producer's own tests carry the rule.
+* A model is compared at its own `valid_from` only. A model that persists
+  while the target's belief changes is not compared again. A producer that
+  wants the change judged must restate the model, as the `false-exposure`
+  case does.
+* The corpus has order 1 only, because its depth is 1. A reader that read
+  the ascription path the other way round (removing the innermost holder)
+  derives the same verdicts on every case in it. The crate's own tests pin
+  the reading at order 2; the corpus does not.
+* The rule says "holds" or "does not hold". It does not compare intervals.
+  A model of `suspected` agrees with an own belief of `certain`.
+
+=== Neutral
+
+* The validator and `enaction-runner-output/1` do not change. A package with
+  an undecidable model is still valid; only the derivation refuses it.
+
+Real-game status:: No host emits models yet. The first producer is work
+package C1 (Evil Weevil) and C2 (IDApTIK) of
+`docs/proposals/WEEVIL-SLICE-2-IT-MODELS-YOU.adoc`, and the first reader in
+another repository is work package C3 (UMS).
