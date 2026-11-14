@@ -19,7 +19,9 @@
 //!   a replay harness for the determinism MUST.
 //! * **Package validation** ([`package`]): everything a package MUST declare
 //!   and everything a loader MUST reject, as a validator that reports every
-//!   fault.
+//!   fault. It computes the package digest itself.
+//! * **Canonical bytes** ([`canonical`]): RFC 8785 JCS over integer-only
+//!   I-JSON (ADR-0024), the bytes every digest and parity check uses.
 //!
 //! # What is refused
 //!
@@ -41,6 +43,7 @@
 #![forbid(unsafe_code)]
 
 pub mod belief;
+pub mod canonical;
 pub mod package;
 pub mod reduce;
 pub mod version;
@@ -51,6 +54,8 @@ pub use belief::{
     Subject,
 };
 pub use enaction_trace::Mass;
-pub use package::{EpistemicPackage, PackageFault, PackageManifest, SeedPolicy, validate_package};
+pub use package::{
+    EpistemicPackage, PackageFault, PackageManifest, SeedPolicy, package_digest, validate_package,
+};
 pub use reduce::{Derived, Diagnostic, EpistemicReduce, ReductionContext, ReductionResult};
 pub use version::{ContractVersion, KERNEL_CONTRACT_VERSION, ProfileRef};

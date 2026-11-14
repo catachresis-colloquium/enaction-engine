@@ -173,7 +173,11 @@ impl Default for DepthPolicy {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BeliefStatus {
-    Known,
+    /// Full belief mass: `belief == FULL`. Certainty of *commitment*, not
+    /// knowledge: mass certainty never reads as truth. Factive knowledge
+    /// needs world truth, which a belief does not carry (rung 2, "Certain is
+    /// not Known"; renamed from `Known`, completion-plan step 11).
+    Certain,
     Believed,
     Suspected,
     Rejected,
@@ -308,14 +312,14 @@ pub struct StatusPolicy {
 
 impl StatusPolicy {
     /// Map an interval to a status. The evaluation order is **normative**
-    /// (ADR-0016): Known, Rejected, Unknown-by-ignorance, Believed,
+    /// (ADR-0016): Certain, Rejected, Unknown-by-ignorance, Believed,
     /// Suspected, otherwise Unknown. Reordering it changes meaning — in
     /// particular, a wide-ignorance interval must read `Unknown` even when
     /// its belief clears the believed floor.
     #[must_use]
     pub fn status(&self, interval: BeliefInterval) -> BeliefStatus {
         if interval.belief() == Mass::FULL {
-            BeliefStatus::Known
+            BeliefStatus::Certain
         } else if interval.plausibility() <= self.rejected_ceiling {
             BeliefStatus::Rejected
         } else if interval.ignorance() >= self.unknown_band {
@@ -375,7 +379,7 @@ mod tests {
     #[test]
     fn the_normative_evaluation_order_is_walked_in_order() {
         let p = policy();
-        assert_eq!(p.status(BeliefInterval::certain()), BeliefStatus::Known);
+        assert_eq!(p.status(BeliefInterval::certain()), BeliefStatus::Certain);
         assert_eq!(p.status(interval(0, 500)), BeliefStatus::Rejected);
         assert_eq!(p.status(interval(8_000, 9_000)), BeliefStatus::Believed);
         assert_eq!(p.status(interval(2_000, 6_000)), BeliefStatus::Suspected);

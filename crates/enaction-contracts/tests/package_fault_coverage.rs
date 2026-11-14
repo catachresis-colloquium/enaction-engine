@@ -91,23 +91,19 @@ fn valid() -> EpistemicPackage {
     }
 }
 
-/// The digest the caller computed. Stage 1 of the plan makes it mandatory;
-/// the crate does not yet compute it.
-const DIGEST: &str = "abc123";
-
 fn validate(package: &EpistemicPackage) -> Result<(), Vec<PackageFault>> {
     validate_package(
         package,
         KERNEL_CONTRACT_VERSION,
         &DepthPolicy::default(),
         &policy(),
-        DIGEST,
     )
 }
 
-/// A package whose declared digest matches what the caller computed.
+/// A package whose declared digest is right for it as it stands. The
+/// validator computes the digest itself; no caller supplies one.
 fn sealed(mut package: EpistemicPackage) -> EpistemicPackage {
-    package.manifest.digest = DIGEST.into();
+    package.manifest.digest = enaction_contracts::package_digest(&package).unwrap();
     package
 }
 
@@ -157,14 +153,19 @@ fn planted() -> Vec<(&'static str, EpistemicPackage)> {
     p.beliefs.push(belief(3, &[""], &[1]));
     out.push(("ascription-names-nonempty", sealed(p)));
 
-    // The digest rule: the declared digest is not the computed one.
-    let mut p = valid();
-    p.manifest.digest = "stale".into();
+    // The digest rule: a sealed package mutated after sealing.
+    let mut p = sealed(valid());
+    p.manifest.source = "ums:tampered".into();
     out.push(("digest-matches", p));
 
-    // The status rule: the producer says Known, the interval says Believed.
+    // Q1: an integer above 2^53-1 has no canonical bytes, hence no digest.
     let mut p = valid();
-    p.beliefs[0].status = BeliefStatus::Known;
+    p.events[1].sequence = u64::MAX;
+    out.push(("IntegerOutOfRange", p));
+
+    // The status rule: the producer says Certain, the interval says Believed.
+    let mut p = valid();
+    p.beliefs[0].status = BeliefStatus::Certain;
     out.push(("status-agrees-with-interval", sealed(p)));
 
     out
@@ -208,7 +209,6 @@ fn the_status_check_uses_the_callers_policy_not_the_producers_word() {
         KERNEL_CONTRACT_VERSION,
         &DepthPolicy::default(),
         &strict,
-        DIGEST,
     )
     .unwrap_err();
     assert!(

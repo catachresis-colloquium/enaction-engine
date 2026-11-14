@@ -104,7 +104,7 @@ Belief {
   belief_id: BeliefId,
   holder: AgentId,
   proposition: Proposition,
-  status: Known | Believed | Suspected | Rejected | Unknown,
+  status: Certain | Believed | Suspected | Rejected | Unknown,
   confidence: Mass,
   source_events: [EventId],
   valid_from: Tick,
@@ -123,6 +123,12 @@ Belief {
   cap MUST be counted in deterministic units — inferences, unifications, stream
   nodes — never in milliseconds.
 . `Unknown` is a first-class status, distinct from rejected or false.
+. `Certain` means full belief mass (`belief == FULL`). It is certainty of
+  commitment, not knowledge: mass certainty never reads as truth. Factive
+  knowledge needs world truth, which a belief does not carry. The status was
+  named `Known` before ADR-0024's change; on the wire it is `certain`, and
+  `known` is refused.
+. Every integer on the wire is in `0 ..= 2^53 − 1` (§6, canonical bytes).
 . Confidence is typed and bounded, and an implementation must not confuse
   confidence with truth. The type is `Mass`; belief status derives from the
   belief-plausibility *interval* via a versioned profile policy, never from a
@@ -186,6 +192,28 @@ duplicate event identifiers, non-monotonic ordering, unbounded nested-belief
 expansion, and packages whose digest does not match their contents. A diagnostic
 should identify the stable field path and the compatibility rule that failed.
 
+=== Canonical bytes and the package digest
+
+Canonical bytes are RFC 8785 JCS over integer-only I-JSON (ADR-0024, owner
+ruling Q1 arm A). Every digest and every parity comparison uses them.
+
+* A number with a fraction or an exponent is refused as `NonIntegerNumber`.
+  The contract has no float field and no utility score.
+* Every integer above `2^53 − 1` (or below its negation) is refused as
+  `IntegerOutOfRange`. This covers every integer field: event and belief
+  ids, ticks, sequences, `valid_from`, fixed seeds, and policy fields such
+  as `max_order`. There is no decimal-string escape.
+* Duplicate member names (`DuplicateKey`), lone surrogates, raw control
+  characters, a byte-order mark, trailing input and every RFC 8259 grammar
+  error (`MalformedJson`) are refused.
+
+`manifest.digest` is the lowercase hex SHA-256 of the canonical bytes of the
+package with the `manifest.digest` member omitted, because a digest cannot
+hash itself. The bytes are those of the package's typed form: an absent
+optional member is omitted, never written as `null`, and an empty `holders`
+is omitted. The loader computes the digest itself and compares it. No caller
+supplies a digest, so no caller can vouch for a mutated package.
+
 The digest check and the status check cannot be skipped. A loader MUST also
 reject a belief whose declared status differs from the status that the
 *caller's* status policy derives from the belief's interval
@@ -202,7 +230,7 @@ the owner and vendored by consumers against a recorded digest.
 Deliberately narrow:
 
 . `Observation`, `Communication`, `Inference` and `Correction` events.
-. `Known`, `Believed`, `Suspected`, `Rejected` and `Unknown` statuses.
+. `Certain`, `Believed`, `Suspected`, `Rejected` and `Unknown` statuses.
 . One level of nested belief, with a declared maximum depth.
 . Provenance, confidence, contradiction, replay and snapshot verification.
 . A small IDApTIK Ghost Lobby profile with fixtures shared with UMS.
