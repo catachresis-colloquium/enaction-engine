@@ -1,0 +1,69 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Theory-of-mind contract v1 conformance fixtures
+
+These fixtures are the cross-repository currency for the rule that a model
+is compared with a mind, not with the world (CAC-KERNEL §9, "Models";
+ADR-0028). A reader that shows whether an agent's model of another agent is
+right, such as the UMS explain lens, proves conformance against these bytes.
+No Enaction source is needed to do so: reimplement the rule from CAC-KERNEL
+and derive each `expected.json`.
+
+Every document is an `enaction-runner-output/1` envelope (CAC-KERNEL §9). No
+new contract, document or field is involved.
+
+== The cases
+
+Two agents. `guard-0` holds a model of `contact-21`: does contact-21 know
+where guard-0 is (`guard-0 at cell-14`)? The second proposition,
+`contact-21 sees guard-0`, is the cue that guard-0's evidence is about. In
+every accepted case guard-0 really is at cell-14, so a reader that compared
+a model with world truth would get three of the four cases wrong.
+
+* `accepted/true-concealment`: guard-0 thinks contact-21 does not know
+  (belief 1, rejected). contact-21 states no belief about it, which means
+  that it does not hold it. Belief 1 *agrees*.
+* `accepted/caught`: contact-21 does not know (1) and guard-0 is right (2).
+  On tick 5 contact-21 comes to know (3 supersedes 1) and guard-0 sees the
+  gaze (4 supersedes 2). Belief 2 is compared with belief 1, belief 4 with
+  belief 3. Both *agree*.
+* `accepted/false-exposure`: contact-21 knows (1) and guard-0 knows that it
+  knows (2, *agrees*). On tick 6 contact-21 loses track (3, unknown,
+  supersedes 1). guard-0 restates that it is exposed (4, supersedes 2) and
+  is wrong: belief 4 *diverges*.
+* `accepted/false-concealment`: contact-21 knows (1). guard-0 had no cue and
+  thinks that it is hidden (2): belief 2 *diverges*.
+* `rejected/nesting-bounded`: guard-0's model of contact-21's model of
+  guard-0, of order 2, under the corpus depth of 1. Refused by the existing
+  `nesting-bounded` rule with path
+  `package.beliefs[belief_id=1].holders`.
+
+== Layout
+
+* `policies.json`: the caller's `enaction-policies/1` document, with
+  `depth.max_order` of 1. Its status policy is that of `conformance/mind/v1`.
+* `accepted/<case>/runner-output.json`: a valid envelope, in canonical bytes.
+  Generated from the contract types by
+  `crates/enaction-contracts/tests/tom.rs`.
+* `accepted/<case>/expected.json`: every model in the package, by belief id
+  in ascending order, with its verdict: `agrees`, `diverges` or `no-claim`.
+  Written by hand, never generated.
+* `rejected/<rule>/runner-output.json`: refused with exactly that rule.
+* `SHA256SUMS`: SHA-256 of every other file, sorted by path.
+
+== Use
+
+[source,bash]
+----
+cd conformance/tom/v1 && sha256sum -c SHA256SUMS
+enaction-validate --policies policies.json \
+  < accepted/false-exposure/runner-output.json      # exit 0
+enaction-validate --policies policies.json \
+  < rejected/nesting-bounded/runner-output.json     # exit 1, nesting-bounded
+----
+
+`enaction-validate` validates the envelope. It does not print the verdicts;
+`enaction_contracts::tom::model_agreements` derives them.
+
+The fixtures are design examples for the four cases of
+`docs/proposals/WEEVIL-SLICE-2-IT-MODELS-YOU.adoc`. They are not output of a
+real host. No host emits models yet.
