@@ -98,10 +98,12 @@ pub struct MindTick {
 #[serde(deny_unknown_fields)]
 pub struct Affect {
     pub token: String,
-    /// Attention, in mass units `0 ..= 10_000`. Read as a plain integer so
-    /// that a value above full mass is refused with its own rule,
-    /// `MassOutOfRange`, rather than as a shape fault.
-    pub attention: u64,
+    /// Attention, in mass units `0 ..= 10_000`, if the host publishes it
+    /// (ADR-0027: optional). Read as a plain integer so that a value above
+    /// full mass is refused with its own rule, `MassOutOfRange`, rather than
+    /// as a shape fault.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attention: Option<u64>,
     /// The runner-output event ids that caused this tick's token. Required
     /// to be nonempty when the token changed.
     pub caused_by: Vec<u64>,
@@ -114,9 +116,8 @@ pub struct Affect {
 pub struct Conation {
     /// Candidates, best first.
     pub ranking: Vec<String>,
-    /// The candidate the agent was already committed to, if any.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub incumbent: Option<String>,
+    /// The candidate the agent is already committed to (ADR-0027: required).
+    pub incumbent: String,
     pub selected: String,
     /// What the selection is aimed at, if anything. Opaque to the kernel.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -129,8 +130,7 @@ pub struct Conation {
 #[must_use]
 pub fn commitment_override(tick: &MindTick) -> bool {
     let c = &tick.conation;
-    c.incumbent.as_deref() == Some(c.selected.as_str())
-        && c.ranking.first().map(String::as_str) != Some(c.selected.as_str())
+    c.incumbent == c.selected && c.ranking.first().map(String::as_str) != Some(c.selected.as_str())
 }
 
 /// The `(agent, tick)` of every commitment-override tick, in document order.
@@ -211,10 +211,8 @@ pub fn validate_mind_trace(
                 );
             }
         }
-        if let Some(incumbent) = &t.conation.incumbent
-            && !declared(&vocab.candidates, incumbent)
-        {
-            undeclared(at("conation.incumbent"), "candidate", incumbent);
+        if !declared(&vocab.candidates, &t.conation.incumbent) {
+            undeclared(at("conation.incumbent"), "candidate", &t.conation.incumbent);
         }
         if !declared(&vocab.candidates, &t.conation.selected) {
             undeclared(at("conation.selected"), "candidate", &t.conation.selected);
@@ -239,7 +237,7 @@ pub fn validate_mind_trace(
                 "BadRanking",
                 format!("selected {:?} is not in the ranking", c.selected),
             ));
-        } else if c.ranking[0] != c.selected && c.incumbent.as_ref() != Some(&c.selected) {
+        } else if c.ranking[0] != c.selected && c.incumbent != c.selected {
             faults.push(Fault::new(
                 at("conation.selected"),
                 "UnexplainedSelection",
@@ -251,11 +249,13 @@ pub fn validate_mind_trace(
         }
 
         // Attention is a mass.
-        if t.affect.attention > full {
+        if let Some(attention) = t.affect.attention
+            && attention > full
+        {
             faults.push(Fault::new(
                 at("affect.attention"),
                 "MassOutOfRange",
-                format!("attention {} is above full mass {full}", t.affect.attention),
+                format!("attention {attention} is above full mass {full}"),
             ));
         }
 

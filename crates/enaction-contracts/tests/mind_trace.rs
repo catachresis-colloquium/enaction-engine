@@ -254,7 +254,7 @@ fn every_accepted_case_validates_and_matches_its_expected_output() {
     assert!(cases.contains("the-grudge") && cases.contains("the-flinch"));
 }
 
-fn tick(ranking: &[&str], incumbent: Option<&str>, selected: &str) -> MindTick {
+fn tick(ranking: &[&str], incumbent: &str, selected: &str) -> MindTick {
     let value = serde_json::json!({
         "tick": 1,
         "agent": "a",
@@ -274,25 +274,25 @@ fn commitment_override_is_derived_not_asserted() {
     // Selected is the incumbent and is not first: override.
     assert!(commitment_override(&tick(
         &["evade", "engage"],
-        Some("engage"),
+        "engage",
         "engage"
     )));
     // Selected is first: the ranking explains it, incumbent or not.
     assert!(!commitment_override(&tick(
         &["engage", "evade"],
-        Some("engage"),
+        "engage",
         "engage"
     )));
-    assert!(!commitment_override(&tick(&["engage"], None, "engage")));
+    assert!(!commitment_override(&tick(&["engage"], "engage", "engage")));
     // Selected is neither first nor incumbent: no override (and the
     // validator refuses it as UnexplainedSelection).
     assert!(!commitment_override(&tick(
         &["evade", "engage"],
-        Some("advance"),
+        "advance",
         "engage"
     )));
     // A producer cannot assert it: there is no member for it.
-    let mut value = serde_json::to_value(tick(&["a"], None, "a")).unwrap();
+    let mut value = serde_json::to_value(tick(&["a"], "a", "a")).unwrap();
     value["commitment_override"] = true.into();
     let bytes = value.to_string();
     let fault = canonical::decode::<MindTick>(bytes.as_bytes()).unwrap_err();
@@ -312,4 +312,24 @@ fn a_mind_trace_carries_no_utility_and_no_float() {
     value["ticks"][0]["affect"]["attention"] = serde_json::json!(0.75);
     let faults = validate_mind_trace(value.to_string().as_bytes(), &runner_output()).unwrap_err();
     assert_eq!(faults[0].rule, "NonIntegerNumber");
+}
+
+#[test]
+fn attention_is_optional_and_incumbent_is_required_per_adr_0027() {
+    let case = root().join("accepted/the-grudge");
+    let mut value: serde_json::Value = serde_json::from_slice(&mind(&case)).unwrap();
+    value["ticks"][0]["affect"]
+        .as_object_mut()
+        .unwrap()
+        .remove("attention");
+    validate_mind_trace(value.to_string().as_bytes(), &runner_output())
+        .expect("attention may be absent");
+
+    let mut value: serde_json::Value = serde_json::from_slice(&mind(&case)).unwrap();
+    value["ticks"][0]["conation"]
+        .as_object_mut()
+        .unwrap()
+        .remove("incumbent");
+    let faults = validate_mind_trace(value.to_string().as_bytes(), &runner_output()).unwrap_err();
+    assert_eq!(faults[0].rule, "BadShape", "{faults:?}");
 }
