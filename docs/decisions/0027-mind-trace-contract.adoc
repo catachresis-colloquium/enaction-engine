@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Architecture Decision Record: 0027-mind-trace-contract
+
+Date: 2026-11-14
+
+== Status
+
+Proposed
+
+Extends ADR-0014 (two-rate architecture) and ADR-0016 (confidence types).
+It gives a partial answer to one open problem in `CAC-KERNEL.adoc` section 8:
+whether affect is state or annotation.
+
+== Context
+
+The contract can describe what an agent believes and why. It cannot describe
+what an agent feels, what it wants, or what its body gives away. The only
+affect and conation fields are two optional annotations on an epistemic
+event. An event is the wrong carrier for a continuous process: affect changes
+on ticks where no evidence arrives.
+
+A designer needs to ask four questions about a mind:
+
+. Why did the agent choose this action?
+. Did it choose from the ranking, or from a commitment it already had?
+. What changed its mood, and when?
+. What did its body show before it acted?
+
+ADR-0014 and ADR-0016 limit the answers. No float may cross. A utility score
+may never leave the conative layer. Affect may buy attention and may never
+assert a truth.
+
+== Decision
+
+. *A separate document.* `enaction-mind-trace/1` is a versioned document
+  beside `enaction-runner-output/1`. The strict runner envelope gains no
+  optional field.
+. *One record for each agent on each tick.* It carries the affect token, an
+  optional attention mass, the candidate ranking, the incumbent, the selected
+  candidate, an optional target and the tells.
+. *Rankings, not scores.* The conative layer publishes the order of its
+  candidates. An order is invariant under any monotone rescale, so it leaks no
+  magnitude. This keeps ADR-0016 and still explains a choice.
+. *Reservoir values stay inside the host.* The contract carries the token and
+  the attention mass, as ADR-0014 crossing A allows. It does not carry the
+  continuous affect state.
+. *A change of token has a cause.* When an agent's token differs from its
+  previous token, the record names at least one event in the paired runner
+  output. A token may persist without a cause.
+. *Selection must be explained.* The selected candidate is first in the
+  ranking, or it is the incumbent. Any other selection is refused.
+. *Commitment override is derived.* A tick shows commitment override when the
+  selected candidate is the incumbent and is not first in the ranking. The
+  reader derives it. The producer does not assert it.
+. *Vocabularies are declared.* The document declares its affect tokens,
+  candidates and tells, in order. The engine owns no emotion names and no
+  action names. Games and hosts own them.
+. *Integers only, canonical bytes.* RFC 8785 JCS, with each integer at most
+  2^53-1.
+
+The rule names and the wire shape are normative in `CAC-KERNEL.adoc`. The
+fixtures in `conformance/mind/v1` are the currency.
+
+=== The answer to "state or annotation"
+
+Affect is *state* inside a host and a *trace* at the contract. The event
+annotation of the first slice stays, for the moment at which evidence arrives.
+The trace covers the ticks between events. The contract still never carries a
+continuous affect value.
+
+== Consequences
+
+=== Positive
+
+* "Ill will that persists" becomes a count that a test can check.
+* A host with a different affect model can conform. The contract fixes the
+  form of an explanation, not the psychology.
+* The validator can refuse a mind whose mood changes without a cause.
+
+=== Negative
+
+* A designer cannot tune reservoir constants from this document. Tuning needs
+  a host-side workbench channel, which this contract does not define.
+* A ranking hides how close two candidates were. A near tie and a wide gap
+  look the same.
+* The rule "selected is first or incumbent" assumes one commitment mechanism.
+  A host that selects by another lawful rule, such as a forced reflex, has no
+  way to say so yet. That is a known limit of version 1.
+
+=== Neutral
+
+* The event annotations `AffectAnnotation` and `ConativeAnnotation` do not
+  change.
+
+Real-game status:: No producer emits this document yet. The validator is work
+package A2 and the first producer is work packages A3 and B1 of
+`docs/proposals/WEEVIL-HOST-ROUTE.adoc`.

@@ -1,0 +1,250 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Enactive commitments
+:toc:
+:toclevels: 2
+:sectnums:
+
+Status: **Draft for the identity review of 2026-11-30** (written 2026-11-14).
+ADR-0018 requires this document. The owner ruled on 2026-11-09 (Q8) that it
+states each enactivist commitment that the engine makes and what would
+falsify it.
+
+This is a draft by an advisory agent. The owner decides whether the name
+fits. Section <<verdict>> gives an assessment, marked as an assessment.
+
+== How to read a commitment
+
+Each commitment has five parts:
+
+* *Claim.* One sentence that can be false.
+* *Source.* The work in the enactive literature that the claim answers to.
+* *Where.* The code, contract or decision record that carries it.
+* *Falsifier.* An observation or test result that shows the claim is false
+  for this engine.
+* *Evidence today.* What was run, with its result. "Designed" means that no
+  test exists.
+
+A commitment with no falsifier is decoration. ADR-0018 calls a bibliography
+with no design consequence the same defect as an empty crate.
+
+== Commitments that the engine makes
+
+=== C1. An agent's epistemic state is closed under its own history
+
+*Claim.* An agent's beliefs are a function of a declared prior and of that
+agent's own ordered observations. They are never a function of world state
+that the agent did not observe.
+
+*Source.* Varela, Thompson and Rosch define cognition as enaction: "a history
+of structural coupling that brings forth a world" <<vtr>>. The agent's world
+is the one its own history of coupling produced.
+
+*Honest limit.* In the literature, operational closure is a property of a
+network of processes that produce one another <<mv>>. The claim here is
+weaker. It is closure of an informational state under the agent's history. It
+is an analogy to operational closure and not an instance of it.
+
+*Where.* `enaction-trace::store` (baseline plus deltas for each perspective),
+ADR-0022 (the baseline is a frozen prior), `CAC-KERNEL.adoc` section 3.
+
+*Falsifier.* Two runs that differ only in an event outside the agent's
+observations and their causal closure give different beliefs for that agent.
+
+*Evidence today.* **The claim is false on `main`.** `BeliefStore::belief`
+reads the live world value for an agent with no observations
+(`crates/enaction-trace/src/store.rs:325`). The repair and its tests are work
+package A1 of `docs/proposals/WEEVIL-HOST-ROUTE.adoc`. Until that work is
+merged and its planted mutant fails, this commitment is not met.
+
+=== C2. Breakdown constitutes meaning
+
+*Claim.* A contradiction between what an agent expects and what it observes
+is a first-class event. It changes the agent's later conduct. It is never an
+error that the system hides or overwrites.
+
+*Source.* Winograd and Flores, after Heidegger: objects and properties show
+themselves in a breakdown of ready-to-hand activity <<wf>>.
+
+*Where.* Retraction is a trace event (`Revision::Retract`). `CAC-KERNEL.adoc`
+invariant 4 forbids a silent overwrite. ADR-0014 crossing B makes a
+contradiction a bounded arousal spike. The Weevil mind slice fills its arousal
+reservoir when an agent reaches a remembered place and finds nothing.
+
+*Falsifier.* Either of these: (a) a package in which a belief was overwritten
+with no contradiction record passes the validator; (b) in a fixture with a
+contradiction, the agent's trace after the contradiction is identical to a
+control run without it.
+
+*Evidence today.* Neither falsifier has a test. The package validator checks
+that a supersession link is well formed (`SupersedesUnknownBelief`,
+`SupersessionCycle`), and the trace validator checks that a retraction has a
+cause and a prior assertion. No rule refuses two beliefs of one holder about
+one proposition with no link between them, so (a) is open. (b) is designed.
+No crossing B has run. Work package A3 gives the first fixture.
+
+=== C3. Cognition is a loop through the world, not a pipeline
+
+*Claim.* What an agent comes to believe depends on what it did. Its actions
+change what it can observe next.
+
+*Source.* The enactive approach treats perception and action as one coupled
+process <<vtr>>, <<thompson>>.
+
+*Where.* The host boundary. A host gives a snapshot, the mind returns an
+intent, and the next snapshot contains the consequence. ADR-0014 adds that
+affect buys sampling, so feeling changes what is seen.
+
+*Falsifier.* For every fixture, the agent's belief trajectory is the same
+when its intents are replaced by a fixed script. If no fixture separates the
+closed loop from the open loop, the loop is decoration.
+
+*Evidence today.* Designed. No ablation test exists. This document proposes
+one as a conformance fixture: the same scenario with the agent's intents
+frozen must give a different belief trajectory.
+
+=== C4. No attention without stakes (proposed)
+
+*Claim.* Affect is not an output layer. It changes what the agent attends to,
+and therefore what it comes to believe, on at least one fixture.
+
+*Source.* Colombetti argues that affectivity is a primordial dimension of
+mind and not a separate faculty <<colombetti>>.
+
+*Honest limit.* ADR-0007 treats cognition, affect and conation as siblings.
+That separation is the thing Colombetti's thesis denies. The engine keeps the
+separation as an engineering boundary and makes only this weaker claim.
+
+*Where.* ADR-0014 crossing A. The Weevil mind slice: arousal extends memory
+lifetime.
+
+*Falsifier.* With every affect reservoir held at zero, every fixture gives
+the same belief trajectory as the normal run.
+
+*Evidence today.* Designed. The owner has not accepted this commitment. It is
+listed because the route chosen on 2026-11-14 makes it testable.
+
+== Commitments that the engine declines
+
+=== D1. Autopoiesis and precariousness
+
+The enactive account grounds sense-making in a system that produces and
+maintains itself under the threat of dissolution <<mv>>, <<dipaolo>>. Nothing
+in this engine produces itself.
+
+The Weevil route adds one qualification. A hosted agent has a health value,
+it can cease, and its fear reservoir regulates its conduct against that
+limit. Di Paolo calls regulation against the limits of viability
+*adaptivity* <<dipaolo>>. The engine still declines the commitment, for a
+stated reason: the norm is authored by a designer. Barandiaran, Di Paolo and
+Rohde require that an agent's norms arise from its own organisation
+<<agency>>. An authored viability variable does not meet that condition. The
+accurate description is *simulated precariousness*.
+
+=== D2. Anti-representationalism
+
+Beliefs in this engine are propositions with provenance. That is a design
+requirement: an agent that reasons invisibly cannot be told apart from an
+agent that cheats. The engine is representationalist and says so.
+
+=== D3. Participatory sense-making
+
+De Jaegher and Di Paolo locate social understanding in the interaction
+process between agents, and not only inside each agent <<psm>>. This engine
+models other minds by ascription paths: one agent's model of another agent's
+state. That is a representational theory of mind. The engine does not claim
+that meaning arises in the interaction itself.
+
+[[verdict]]
+== Assessment for the review
+
+This section is an assessment by the author of the draft. It is not a ruling.
+
+[cols="1,3,2",options="header"]
+|===
+| Commitment | State on 2026-11-14 | Needed before the name is earned
+
+| C1 | False on `main`. Repair in progress.
+| A1 merged, the observer tests pass, and the planted mutant fails.
+
+| C2 | The link structure is tested. Neither falsifier has a test.
+| A validator rule against a silent overwrite, and a fixture in which a
+  contradiction changes later conduct.
+
+| C3 | Designed.
+| The intent-ablation fixture.
+
+| C4 | Proposed. Not accepted.
+| Owner acceptance, then the zero-affect fixture.
+|===
+
+On this date, no commitment has complete passing evidence. The name is an
+aspiration, as ADR-0018 says. Three of the four falsifiers can have tests
+within the current route. If C1 to C3 pass by the review, the engine can
+defend a *weak enactive* reading: closure of the epistemic state, breakdown
+as a first-class event, and a loop through the world. It cannot defend the
+strong reading, because it declines D1 to D3.
+
+The review has three honest outcomes:
+
+. Keep the name, with this document as its qualification.
+. Keep the name on condition that C1 to C3 pass by a new date.
+. Execute the rename that ADR-0018 agreed in advance.
+
+== References
+
+Bibliographic details were checked through web search on 2026-11-14. The full
+texts were not read in this session. A claim about what a work argues rests on
+its abstract, a publisher record or a later citation, as the last column
+states.
+
+[cols="1,5,3",options="header"]
+|===
+| Key | Work | Checked
+
+| [[vtr]]vtr
+| Varela, F. J., Thompson, E. and Rosch, E. (1991). _The Embodied Mind:
+  Cognitive Science and Human Experience_. MIT Press.
+| The quoted definition and its page (206) are as quoted by Thompson in a
+  later paper. The book was not opened.
+
+| [[mv]]mv
+| Maturana, H. R. and Varela, F. J. (1980). _Autopoiesis and Cognition: The
+  Realization of the Living_. D. Reidel.
+| Not checked in this session.
+
+| [[thompson]]thompson
+| Thompson, E. (2007). _Mind in Life: Biology, Phenomenology, and the
+  Sciences of Mind_. Harvard University Press.
+| Not checked in this session.
+
+| [[wf]]wf
+| Winograd, T. and Flores, F. (1986). _Understanding Computers and Cognition:
+  A New Foundation for Design_. Ablex.
+| Publication details and the role of breakdown, from a review and a chapter
+  excerpt.
+
+| [[dipaolo]]dipaolo
+| Di Paolo, E. A. (2005). Autopoiesis, adaptivity, teleology, agency.
+  _Phenomenology and the Cognitive Sciences_ 4, 429-452.
+  doi:10.1007/s11097-005-9002-y
+| Details and abstract.
+
+| [[agency]]agency
+| Barandiaran, X. E., Di Paolo, E. A. and Rohde, M. (2009). Defining agency:
+  individuality, normativity, asymmetry, and spatio-temporality in action.
+  _Adaptive Behavior_ 17(5), 367-386.
+| Details and abstract.
+
+| [[psm]]psm
+| De Jaegher, H. and Di Paolo, E. (2007). Participatory sense-making: an
+  enactive approach to social cognition. _Phenomenology and the Cognitive
+  Sciences_ 6, 485-507. doi:10.1007/s11097-007-9076-9
+| Details and abstract.
+
+| [[colombetti]]colombetti
+| Colombetti, G. (2014). _The Feeling Body: Affective Science Meets the
+  Enactive Mind_. MIT Press.
+| Details and chapter title "Primordial Affectivity", from publisher records
+  and reviews. Some records give 2013.
+|===
