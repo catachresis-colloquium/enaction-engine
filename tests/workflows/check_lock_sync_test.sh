@@ -147,19 +147,57 @@ test_accepts_listed_zero_uses_workflow() {
 }
 
 test_accepts_yaml_extension_and_normalises_subpath() {
-  new_fixture reusable-workflow
+  new_fixture action-subpath
   {
     printf '%s\n' \
-      'name: Reusable workflow fixture' \
+      'name: Action subpath fixture' \
+      'on: push' \
+      'jobs:' \
+      '  build:' \
+      '    runs-on: ubuntu-latest' \
+      '    steps:' \
+      '      - uses: "Acme/Tools/sub-action@Main" # pinned action in a subdirectory'
+  } >"$WORKFLOWS_DIR/subpath.yaml"
+  write_closed_lock subpath.yaml 'acme/tools@Main'
+
+  run_checker
+  assert_success 'discovers .yaml workflows, strips quotes/comments, normalises subpaths, and folds repository case'
+}
+
+# gh actions-lock v0.2.0 (the official verifier the gate runs) does not lock
+# job-level reusable-workflow calls: it generates '[]' for a workflow whose only
+# uses: is such a call, and `--verify` rejects an entry for one as "Unused
+# lockfile entry". Measured on this repository, 2026-11-14 (Lock Sync Gate
+# run 43650652741). The local checker must agree, or the two gates can never
+# both pass.
+write_reusable_caller() {
+  {
+    printf '%s\n' \
+      'name: Reusable workflow caller' \
       'on: push' \
       'jobs:' \
       '  call:' \
       '    uses: "Acme/Reusable/.github/workflows/build.yml@Main" # pinned reusable workflow'
-  } >"$WORKFLOWS_DIR/reuse.yaml"
+  } >"$WORKFLOWS_DIR/$1"
+}
+
+test_accepts_reusable_workflow_call_with_empty_entry() {
+  new_fixture reusable-workflow-empty
+  write_reusable_caller reuse.yaml
+  write_closed_lock reuse.yaml
+
+  run_checker
+  assert_success 'accepts an empty lock entry for a job-level reusable-workflow call' '0 dangling edges'
+}
+
+test_rejects_lock_entry_for_reusable_workflow_call() {
+  new_fixture reusable-workflow-locked
+  write_reusable_caller reuse.yaml
   write_closed_lock reuse.yaml 'acme/reusable@Main'
 
   run_checker
-  assert_success 'discovers .yaml workflows, strips quotes/comments, normalises subpaths, and folds repository case'
+  assert_failure 'rejects a lock entry for a job-level reusable-workflow call, as gh actions-lock --verify does' \
+    'stale lockfile entries, no uses: references them: acme/reusable@Main'
 }
 
 test_ignores_local_and_non_action_uses() {
@@ -445,6 +483,8 @@ test_allows_unreferenced_dependency_record() {
 test_accepts_synchronised_lock
 test_accepts_listed_zero_uses_workflow
 test_accepts_yaml_extension_and_normalises_subpath
+test_accepts_reusable_workflow_call_with_empty_entry
+test_rejects_lock_entry_for_reusable_workflow_call
 test_ignores_local_and_non_action_uses
 test_accepts_duplicate_uses_once
 test_requires_lockfile
