@@ -27,6 +27,9 @@
 //!   validated by the `enaction-validate` binary.
 //! * **The mind trace** ([`mind`]): `enaction-mind-trace/1`, its named
 //!   rules, and the derived commitment override.
+//! * **Models** ([`tom`]): a belief of order 1 or more is compared with the
+//!   modelled bearer's own belief of one order less, never with world
+//!   truth; [`model_agreements`] derives the verdict (ADR-0028).
 //!
 //! # What is refused
 //!
@@ -53,6 +56,7 @@ pub mod envelope;
 pub mod mind;
 pub mod package;
 pub mod reduce;
+pub mod tom;
 pub mod version;
 
 pub use belief::{
@@ -69,4 +73,5 @@ pub use package::{
     EpistemicPackage, PackageFault, PackageManifest, SeedPolicy, package_digest, validate_package,
 };
 pub use reduce::{Derived, Diagnostic, EpistemicReduce, ReductionContext, ReductionResult};
+pub use tom::{ModelFault, ModelVerdict, model_agreements};
 pub use version::{ContractVersion, KERNEL_CONTRACT_VERSION, ProfileRef};

@@ -51,11 +51,20 @@ ADR-0022 (the baseline is a frozen prior), `CAC-KERNEL.adoc` section 3.
 *Falsifier.* Two runs that differ only in an event outside the agent's
 observations and their causal closure give different beliefs for that agent.
 
-*Evidence today.* **The claim is false on `main`.** `BeliefStore::belief`
-reads the live world value for an agent with no observations
-(`crates/enaction-trace/src/store.rs:325`). The repair and its tests are work
-package A1 of `docs/proposals/WEEVIL-HOST-ROUTE.adoc`. Until that work is
-merged and its planted mutant fails, this commitment is not met.
+*Evidence today.* The claim was false on `main` when this draft was first
+written: `BeliefStore::belief` read the live world value for an agent with no
+observations. Work package A1 repaired it later on the same day (pull request
+102, ADR-0022). On `main` at `03cb27b`:
+
+* `observer_sally_anne_two_run_probe` and
+  `observer_proptest_perturbs_outside_closure` pass;
+* `scripts/check-observer-mutant.sh` exits 0, and both tests fail against the
+  planted omniscience mutant.
+
+One residual limit stands, and ADR-0022 records it. A prior is frozen at
+registration, so a world event that is already in the trace at registration
+becomes part of every agent's prior. The game must register before the events
+that no agent may know.
 
 === C2. Breakdown constitutes meaning
 
@@ -164,8 +173,9 @@ This section is an assessment by the author of the draft. It is not a ruling.
 |===
 | Commitment | State on 2026-11-14 | Needed before the name is earned
 
-| C1 | False on `main`. Repair in progress.
-| A1 merged, the observer tests pass, and the planted mutant fails.
+| C1 | Met on `main` at `03cb27b`, with the registration-order limit of
+  ADR-0022.
+| Nothing more for the weak claim. Arm B of ADR-0022 removes the limit.
 
 | C2 | The link structure is tested. Neither falsifier has a test.
 | A validator rule against a silent overwrite, and a fixture in which a
@@ -178,9 +188,10 @@ This section is an assessment by the author of the draft. It is not a ruling.
 | Owner acceptance, then the zero-affect fixture.
 |===
 
-On this date, no commitment has complete passing evidence. The name is an
-aspiration, as ADR-0018 says. Three of the four falsifiers can have tests
-within the current route. If C1 to C3 pass by the review, the engine can
+At the end of this date, one commitment of four (C1) has passing evidence on
+`main`. For the other three the name is still an aspiration, as ADR-0018
+says. Two of the remaining falsifiers (C2 and C3) can have tests within the
+current route. If C1 to C3 pass by the review, the engine can
 defend a *weak enactive* reading: closure of the epistemic state, breakdown
 as a first-class event, and a loop through the world. It cannot defend the
 strong reading, because it declines D1 to D3.

@@ -19,10 +19,17 @@ The engine has a contract for minds and no place where a mind runs. Five
 library crates exist. No binary, no tick and no consumer exists.
 
 A sibling repository, `evil-weevil`, has the opposite shape. It has a frozen C
-ABI, an integer-only kernel, three injection modes and a real host: the
-IDApTIK guard runs on it through `crates/idaptik-weevil`. Its mind is thin: a
+ABI, an integer-only kernel, three injection modes and one adapter: IDApTIK's
+`crates/idaptik-weevil`, with a headless corridor runner. Its mind is thin: a
 utility graph, a remembered bearing and commitment by score margin. It does
 not mention this engine.
+
+*Correction, 2026-11-14.* The first version of this record called IDApTIK "a
+real host" on which "the IDApTIK guard runs". That was an overclaim. The
+adapter crate did not compile on IDApTIK `main`, and no CI job built it. Work
+package B1 of the route plan repaired it. The decision below does not depend
+on the overclaim: it needs a kernel with a frozen seam and a runner that can
+emit documents, and both now exist.
 
 Two facts constrain any connection between them:
 

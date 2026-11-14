@@ -1,0 +1,12 @@
+{
+  "models": [
+    {
+      "belief_id": 2,
+      "verdict": "agrees"
+    },
+    {
+      "belief_id": 4,
+      "verdict": "agrees"
+    }
+  ]
+}
