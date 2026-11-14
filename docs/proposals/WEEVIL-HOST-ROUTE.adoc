@@ -1,0 +1,440 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Weevil as first host: the mind, the body and the bench
+:toc:
+:toclevels: 2
+:sectnums:
+
+Status: **Proposed** (2026-11-14). This plan selects a route through
+link:ULTRACODE-COMPLETION-PLAN.adoc[ULTRACODE-COMPLETION-PLAN]. It does not
+replace that plan. Section <<relation>> lists each step that it keeps, narrows
+or defers. `CAC-KERNEL.adoc` stays normative.
+
+== Owner rulings, 2026-11-14
+
+The owner gave these rulings through the selector. Each line quotes the
+selected option label.
+
+[cols="1,3,3",options="header"]
+|===
+| # | Question | Ruling
+
+| R1 | Route for the Enaction Engine
+| "Weevil as first host". Evil Weevil is the injectable body. Enaction is the
+  mind contract, the validator and the inspector.
+
+| R2 | Home of the first deterministic affect and conation code
+| "Evil Weevil kernel". Enaction holds the contract and the fixtures, which
+  ADR-0017 permits. No `enaction-affect` or `enaction-conation` crate is
+  created.
+
+| R3 | Scale of work on the day
+| "Spine plus first visible". About 6 to 8 Opus sessions. Nothing merges
+  without the owner.
+
+| R4 | Effects that make a mind disturbing
+| All four: "It models you", "Wrong for a reason", "Ill will that persists",
+  "Bodily tells".
+|===
+
+== Why this route
+
+These facts were measured on 2026-11-14.
+
+* Enaction has 5 library crates and no binary, no tick and no consumer. The
+  default members pass 126 tests.
+* The observer leak is present at `crates/enaction-trace/src/store.rs:325`.
+  The optional digest is present at
+  `crates/enaction-contracts/src/package.rs:162`.
+* Evil Weevil has a frozen C ABI (1.0), an integer kernel and 3 injection
+  modes. Its kernel passes 32 of 32 tests with Zig 0.16.0.
+* IDApTIK already runs its guard on that kernel (`crates/idaptik-weevil`). It
+  also has a headless runner, `idaptik-weevil-replay`, with a deterministic
+  corridor world and a JSON replay.
+* IDApTIK has no `package-runner`. The supervisor ledger that the earlier plan
+  reports on does not drive the guard. The six-stage `CacTrace` is 6
+  constants.
+* Affect exists only in Project Ovine's JavaScript mockup, which uses a
+  variable time step and `Math.random`.
+* Evil Weevil does not mention Enaction anywhere.
+
+Conclusion: Enaction has a mind contract and no body. Evil Weevil has a body
+and a thin mind. One real host already carries that body.
+
+== Architecture
+
+[source,text]
+----
+ designer
+    |  ums-profile preview --explain                       (UMS: the bench)
+    v
+ UMS ProcessPreviewAdapter      argv only, cleared env, timeout, output cap
+    |
+    v
+ runner: idaptik-weevil-replay --emit-epistemic --emit-mind-trace   (IDApTIK)
+    |  links libevil_weevil.a through the C ABI            (Evil Weevil: body)
+    |  data seam, canonical JCS bytes:
+    |     enaction-runner-output/1     beliefs and world truth
+    |     enaction-mind-trace/1        affect, volition and tells
+    v
+ enaction-validate               (Enaction: the mind contract)
+    |
+    v
+ explain report, replay-checked
+----
+
+The rules of the earlier architecture stay in force:
+
+* No layer links another as a library, except that a host links the Evil
+  Weevil kernel through its C ABI.
+* Every seam is a process or a versioned document.
+* A missing binary is a failure. No stub runs outside tests.
+
+=== The licence boundary
+
+Enaction code is AGPL-3.0-or-later. Evil Weevil code is MPL-2.0, and its
+`AGENTIC` record denies AGPL. Therefore no Enaction source enters Evil
+Weevil. The mind crosses the boundary as contract documents and conformance
+bytes only. Evil Weevil implements the mind in its own integer Zig code and
+proves conformance against Enaction's fixtures.
+
+This also answers the composition question. A closed engine can load the
+MPL kernel in process. It can then emit Enaction documents and run
+`enaction-validate` as a separate program. No party must link AGPL code into
+a game. This plan makes no licence edit. Licence edits stay manual and
+owner-only.
+
+[[relation]]
+== Relation to the completion plan
+
+[cols="1,2,4",options="header"]
+|===
+| Step | Disposition | Detail
+
+| 1 | Kept | The remainder of proof-gate honesty, and `scripts/cargo-test-exact.sh`.
+| 2 | Kept | Observer boundary. The baseline becomes a frozen prior (Q2 arm A).
+| 3 | Kept | Mandatory digest and a required `StatusPolicy`.
+| 5 | Kept | UMS boundary gate and the honesty corrections.
+| 6 | Narrowed | Only (a) the six-line `package-runner` and (b) first-max
+  `most_likely`. The checked `Bpa` and `absorb` work is deferred.
+| 8 | Narrowed | ADR-0022 and ADR-0024 are written now. ADR-0023 and ADR-0025
+  wait for the ledger work. ADR-0026 and ADR-0027 are new (below).
+| 11 | Narrowed | Canonical module, self-computed digest, strict parsing, the
+  `enaction-runner-output/1` envelope and the `enaction-validate` binary.
+  Frame declarations, evidence payloads, independence groups and the
+  counterfactual envelope are deferred.
+| 19, 22 | Retargeted | The first runner is `idaptik-weevil-replay`, not a
+  ledger emitter. The leak verdict is deferred with the counterfactual seam.
+| 4, 7, 10, 12-18, 20, 23-28 | Deferred | Unchanged. They remain owed.
+|===
+
+*Departure, stated.* The completion plan's default arm is one kernel-owned
+reducer over Dempster-Shafer ledgers. This route does not abandon that arm.
+It changes the order: a running, injectable mind comes first, and the ledger
+reducer comes when ADR-0017 T1 is on record. The reason is that the reducer is
+gated on a person who is not the owner, and the Weevil route is not.
+
+== Mind slice 1
+
+=== Rules that bind every mind
+
+These rules come from ADR-0014, ADR-0015 and ADR-0016. They bind Evil Weevil
+because it conforms to the Enaction contract.
+
+. No float in the mind. All state is integer or fixed point.
+. Affect buys attention, never belief. Affect can change how often an agent
+  samples, how long it remembers and how fast it moves. Affect cannot assert
+  a proposition.
+. Utilities never leave the conative layer. A mind publishes a *ranking* of
+  candidates and the selected candidate. It never publishes a score.
+. A change of affect token is an event. It carries the identifier of the
+  event that caused it.
+. A contradiction is the pain signal. It produces a bounded arousal spike.
+
+=== The four effects
+
+[cols="2,4,3,1",options="header"]
+|===
+| Effect (R4) | Mechanism | Home | Slice
+
+| Wrong for a reason
+| The agent acts on a remembered bearing after the target moved, or on a
+  decoy. The report shows the belief, the world truth, the divergence and the
+  events behind the belief.
+| Exists in the kernel (memory, ADR-0009) and in the IDApTIK corridor world
+  (decoys). Slice 1 only reports it.
+| 1
+
+| Ill will that persists
+| A *grievance* reservoir for each remembered target. Harm from that target
+  fills it. It drains much more slowly than memory expires. It widens the
+  margin that a challenger must beat. The agent then keeps a pursuit that the
+  ranking no longer supports.
+| New in the kernel. Needs the host capability `EE_CAP_DAMAGE_EVENTS`.
+| 1
+
+| Bodily tells
+| An *arousal* reservoir. A surprise fills it. It changes the motor output
+  before the decision changes: a one-tick freeze (startle), a delay before a
+  new action (hesitate), and a locked gaze (fixate).
+| New in the kernel. Reported through intent flags.
+| 1
+
+| It models you
+| A first-order belief about the player: "the player knows where I am". The
+  host reports whether a contact observes the agent. The agent remembers it
+  and chooses ambush or open pursuit from it. The belief can be false.
+| New snapshot input and new belief state. Uses the ascription path
+  `[agent, player]`.
+| 2
+|===
+
+Slice 1 delivers 3 effects. "It models you" is slice 2, because it needs a new
+host input and a second belief store in the kernel.
+
+=== The definition that makes ill will checkable
+
+A tick shows *commitment override* when the selected candidate is the
+incumbent and is not first in the published ranking. The validator checks this
+definition. A designer can then count the ticks on which an agent acted from
+commitment and not from the ranking. This is the measurable form of "ill will
+that persists".
+
+=== Affect state in the kernel
+
+Three reservoirs, each a fixed-point value from 0 to full scale:
+
+[cols="1,3,3",options="header"]
+|===
+| Reservoir | Filled by | Effect
+
+| arousal | A new contact at close range, a contradiction, damage
+| Tells. Longer memory. It does not change belief.
+
+| fear | Low health, several threats, no ammunition
+| Raises the rank of evade. Shortens hesitation before flight.
+
+| grievance | Damage from one remembered target
+| Widens the commitment margin for that target.
+|===
+
+Each reservoir is a leaky integrator in integer arithmetic:
+`x' = x - (x >> k) + input`, clamped. The affect token is the reservoir with
+the highest value above a threshold, in declaration order on a tie, with a
+hysteresis band. The Evil Weevil decision record fixes `k`, the thresholds
+and the band, and pins them with digests.
+
+=== ABI
+
+The change is additive, so it is ABI 1.1 under Evil Weevil ADR-0005. The
+existing `ee_tick` does not change, and its 3 pinned digests must not move.
+That is the acceptance test, as in ADR-0010. New caller-owned state and a new
+trace record enter through a new entrance. A host that does not call the new
+entrance gets the 1.0 behaviour exactly.
+
+== The mind trace contract
+
+`enaction-mind-trace/1` is a separate versioned document. It stays outside
+`enaction-runner-output/1` so that the strict envelope gains no optional
+field. Integers only. Canonical bytes are RFC 8785 JCS (Q1).
+
+[source,json]
+----
+{
+  "contract": "enaction-mind-trace/1",
+  "producer": {"kernel": "evil-weevil", "abi": "1.1"},
+  "profile": {"id": "idaptik", "version": "1.0.0"},
+  "vocabulary": {
+    "affect_tokens": ["calm", "wary", "afraid", "angry"],
+    "candidates": ["advance", "investigate", "engage", "evade", "reload"],
+    "tells": ["hesitate", "startle", "fixate"]
+  },
+  "ticks": [
+    {
+      "tick": 41,
+      "agent": "guard-0",
+      "affect": {"token": "angry", "attention": 7500, "caused_by": [17]},
+      "conation": {
+        "ranking": ["evade", "engage", "advance"],
+        "incumbent": "engage",
+        "selected": "engage",
+        "target": "contact-3"
+      },
+      "tells": ["fixate"]
+    }
+  ]
+}
+----
+
+The validator refuses a document with a named rule when:
+
+* the contract tag differs, or a field is unknown (`UnknownField`);
+* a token, candidate or tell is not in the declared vocabulary
+  (`UndeclaredTerm`);
+* a vocabulary is empty or has a duplicate (`BadVocabulary`);
+* ticks are not strictly increasing for one agent (`NonMonotonicTick`);
+* a ranking is empty or has a duplicate, or `selected` is not in the ranking
+  (`BadRanking`);
+* `selected` is neither first in the ranking nor equal to `incumbent`
+  (`UnexplainedSelection`);
+* `attention` is above full mass (`MassOutOfRange`);
+* an affect token differs from the previous tick's token for that agent and
+  `caused_by` is empty (`UncausedAffectChange`);
+* an identifier in `caused_by` is absent from the paired runner output
+  (`DanglingCause`);
+* an integer is above 2^53-1 (`IntegerOutOfRange`).
+
+The report derives commitment override from the document. The producer does
+not assert it.
+
+== Work packages
+
+Each package is one cloud session with its own branch and one draft pull
+request. A `done_when` is a command whose failure is visible.
+
+=== Wave A: four sessions in parallel
+
+[cols="1,2,1,5,4",options="header"]
+|===
+| Id | Repository | Model | Scope and owned files | done_when
+
+| A1 | enaction-engine | Opus
+| Completion-plan steps 1 (remainder) and 2. Owns `crates/enaction-trace/**`,
+  `scripts/cargo-test-exact.sh`, `scripts/check-observer-mutant.sh`,
+  `tests/mutants/**`, `tests/check-proofs-vacuous.sh`, and
+  `docs/decisions/0022-*`.
+| `bash scripts/cargo-test-exact.sh enaction-trace
+  observer_sally_anne_two_run_probe`, the observer proptest, and
+  `bash scripts/check-observer-mutant.sh` all pass. The mutant copy fails.
+
+| A2 | enaction-engine | Opus
+| Steps 3 and 11 as narrowed, and the mind trace validator. Owns
+  `crates/enaction-contracts/**`, `docs/architecture/CAC-KERNEL.adoc`,
+  `conformance/mind/v1/**`, and `docs/decisions/0024-*`.
+| `cargo test --locked -p enaction-contracts --test package_fault_coverage
+  --test canonical_bytes --test mind_trace --test validate_cli` passes. One
+  fixture exists for every rule name above, and each is refused with its
+  rule. `! rg -q 'computed_digest: Option' crates/enaction-contracts/src`.
+
+| A3 | evil-weevil | Opus
+| Mind slice 1 in the kernel: reservoirs, grievance, tells, the trace record,
+  ABI 1.1, the Idris2 specification, and a decision record. Fixtures "the
+  grudge" and "the flinch".
+| `just seam-check` passes. The 3 digests of `ee_tick` are unchanged. Both
+  null hosts agree on the new pinned digests. A planted change to a reservoir
+  constant moves a digest and fails the gate.
+
+| A4 | universal-modding-studio | Opus
+| Step 5, then step 19 against stub binaries, then the explain lens for the
+  mind trace. Owns `crates/ums-profile-sdk/src/preview.rs`, its tests,
+  `adapters/enaction/**`, `scripts/check-architecture-boundaries.sh`, and
+  ADR-0019.
+| `cargo test --locked -p ums-profile-sdk --test process_preview --test
+  explain_golden` passes. A missing binary fails the preview. A stub runner
+  that is not deterministic is refused with `ReplayMismatch`.
+|===
+
+=== Wave B: after A2 and A3 are reviewed
+
+[cols="1,2,1,5,4",options="header"]
+|===
+| Id | Repository | Model | Scope | done_when
+
+| B1 | IDApTIK | Opus
+| Adapter mirror for ABI 1.1. `idaptik-weevil-replay --emit-epistemic
+  --emit-mind-trace`. The six-line `package-runner`. First-max `most_likely`.
+| Both emitted documents pass `enaction-validate`. Two runs in separate
+  processes give identical bytes under `cmp`. `just roundtrip-idaptik` passes
+  from UMS.
+
+| B2 | universal-modding-studio | Opus
+| Replace the stubs with the real binaries. Add `just preview-weevil`.
+| The preview of "the grudge" reports at least 1 commitment-override tick,
+  prints `replay-identical: ok`, and matches its golden file.
+
+| B3 | each repository | Haiku or Sonnet
+| Status upkeep: `ROUNDTRIP-STATUS`, `READINESS`, `ROADMAP`,
+  `CAC-DOCUMENT-MAP`, `AFFIRMATION`. Record every leg that did not run as
+  `OPEN` with its reason.
+| Each status file names the source commit that its gates ran on.
+|===
+
+=== Advisor work, in the coordinating session
+
+* ADR-0026: Evil Weevil is the first host, and the mind crosses as bytes.
+* ADR-0027: the mind trace contract (rankings, tokens, tells, causes).
+* `docs/theory/ENACTIVE-COMMITMENTS.adoc`, which Q8 requires before
+  2026-11-30.
+* Review of every Wave A pull request against its `done_when` before Wave B
+  starts.
+
+== Orchestration rules
+
+. *Models.* The advisor designs contracts and decision records and reviews
+  gates. Opus implements one package for each session. Sonnet reads, writes
+  tests against a fixed specification and makes mechanical changes. Haiku does
+  CI, workflow and status upkeep.
+. *One coordinator for each repository.* A1 and A2 share enaction-engine.
+  They own disjoint crates. Neither edits `Cargo.toml`, `Justfile` or a
+  workflow. The coordinator applies those edits and resolves `Cargo.lock`.
+. *Tests first.* Each session writes the failing test or the planted control
+  before the change.
+. *No silent pass.* A step whose toolchain is absent is reported as not run.
+  It is never reported as passed.
+. *Stop conditions.* A session stops and reports when a gate needs an owner
+  ruling, when it must edit a file that another package owns, or when a
+  licence header would change.
+. *Draft pull requests only.* Nothing merges without the owner.
+
+=== Provisioning, verified on 2026-11-14
+
+Zig 0.16.0 installs from the package index without access to ziglang.org.
+This command was run in an agent container, and the Evil Weevil kernel tests
+passed with the result.
+
+[source,bash]
+----
+python3 -m pip install --no-cache-dir --target "$HOME/zig16" ziglang==0.16.0
+export PATH="$HOME/zig16/ziglang:$PATH"
+----
+
+`just` and Idris2 were not installed in this session. A session that needs
+them installs them and records the commands that worked. The completion plan
+records that Idris2 0.8.0 builds from source with Chez Scheme in about ten
+minutes.
+
+== Evidence discipline for the psychology
+
+The mechanisms above are design hypotheses. They are not findings. These
+sources are leads for the theory document. No source was checked in this
+session, so none is cited as evidence:
+
+* appraisal theory (Lazarus; Scherer) for affect as an evaluation of events
+  against goals;
+* action tendencies (Frijda) for affect that prepares movement before choice;
+* anger as an approach-related affect (Carver and Harmon-Jones) for
+  grievance that drives pursuit;
+* intention as commitment (Bratman) for a plan that resists reconsideration;
+* mind perception and the uncanny (Gray and Wegner) for unease caused by an
+  apparent capacity to feel;
+* the attribution of intent to simple motion (Heider and Simmel).
+
+A claim about animals or people does not transfer to a game agent without an
+argument. The theory document must state each commitment and what would
+falsify it.
+
+== Open items for the owner
+
+* Evil Weevil gains ABI 1.1. Its decision record needs acceptance.
+* ADR-0022, 0024, 0026 and 0027 are Proposed until the owner accepts them.
+* The name review is due on 2026-11-30.
+* The repository UUID migration (Q7) is not part of this plan.
+
+== Refused
+
+* An `enaction-affect` or `enaction-conation` crate (ADR-0017).
+* Any Enaction source inside Evil Weevil, and any licence edit.
+* A published utility score.
+* Affect that changes a belief directly.
+* A stub adapter outside tests.
+* A label of "cognition" on the six-row `CacTrace`.
