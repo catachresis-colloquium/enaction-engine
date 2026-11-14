@@ -124,3 +124,10 @@ Real-game status:: The whole-estate determinism this describes is not
 demonstrated. `FixedStep` has not run in a real game. The conformance harness
 does not exist. What is true today is narrower: IDApTIK achieves byte parity
 under its own regime, and Slavia's cognition layer is float-free.
+
+== Amendment, 2026-11-14
+
+The owner ruled on 2026-11-05 (completion-plan question Q1) that canonical
+parity bytes are RFC 8785 JCS over integer-only I-JSON, with every integer at
+most 2^53-1. ADR-0024 (Proposed) records that ruling. Where this record says
+"canonical CBOR", read that ruling. The body above is unchanged.

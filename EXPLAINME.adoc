@@ -6,7 +6,7 @@
 
 This document maps the principal claims in `README.adoc` to evidence. A passing
 test demonstrates only the property it observes; it does not turn the current
-timing crate into a complete game engine.
+crates into a complete game engine.
 
 == Deterministic whole-step simulation support
 
@@ -102,27 +102,41 @@ Provenance:: Mixed: interpolation is derived from IDApTIK; `FixedStep` is new.
 
 == Complete engine subsystems are absent
 
-Claim:: The repository is currently only the first deterministic substrate.
-Implementation artifact:: The workspace lists only `crates/enaction-time`.
+Claim:: The repository is currently a small set of library crates, not an
+engine.
+Implementation artifact:: The workspace lists five crates: `enaction-time`,
+`enaction-trace`, `enaction-contracts` (which also has a binary,
+`enaction-validate`), `enaction-accelerator` and `enaction-accelerator-native`.
 Verification gate:: `cargo metadata`, workspace tests, repository-tree review,
-and the speculative-subsystem rule in ADR-0012.
+and the speculative-subsystem rule in ADR-0012. On 2026-11-14 `cargo test
+--locked` on `main` at 03cb27b passed 162 tests with 0 failures on the default
+members; `enaction-accelerator-native` needs Zig, is outside the default
+members and was not built in that run.
 Demonstrated:: No renderer, ECS, audio, input, assets, networking, general AI,
 physics, or complete cognitive/affective/conative crate is shipped here.
 Not demonstrated:: Any of those future capabilities.
-Real-game status:: Not applicable.
+Real-game status:: No game links any `enaction-*` crate. The contract's
+documents (`enaction-runner-output/1` and `enaction-mind-trace/1`) now have a
+producer and a reader in other repositories: IDApTIK's `idaptik-weevil-replay`
+emits both from the Evil Weevil kernel, and Universal Modding Studio previews
+and explains them. `enaction-trace` and `enaction-time` still have no consumer.
 Provenance:: Honest current repository state.
 
 == Future UMS contract
 
 Claim:: UMS may author and validate content through versioned contracts without
 becoming a runtime dependency.
-Implementation artifact:: `docs/architecture/UMS-INTEGRATION.adoc` and ADR-0009.
-Verification gate:: Architecture review only; there is no adapter or contract
-implementation yet.
-Demonstrated:: The intended dependency boundary and prohibition on cycles.
-Not demonstrated:: Schema stability, package compatibility, preview parity, or
-an actual UMS adapter.
-Real-game status:: No.
+Implementation artifact:: `docs/architecture/UMS-INTEGRATION.adoc`, ADR-0009,
+and `enaction-contracts` with its `enaction-validate` binary (ADR-0024,
+Proposed).
+Verification gate:: Architecture review, plus the `enaction-contracts` tests
+and the `conformance/mind/v1` corpus.
+Demonstrated:: The intended dependency boundary and prohibition on cycles; a
+validator that computes the mandatory digest over RFC 8785 JCS bytes; a
+producer and a reader of the two documents in other repositories (see above).
+Not demonstrated:: Schema stability, package compatibility, or a UMS runtime
+adapter.
+Real-game status:: No game links an `enaction-*` crate.
 Provenance:: Design direction, not extracted code.
 
 == Rust now, AffineScript later
@@ -143,13 +157,17 @@ Provenance:: Current implementation plus an explicitly conditional direction.
 
 Claim:: Enaction Engine is scoped as a complete game engine in the long term.
 Implementation artifact:: `ARCHITECTURE.md`, `docs/status/ROADMAP.adoc`, and
-ADRs 0007, 0010, and 0012.
+ADRs 0007, 0010, 0012 and 0026 (Proposed).
 Verification gate:: None for unimplemented direction; each future component
 must introduce its own implementation evidence and tests before documentation
 may move it into “implemented now.”
 Demonstrated:: A modular destination and admission rule.
 Not demonstrated:: Rendering, physics, audio, input, assets, networking,
-persistence, tools, or full cognition/affect/conation.
-Real-game status:: Only the timing/interpolation provenance described above.
+persistence, tools, or full cognition/affect/conation. Affect and conation
+have only a contract and fixtures here; their first implementation is in the
+Evil Weevil kernel (its ADR-0013, Proposed there), and ADR-0017's refusal of
+`enaction-affect` and `enaction-conation` stands.
+Real-game status:: The timing/interpolation provenance described above, and
+the Evil Weevil kernel as a producer of the contract's documents.
 Provenance:: Incremental extraction strategy, with Chronicles of Slavia planned
 as the second abstraction test.
