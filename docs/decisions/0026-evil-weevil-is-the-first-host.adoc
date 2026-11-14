@@ -1,0 +1,86 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Architecture Decision Record: 0026-evil-weevil-is-the-first-host
+
+Date: 2026-11-14
+
+== Status
+
+Proposed
+
+Applies ADR-0010 (proving grounds), ADR-0013 (two-layer estate) and ADR-0015
+(conformance fixtures are the cross-repository currency). It leaves ADR-0017
+unchanged. The owner selected this route through the selector on 2026-11-14;
+see `docs/proposals/WEEVIL-HOST-ROUTE.adoc`.
+
+== Context
+
+The engine has a contract for minds and no place where a mind runs. Five
+library crates exist. No binary, no tick and no consumer exists.
+
+A sibling repository, `evil-weevil`, has the opposite shape. It has a frozen C
+ABI, an integer-only kernel, three injection modes and a real host: the
+IDApTIK guard runs on it through `crates/idaptik-weevil`. Its mind is thin: a
+utility graph, a remembered bearing and commitment by score margin. It does
+not mention this engine.
+
+Two facts constrain any connection between them:
+
+* The licences differ. This engine's code is AGPL-3.0-or-later. Evil Weevil's
+  code is MPL-2.0, and its own rules deny AGPL. Source can never move from
+  this engine into that kernel.
+* The estate already forbids link edges between the engine, the studio and
+  the games. Seams are processes and versioned documents.
+
+== Decision
+
+. *Evil Weevil is the first host of the engine's mind contract.* A mind that
+  runs in that kernel emits documents that this engine defines and validates.
+. *The mind crosses the boundary as bytes.* This engine publishes contracts,
+  a validator binary and conformance fixtures. Evil Weevil implements the mind
+  in its own code and proves conformance against the fixtures. No source and
+  no link edge crosses.
+. *This engine owns three things on the route:* the contract text
+  (`CAC-KERNEL.adoc`), the validator (`enaction-validate`) and the fixtures
+  (`conformance/mind/v1`). It owns no affect or conation implementation.
+  ADR-0017's refusal of `enaction-affect` and `enaction-conation` stands.
+. *A lesson from the host is recorded here.* When the kernel work shows that
+  the contract was wrong, the correction lands in the contract and in
+  `docs/status/DEFECTS.adoc`. Those records are candidate T3 evidence under
+  ADR-0017 for a later extraction.
+. *No licence changes.* Licence edits stay manual and owner-only.
+
+== Consequences
+
+=== Positive
+
+* The contract gains a consumer with a real game behind it.
+* A closed engine can use the route. It loads the MPL kernel in process and
+  runs the AGPL validator as a separate program at design time.
+* Affect and conation get deterministic integer code in a kernel that a game
+  already ships, which is the condition ADR-0017 sets for later extraction.
+
+=== Negative
+
+* The engine's *crates* still have no consumer. This route exercises
+  `enaction-contracts` through its binary. It does not exercise
+  `enaction-trace` or `enaction-time`. Their status in
+  `docs/status/READINESS.adoc` does not improve.
+* Mind semantics will exist in two places when the kernel-owned reducer
+  arrives: integer Zig in the host and Rust here. Only the fixtures keep them
+  equal. A divergence that no fixture covers stays invisible.
+* The kernel-owned reducer of the completion plan moves later. It still waits
+  for ADR-0017 T1.
+
+=== Neutral
+
+* IDApTIK's ADR-0009 is unaffected. IDApTIK gains no `enaction-*` dependency.
+
+Real-game status:: No document from a Weevil-hosted mind has passed the
+validator. The validator binary and the mind slice are in progress in work
+packages A2 and A3 of the route plan.
+
+== Review
+
+Review this decision at the identity review on 2026-11-30, and again when the
+first Weevil-hosted preview passes its gate.
