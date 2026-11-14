@@ -1,0 +1,93 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
+= Architecture Decision Record: 0024-canonical-bytes-jcs
+
+Date: 2026-11-14
+
+== Status
+
+Proposed
+
+Default arm: owner ruling Q1, arm A (RFC 8785 JCS over integer-only I-JSON),
+ruled 2026-11-05. This record is Proposed until the owner accepts it.
+
+== Context
+
+ADR-0015 requires canonical encoding before any hash or parity comparison,
+and names canonical CBOR for bytes. The owner ruled on 2026-11-05 (completion
+plan, Q1) that the estate's canonical parity bytes are RFC 8785 JCS instead,
+over integer-only I-JSON, provided that every integer-valued field is bounded
+to 2^53 − 1 with no decimal-string escape. I-JSON integers beyond that bound
+round in JavaScript consumers, and UMS, Evil Weevil hosts and browser tools
+must all read the same bytes.
+
+Until this change `validate_package` compared a digest that the caller
+computed, and the digest argument was optional. A caller could skip the
+check, or vouch for a mutated package. ADR-0019 had refused a hashing
+dependency for that reason.
+
+== Decision
+
+. **Canonical bytes are RFC 8785 JCS over integer-only I-JSON.** The module
+  is `crates/enaction-contracts/src/canonical.rs`. Output is exactly RFC 8785:
+  object members sorted by UTF-16 code units, arrays in order, minimal string
+  escapes, no insignificant whitespace.
+. **Integers only.** A number with a fraction or an exponent is refused as
+  `NonIntegerNumber`, on input and on output.
+. **Bounded integers.** Every integer above 2^53 − 1, or below its negation,
+  is refused as `IntegerOutOfRange`. The bound applies to every integer on the
+  wire and in a policy document, `usize` fields such as
+  `DepthPolicy.max_order` included. The decoder enforces it generically, so
+  no field can opt out. There is no decimal-string escape.
+. **Strict I-JSON.** Duplicate member names, lone surrogates, raw control
+  characters, a byte-order mark, trailing input and every RFC 8259 grammar
+  error are refused. Contract types reject unknown members before anything is
+  canonicalised or hashed, so a digest always covers every member supplied.
+. **The package digest is computed by the validator.** It is the lowercase
+  hex SHA-256 of the canonical bytes of the package's typed form with
+  `manifest.digest` omitted. `validate_package` no longer takes a digest.
+  ADR-0019's "no hashing dependency" is withdrawn for this purpose:
+  `enaction-contracts` now depends on `sha2`.
+. **`Known` is renamed `Certain`.** Full belief mass is certainty of
+  commitment, not knowledge. On the wire the status is `certain`; `known` is
+  refused.
+
+=== No float and no utility score
+
+The contract carries **no float anywhere** and **no utility score**. This is
+not a range rule that a careful producer could satisfy; it is a property of
+the bytes. A float cannot be encoded, because the canonical form refuses every
+non-integer number. A utility cannot be published, because no contract type
+has a field for it: a conative annotation and a mind-trace tick publish a
+*ranking* of candidates and the selected candidate, never a score (ADR-0016:
+utilities never leave the conative layer). A producer that adds a `utility`
+member is refused as `UnknownField`.
+
+=== Amendment owed
+
+ADR-0015's "Canonical CBOR for bytes" wording is superseded by this record.
+The owner ruling says ADR-0015 is amended in the same change as completion-plan
+step 11. This record does not edit ADR-0015, because that file is outside this
+work package; the coordinator applies the amendment. ADR-0016 still names the
+status `Known` in its evaluation order; its amendment (Known → Certain) is
+likewise owed by completion-plan step 8.
+
+== Consequences
+
+* A digest is reproducible in any language with a JCS implementation and a
+  SHA-256, which is what a cross-repository conformance fixture needs.
+* A JavaScript consumer reads every integer exactly.
+* Integer-valued fields lose the range above 2^53 − 1. No field in the
+  contract needs it today. Arm B (canonical CBOR, full `u64`) stays recorded as
+  the alternative.
+* The typed form fixes the projection: an absent optional member is omitted,
+  never written as `null`, and an empty `holders` is omitted. A producer that
+  hashes a different spelling of the same package gets a different digest.
+  The conformance fixtures pin this.
+* `enaction-contracts` gains three runtime dependencies: `sha2`,
+  `serde_json` (promoted from a dev-dependency) and `serde_path_to_error`.
+
+Real-game status:: No game emits these bytes yet. The JCS vectors used to
+test the module come from `hyperpolymath/ijson-jcs` at commit
+`1735d68768920f6f59667c9ba2c84769d8d45336` and from RFC 8785 section 3.2.3.
+Vectors with non-integer numbers are kept as refusals.

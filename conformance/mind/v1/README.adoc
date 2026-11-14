@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Mind trace contract v1 conformance fixtures
+
+These fixtures are the cross-repository currency for `enaction-mind-trace/1`
+(CAC-KERNEL §10). A host kernel that emits mind traces, such as Evil Weevil,
+proves conformance against these bytes. No Enaction source is needed to do
+so: run `enaction-validate`, or reimplement the rules from CAC-KERNEL.
+
+== Layout
+
+* `policies.json`: the caller's `enaction-policies/1` document.
+* `runner-output.json`: the paired `enaction-runner-output/1` envelope, in
+  canonical bytes. Its package events (ids 11, 17 and 23) are the only causes
+  a mind trace here may cite. It is generated from the contract types by
+  `crates/enaction-contracts/tests/mind_trace.rs`.
+* `accepted/<case>/mind-trace.json`: a valid trace.
+  `accepted/<case>/expected.json`: the commitment-override ticks the
+  validator derives from it.
+** `the-grudge`: harm from `contact-3` makes `guard-0` angry. The agent keeps
+   engaging on ticks 42 and 43 after the ranking prefers evading: commitment
+   override, the checkable form of "ill will that persists".
+** `the-flinch`: an unexplained noise startles `guard-0`. The `startle` tell
+   comes one tick before the decision changes, then `hesitate`.
+* `rejected/<RuleName>/mind-trace.json`: one case for each rule. Each is
+  refused with exactly that rule and no other.
+* `SHA256SUMS`: SHA-256 of every other file, sorted by path.
+
+== Use
+
+[source,bash]
+----
+cd conformance/mind/v1 && sha256sum -c SHA256SUMS
+enaction-validate --policies policies.json \
+  --mind-trace accepted/the-grudge/mind-trace.json < runner-output.json
+----
+
+The fixtures are design examples for the four effects of WEEVIL-HOST-ROUTE.
+They are not output of a real kernel. No host emits mind traces yet.

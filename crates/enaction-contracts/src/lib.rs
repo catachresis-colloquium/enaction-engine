@@ -19,7 +19,14 @@
 //!   a replay harness for the determinism MUST.
 //! * **Package validation** ([`package`]): everything a package MUST declare
 //!   and everything a loader MUST reject, as a validator that reports every
-//!   fault.
+//!   fault. It computes the package digest itself.
+//! * **Canonical bytes** ([`canonical`]): RFC 8785 JCS over integer-only
+//!   I-JSON (ADR-0024), the bytes every digest and parity check uses.
+//! * **The runner seam** ([`envelope`]): the `enaction-runner-output/1`
+//!   envelope and the caller's `enaction-policies/1` document, both strict,
+//!   validated by the `enaction-validate` binary.
+//! * **The mind trace** ([`mind`]): `enaction-mind-trace/1`, its named
+//!   rules, and the derived commitment override.
 //!
 //! # What is refused
 //!
@@ -41,6 +48,9 @@
 #![forbid(unsafe_code)]
 
 pub mod belief;
+pub mod canonical;
+pub mod envelope;
+pub mod mind;
 pub mod package;
 pub mod reduce;
 pub mod version;
@@ -51,6 +61,12 @@ pub use belief::{
     Subject,
 };
 pub use enaction_trace::Mass;
-pub use package::{EpistemicPackage, PackageFault, PackageManifest, SeedPolicy, validate_package};
+pub use envelope::{
+    Fault, POLICIES_CONTRACT, Policies, RUNNER_OUTPUT_CONTRACT, RunnerOutput, parse_policies,
+    validate_runner_output,
+};
+pub use package::{
+    EpistemicPackage, PackageFault, PackageManifest, SeedPolicy, package_digest, validate_package,
+};
 pub use reduce::{Derived, Diagnostic, EpistemicReduce, ReductionContext, ReductionResult};
 pub use version::{ContractVersion, KERNEL_CONTRACT_VERSION, ProfileRef};

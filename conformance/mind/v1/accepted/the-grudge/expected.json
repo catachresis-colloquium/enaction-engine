@@ -1,0 +1,12 @@
+{
+  "commitment_override": [
+    {
+      "agent": "guard-0",
+      "tick": 42
+    },
+    {
+      "agent": "guard-0",
+      "tick": 43
+    }
+  ]
+}
