@@ -51,24 +51,57 @@ where the target once saw it.
   when neither holds it. It diverges otherwise. A model with status
   `rejected` says that the bearer does not hold it. A model with status
   `unknown` makes no claim.
-. *At the model's tick, under supersession.* A model is compared at its
-  `valid_from`. A belief holds at tick `t` when its `valid_from` is at most
-  `t` and no belief that supersedes it has a `valid_from` of at most `t`.
+. *Over the model's lifetime, under supersession.* A belief holds at tick
+  `t` when its `valid_from` is at most `t` and no belief that supersedes it
+  has a `valid_from` of at most `t`. A model's lifetime runs from its
+  `valid_from` to the earliest `valid_from` of a belief that supersedes it,
+  or to the end of the package. The model is compared at every tick of its
+  lifetime.
+. *A timeline, not a point.* The reader derives, for each model, an ordered
+  list of segments `{from_tick, verdict}`. The first starts at the model's
+  `valid_from`; a new one starts where the verdict changes. A superseded
+  model also carries `until`, the tick where its lifetime ends.
+. *Stale divergence is derived.* A model is stale-divergent when its first
+  segment agrees and a later segment diverges: it was right when stated
+  and went wrong without being restated. That is a false exposure.
 . *Closed over stated models.* For each proposition that a model states
   about b, the package states b's compared belief when b holds it. A missing
   belief means that b does not hold the proposition.
 . *Refuse what the rules cannot decide.* When more than one compared belief
-  holds at the model's tick, the reader refuses with
-  `model-counterpart-unique` and does not choose.
-. *Derived, not asserted.* The reader derives the verdict
-  (`enaction_contracts::tom::model_agreements`, in belief-id order). The
-  function takes a package and no world truth. The producer does not assert
-  the verdict, and no document gains a member for it.
+  holds at any tick inside the model's lifetime, the reader refuses the
+  model with `model-counterpart-unique` and does not choose.
+. *Derived, not asserted.* The reader derives the timeline and stale
+  divergence (`enaction_contracts::tom::model_timelines` and
+  `stale_divergence`, in belief-id order). The functions take a package and
+  no world truth. The producer asserts neither, and no document gains a
+  member for them.
 . *No new document and no new field.* A profile that uses models declares a
   depth `max_order` of 1 or more. `enaction-validate` gains no flag.
 
 The normative statement is in `CAC-KERNEL.adoc` section 9, "Models are
 compared with minds". The fixtures in `conformance/tom/v1` are the currency.
+
+=== Rejected alternative: one verdict at the model's `valid_from`
+
+The first draft of this record compared each model once, at its own
+`valid_from`. It was rejected in review before acceptance. A false exposure
+is exactly a model that the agent does not restate while the target's own
+belief changes. Judged only when stated, such a model agrees, and the effect
+that slice 2 exists to show disappears. A producer could recover it only by
+restating every model on every tick that the target changes, which puts the
+reader's work on the producer and makes the verdict depend on how often a
+producer chooses to write. The corpus keeps `false-exposure-restated` to
+show that both forms of a producer's output read correctly.
+
+=== Open points for the owner
+
+* *Supersession across kinds.* The package rules let a belief supersede a
+  belief of another bearer, path or proposition. This record lets any such
+  link end the superseded belief. Whether such a link is meaningful, and
+  whether the validator should refuse it, is not decided.
+* *Whether the validator refuses an undecidable model.* Today only the
+  derivation refuses (`model-counterpart-unique`); `enaction-validate`
+  accepts the package.
 
 == Consequences
 
@@ -78,8 +111,9 @@ compared with minds". The fixtures in `conformance/tom/v1` are the currency.
   is, what the target believes, what the agent thinks the target believes,
   and whether the agent is right about the target.
 * False exposure and false concealment become checkable. The corpus holds a
-  model that diverges in each, and a reader that compared with the world
-  would get three of its four cases wrong.
+  model that diverges in each, and a false exposure that was never
+  restated is flagged as stale-divergent. A reader that compared with the
+  world would get most of the corpus wrong.
 * The rule is a pure function of one package. It needs no world, no clock
   and no host.
 
@@ -93,14 +127,14 @@ compared with minds". The fixtures in `conformance/tom/v1` are the currency.
   belief and an own belief that the bearer does not hold look the same. A
   producer that forgets to state an own belief makes every model of it read
   as "the bearer does not hold it". The producer's own tests carry the rule.
-* A model is compared at its own `valid_from` only. A model that persists
-  while the target's belief changes is not compared again. A producer that
-  wants the change judged must restate the model, as the `false-exposure`
-  case does.
-* The corpus has order 1 only, because its depth is 1. A reader that read
-  the ascription path the other way round (removing the innermost holder)
-  derives the same verdicts on every case in it. The crate's own tests pin
-  the reading at order 2; the corpus does not.
+* A model's lifetime has no end tick unless something supersedes it. A
+  producer that forgets to supersede a model it no longer holds leaves it
+  standing to the end of the package, and the reader judges it there.
+* An ambiguity anywhere in a lifetime refuses the whole model, including
+  the ticks before the ambiguity, which were decidable.
+* One accepted case (`second-order`) pins the reading of the ascription
+  path for a reader in another repository. At order 1 the two readings give
+  the same verdicts.
 * The rule says "holds" or "does not hold". It does not compare intervals.
   A model of `suspected` agrees with an own belief of `certain`.
 
