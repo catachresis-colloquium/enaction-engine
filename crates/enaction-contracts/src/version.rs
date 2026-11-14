@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
     not(creusot),
     derive(PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)
 )]
+#[cfg_attr(not(creusot), serde(deny_unknown_fields))]
 pub struct ContractVersion {
     pub major: u16,
     pub minor: u16,
@@ -54,6 +55,7 @@ impl std::fmt::Display for ContractVersion {
 /// declared without changing kernel semantics (CAC-KERNEL §5).
 #[cfg(not(creusot))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProfileRef {
     /// Namespaced identifier, e.g. `"idaptik/esm/v1"` or `"slavia/esm/v1"`.
     /// The kernel never interprets the segments.
