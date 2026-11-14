@@ -2,8 +2,16 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # check-lock-sync.sh — verify .github/workflows/actions.lock is in sync with the
-# workflow YAML, in BOTH directions (including job-level reusable-workflow refs),
-# AND that the lockfile is TRANSITIVELY CLOSED.
+# workflow YAML, in BOTH directions, AND that the lockfile is TRANSITIVELY CLOSED.
+#
+# Job-level reusable-workflow calls (`uses: owner/repo/.github/workflows/x.yml@ref`)
+# are NOT locked. gh actions-lock v0.2.0, the official verifier the Lock Sync Gate
+# runs, generates '[]' for a workflow whose only uses: is such a call, and its
+# `--verify` rejects an entry for one as "Unused lockfile entry". Measured on
+# catachresis-colloquium/enaction-engine, 2026-11-14 (Lock Sync Gate run
+# 43650652741). This checker therefore skips them in clause 1, and clause 2 then
+# reports an entry for one as stale, as the official verifier does. The history
+# below describes the earlier regime, in which this checker demanded them.
 #
 # Three clauses, each of which alone is insufficient:
 #
@@ -175,6 +183,8 @@ FNR == 1 { wf = FILENAME }
       invalid_local[wf] = raw
       next
     }
+    # A job-level reusable-workflow call is not locked (see the header).
+    if (index(raw, "/.github/workflows/") > 0) next
     n = norm(raw)
     if (n != "") { uses[wf, ck(n)] = 1; useslist[wf] = useslist[wf] " " n }
   }
@@ -292,9 +302,9 @@ END {
     print "reports \"This run likely failed because of a workflow file issue.\""
     print ""
     print "Fix, in this order:"
-    print "  1. `gh actions-lock --no-migrate-local-actions --no-narrow`, then review the diff. It does"
-    print "     NOT handle job-level reusable-workflow refs and it can de-pin bare SHAs to"
-    print "     floating tags - both must be corrected by hand."
+    print "  1. `gh actions-lock --no-migrate-local-actions --no-narrow`, then review the diff. It can"
+    print "     de-pin bare SHAs to floating tags, which must be corrected by hand. Job-level"
+    print "     reusable-workflow calls are not locked: their workflow entry is []."
     print "  2. For any DANGLING EDGES above, add a top-level `dependencies:` record for each"
     print "     ref. A leaf record may legally omit the nested `uses:` key entirely, so adding"
     print "     leaves introduces no new dangling edges and closure terminates in one pass."
@@ -309,7 +319,7 @@ END {
     exit 1
   }
   printf "actions.lock is in sync and transitively closed:\n"
-  printf "  * every uses: is locked under its own workflow path (job-level reusable refs included)\n"
+  printf "  * every uses: is locked under its own workflow path (job-level reusable-workflow calls are not locked)\n"
   printf "  * every lockfile entry is still referenced\n"
   printf "  * every ref named in the lockfile resolves to a dependencies: record (0 dangling edges)\n"
   printf "  * every workflow file has a lockfile key (zero-uses: workflows included)\n"
