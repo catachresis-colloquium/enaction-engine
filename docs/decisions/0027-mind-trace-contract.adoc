@@ -87,6 +87,12 @@ continuous affect value.
 * The rule "selected is first or incumbent" assumes one commitment mechanism.
   A host that selects by another lawful rule, such as a forced reflex, has no
   way to say so yet. That is a known limit of version 1.
+* A token that changes because a reservoir drained has no input to cite. The
+  first producer (the IDApTIK corridor runner, 2026-11-14) met this case. It
+  cites the agent's perception on that tick, which may be an observation that
+  nothing was visible. That keeps rule 5 and the validator unchanged, but the
+  cited event did not cause the change in any strong sense. Version 2 should
+  let a producer declare decay as a cause in its own right.
 
 === Neutral
 
