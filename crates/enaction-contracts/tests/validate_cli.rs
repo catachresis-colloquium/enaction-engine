@@ -303,3 +303,76 @@ fn the_callers_status_policy_decides_not_the_package() {
         show(&out)
     );
 }
+
+fn mind_root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../conformance/mind/v1")
+}
+
+fn run_mind(case: &Path) -> Output {
+    let root = mind_root();
+    let policies = root.join("policies.json");
+    let trace = case.join("mind-trace.json");
+    let runner = std::fs::read(root.join("runner-output.json")).unwrap();
+    run(
+        &[
+            "--policies",
+            policies.to_str().unwrap(),
+            "--mind-trace",
+            trace.to_str().unwrap(),
+        ],
+        &runner,
+    )
+}
+
+#[test]
+fn each_rejected_mind_case_exits_1_and_prints_exactly_its_rule() {
+    let mut count = 0;
+    for entry in std::fs::read_dir(mind_root().join("rejected")).unwrap() {
+        let case = entry.unwrap().path();
+        let rule = case.file_name().unwrap().to_str().unwrap().to_string();
+        let out = run_mind(&case);
+        assert_eq!(out.status.code(), Some(1), "{rule}: {}", show(&out));
+        assert_eq!(rules(&out), [rule.as_str()], "{rule}: {}", show(&out));
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        assert!(
+            stdout.split('\t').nth(1).unwrap().starts_with("mind_trace"),
+            "{rule}: the path names the mind trace: {stdout}"
+        );
+        count += 1;
+    }
+    assert_eq!(count, 10, "one case for each of the ten rules");
+}
+
+#[test]
+fn each_accepted_mind_case_exits_0_with_both_canonical_documents() {
+    for name in ["the-grudge", "the-flinch"] {
+        let case = mind_root().join("accepted").join(name);
+        let out = run_mind(&case);
+        assert_eq!(out.status.code(), Some(0), "{name}: {}", show(&out));
+        let lines: Vec<&[u8]> = out.stdout.split(|b| *b == b'\n').collect();
+        assert_eq!(lines.len(), 3, "two lines and a final newline");
+        let trace = std::fs::read(case.join("mind-trace.json")).unwrap();
+        assert_eq!(
+            lines[1],
+            enaction_contracts::canonical::canonicalize(&trace).unwrap()
+        );
+    }
+}
+
+#[test]
+fn a_missing_mind_trace_file_exits_2() {
+    let root = mind_root();
+    let policies = root.join("policies.json");
+    let missing = scratch("no-such-mind-trace.json");
+    let runner = std::fs::read(root.join("runner-output.json")).unwrap();
+    let out = run(
+        &[
+            "--policies",
+            policies.to_str().unwrap(),
+            "--mind-trace",
+            missing.to_str().unwrap(),
+        ],
+        &runner,
+    );
+    assert_eq!(out.status.code(), Some(2), "{}", show(&out));
+}

@@ -304,16 +304,17 @@ Policies {                           // contract "enaction-policies/1"
 
 [source,text]
 ----
-enaction-validate --policies FILE < runner-output.json
+enaction-validate --policies FILE [--mind-trace FILE] < runner-output.json
 ----
 
 * `exit 0`: valid. Stdout is the canonical bytes of the envelope and a
-  newline.
+  newline, then, with `--mind-trace`, the canonical bytes of the mind trace
+  (§10) and a newline.
 * `exit 1`: a validation fault in the input. Stdout has one line per fault:
   `<rule>` TAB `<path>` TAB `<detail>`.
 * `exit 2`: an invocation or operational failure: a missing or unknown
-  argument, a missing, unreadable or invalid `--policies` file, or unreadable
-  stdin. A message goes to stderr and nothing goes to stdout. An adapter can
+  argument, a missing, unreadable or invalid `--policies` file, a missing or
+  unreadable `--mind-trace` file, or unreadable stdin. A message goes to stderr and nothing goes to stdout. An adapter can
   therefore tell a bad package from a broken call.
 
 === Deferred
@@ -325,3 +326,89 @@ evidence payloads (BPA), independence groups, a `policy_digest` on
 `ProfileRef` with `--expect-profile`, and the `enaction-counterfactual/1`
 envelope. Until frame declarations exist, the validator cannot check a truth
 atom against a declared hypothesis.
+
+== 10. The mind trace: `enaction-mind-trace/1`
+
+A mind trace records, for each agent and tick, the affect token and the
+attention it buys, the conative ranking and the selected candidate, and the
+bodily tells. It is a separate versioned document, outside
+`enaction-runner-output/1`, so that the strict envelope gains no optional
+member. A host kernel produces it in its own code and proves conformance
+against the fixtures in `conformance/mind/v1/`; the mind crosses as bytes.
+
+[source]
+----
+MindTrace {
+  contract: "enaction-mind-trace/1",
+  producer: { kernel: string, abi: string },
+  profile: { id: string, version: string },
+  vocabulary: {
+    affect_tokens: [string],          // declared order; nonempty, unique
+    candidates: [string],
+    tells: [string]
+  },
+  ticks: [{
+    tick: uint,
+    agent: string,
+    affect: { token: string, attention: uint, caused_by: [EventId] },
+    conation: {
+      ranking: [string],              // best first
+      incumbent: optional string,     // absent: no prior commitment
+      selected: string,
+      target: optional string
+    },
+    tells: [string]
+  }]
+}
+----
+
+There is **no utility score and no float** in the document. The conative
+layer publishes a ranking and a selection, never a score (ADR-0016), and the
+canonical decoder refuses every non-integer number (ADR-0024). Affect has no
+member on which it could assert a proposition: affect buys attention, never
+belief (ADR-0014).
+
+=== Rules
+
+The validator reads the mind trace together with its paired runner output
+(§9) and refuses it with a named rule when:
+
+* the contract tag differs, or a member is unknown (`UnknownField`);
+* an affect token, candidate (in `ranking`, `incumbent` or `selected`) or
+  tell is not in the declared vocabulary (`UndeclaredTerm`);
+* a vocabulary is empty or has a duplicate (`BadVocabulary`);
+* ticks are not strictly increasing for one agent (`NonMonotonicTick`);
+  ticks of different agents may interleave;
+* a ranking is empty or has a duplicate, or `selected` is not in the ranking
+  (`BadRanking`);
+* `selected` is neither first in the ranking nor equal to `incumbent`
+  (`UnexplainedSelection`). It is checked only when the ranking is well
+  formed, so one defect yields one rule;
+* `attention` is above full mass, 10,000 (`MassOutOfRange`);
+* an affect token differs from the previous tick's token for that agent and
+  `caused_by` is empty (`UncausedAffectChange`). An agent's first tick has
+  no previous token;
+* an identifier in `caused_by` is not an `event_id` in the paired runner
+  output's package (`DanglingCause`);
+* an integer is above 2^53 − 1 (`IntegerOutOfRange`).
+
+A document that is not I-JSON, or not this shape, is refused by the
+canonical decoder (`MalformedJson`, `DuplicateKey`, `NonIntegerNumber`,
+`BadShape`). Through `enaction-validate`, mind-trace fault paths are
+prefixed `mind_trace`.
+
+=== Commitment override
+
+A tick shows *commitment override* when `selected` equals `incumbent` and is
+not first in `ranking`. The agent acted from commitment and not from the
+ranking: the checkable form of "ill will that persists". It is derived from
+the document by the validator (`commitment_override`); the producer does not
+assert it, and the document has no member for it.
+
+=== Fixtures
+
+`conformance/mind/v1/` holds `accepted/the-grudge` (two commitment-override
+ticks) and `accepted/the-flinch` (a `startle` tell), each with its expected
+commitment-override ticks; `rejected/<RuleName>/` with one case for each
+rule, each refused with exactly that rule; the paired `runner-output.json`
+and `policies.json`; and `SHA256SUMS` over the sorted complete file set.

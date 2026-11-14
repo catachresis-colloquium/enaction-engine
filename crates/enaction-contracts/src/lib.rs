@@ -25,6 +25,8 @@
 //! * **The runner seam** ([`envelope`]): the `enaction-runner-output/1`
 //!   envelope and the caller's `enaction-policies/1` document, both strict,
 //!   validated by the `enaction-validate` binary.
+//! * **The mind trace** ([`mind`]): `enaction-mind-trace/1`, its named
+//!   rules, and the derived commitment override.
 //!
 //! # What is refused
 //!
@@ -48,6 +50,7 @@
 pub mod belief;
 pub mod canonical;
 pub mod envelope;
+pub mod mind;
 pub mod package;
 pub mod reduce;
 pub mod version;
