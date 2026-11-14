@@ -82,6 +82,11 @@ jobs:
           # Keep the generator's scope to the lockfile: do not migrate local
           # action paths or narrow existing pins to different refs.
           gh actions-lock --no-migrate-local-actions --no-narrow
+          # Also print the candidate to the job log, which is readable through
+          # the API where the step summary is not.
+          echo '----- BEGIN actions.lock candidate -----'
+          cat .github/workflows/actions.lock
+          echo '----- END actions.lock candidate -----'
           {
             echo '## Official actions.lock candidate'
             echo
