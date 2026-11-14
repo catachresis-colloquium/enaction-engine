@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Models are compared with minds (CAC-KERNEL §9, "Models"; ADR-0028),
-//! against the published fixtures in `conformance/tom/v1/`.
+//! Models are compared with minds (CAC-KERNEL §9, "Models are compared with
+//! minds"; ADR-0028), against the published fixtures in `conformance/tom/v1/`.
 //!
 //! Each `runner-output.json` is generated from the contract types below.
 //! Each `expected.json` is written by hand and is never generated: it is the

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Models are compared with minds, not with the world (CAC-KERNEL §9,
-//! "Models"; ADR-0028).
+//! "Models are compared with minds"; ADR-0028).
 //!
 //! A belief of order 1 or more is a *model*: `holders = ["guard-0"]`,
 //! `bearer = "contact-21"` is guard-0's model of what contact-21 believes.

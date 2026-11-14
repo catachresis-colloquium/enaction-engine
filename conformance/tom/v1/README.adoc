@@ -2,8 +2,8 @@
 = Theory-of-mind contract v1 conformance fixtures
 
 These fixtures are the cross-repository currency for the rule that a model
-is compared with a mind, not with the world (CAC-KERNEL §9, "Models";
-ADR-0028). A reader that shows whether an agent's model of another agent is
+is compared with a mind, not with the world (CAC-KERNEL §9, "Models are
+compared with minds"; ADR-0028). A reader that shows whether an agent's model of another agent is
 right, such as the UMS explain lens, proves conformance against these bytes.
 No Enaction source is needed to do so: reimplement the rule from CAC-KERNEL
 and derive each `expected.json`.
