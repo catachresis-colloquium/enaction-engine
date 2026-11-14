@@ -7,6 +7,15 @@
 //! perspective's delta map, and a query falls through to the baseline when no
 //! delta exists.
 //!
+//! # The baseline is a frozen prior
+//!
+//! What a perspective falls through to is the subject's [`Prior`]: the ground
+//! trope's value *at registration*, frozen, not the trope's current value. A
+//! perspective with no observations therefore reads what the game declared
+//! common knowledge, plus its own deltas, and nothing the world did since
+//! (ADR-0022, Proposed). Only the empty perspective, the world itself, reads
+//! live ground truth.
+//!
 //! # Keyed by perspective path, not by bearer
 //!
 //! Deltas are keyed by the **full ascription path** — [`Perspective`] is
@@ -90,11 +99,29 @@ pub struct Belief {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BeliefView {
     pub value_milli: i32,
-    /// `Some` for a held delta; `None` for a baseline fall-through — ground
-    /// truth is a fact, not a graded belief.
+    /// `Some` for a held delta; `None` for a prior or ground-truth read — a
+    /// registered fact is not a graded belief.
     pub confidence: Option<Mass>,
     /// The supporting event, where the view came from a delta.
     pub source: Option<u64>,
+}
+
+/// A baseline subject's prior, frozen when the subject is registered.
+///
+/// The ground trope keeps changing as the world moves; the prior does not.
+/// It is the value every perspective starts from — the common knowledge the
+/// game declares by registering — and it is captured once, from the trope's
+/// latest event at registration, so later world events cannot reach a
+/// perspective that never observed them (ADR-0022, Proposed).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Prior {
+    /// The ground trope that carries this subject's world truth.
+    pub trope: TropeId,
+    /// The trope's value at registration, in milliunits.
+    pub value_milli: i32,
+    /// The event the value was captured from: the prior's whole support, and
+    /// so the one world event every perspective counts as observed.
+    pub source: u64,
 }
 
 /// A mutation the store refuses. A content gap must not panic.
@@ -107,6 +134,10 @@ pub enum StoreError {
     EmptyProvenance,
     /// Retraction withdraws a held belief; there is none to withdraw.
     NothingToRetract,
+    /// A prior is frozen from the ground trope's latest event, and that
+    /// trope has no event, or its latest event is a retraction: there is no
+    /// held value to freeze.
+    NoBaselineValue,
 }
 
 impl std::fmt::Display for StoreError {
@@ -121,6 +152,9 @@ impl std::fmt::Display for StoreError {
             StoreError::NothingToRetract => {
                 write!(f, "no held belief exists to retract")
             }
+            StoreError::NoBaselineValue => {
+                write!(f, "the ground trope holds no value to freeze as a prior")
+            }
         }
     }
 }
@@ -131,8 +165,9 @@ impl std::error::Error for StoreError {}
 /// [`Trace`].
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BeliefStore {
-    /// Registered ground facts: which trope carries each subject's truth.
-    baseline: BTreeMap<Subject, TropeId>,
+    /// Registered ground facts: which trope carries each subject's truth,
+    /// and the prior frozen from it at registration.
+    baseline: BTreeMap<Subject, Prior>,
     /// Each perspective's beliefs, where they differ from (or duplicate) the
     /// baseline.
     deltas: BTreeMap<Perspective, BTreeMap<Subject, Belief>>,
@@ -146,14 +181,51 @@ impl BeliefStore {
         Self::default()
     }
 
-    /// Register the ground trope carrying a baseline fact.
+    /// Register the ground trope carrying a baseline fact, and freeze its
+    /// current value as the subject's [`Prior`].
     ///
     /// The game owns the fact's trope entirely — its bearer (`"world"`, a
     /// door…), its domain (usually Mechanical) and its events. The store
-    /// records only which trope answers for which subject; re-registering a
-    /// subject repoints it.
-    pub fn register_baseline(&mut self, subject: Subject, trope: TropeId) {
-        self.baseline.insert(subject, trope);
+    /// records which trope answers for which subject and the value it held
+    /// at this call: its latest event by `(tick, id)`, which must be an
+    /// assertion. Registration is the game declaring common knowledge, so
+    /// register *before* the events no perspective should know about; a
+    /// world event already in the trace here becomes part of every prior.
+    /// Re-registering a subject repoints it and freezes a fresh prior.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::NoBaselineValue`] — the trope has no event, or its
+    /// latest event is a retraction. Nothing is registered.
+    pub fn register_baseline(
+        &mut self,
+        trace: &Trace,
+        subject: Subject,
+        trope: TropeId,
+    ) -> Result<Prior, StoreError> {
+        let latest = trace
+            .events
+            .iter()
+            .filter(|e| e.trope == trope)
+            .max_by_key(|e| e.stamp())
+            .filter(|e| e.revision == Revision::Assert)
+            .ok_or(StoreError::NoBaselineValue)?;
+        let prior = Prior {
+            trope,
+            value_milli: latest.value_milli,
+            source: latest.id,
+        };
+        self.baseline.insert(subject, prior);
+        Ok(prior)
+    }
+
+    /// Every registered subject with its frozen prior, in subject order.
+    ///
+    /// This is what a replay must keep beside the trace: hand it back to
+    /// [`rebuild`](Self::rebuild). Priors are not re-derived from the trace,
+    /// because by replay time the ground tropes have moved on.
+    pub fn baseline(&self) -> impl Iterator<Item = (&Subject, &Prior)> {
+        self.baseline.iter()
     }
 
     /// Assert (or revise) a belief at a perspective.
@@ -299,8 +371,12 @@ impl BeliefStore {
     /// The query the store exists for: what does `perspective` currently
     /// believe about `subject`?
     ///
-    /// A held delta answers first. With no delta at all, the registered
-    /// baseline answers through the trace. A **retracted** delta answers
+    /// A held delta answers first. With no delta at all, the subject's
+    /// [`Prior`] answers: the value frozen at registration, never the ground
+    /// trope's current value, so a world event the perspective never
+    /// observed cannot reach it (observer noninterference, ADR-0022). The
+    /// empty perspective is the Global Baseline — the world itself — and is
+    /// the one reader of live ground truth. A **retracted** delta answers
     /// `None` — a withdrawn belief is absence of belief, not a silent revert
     /// to the baseline: reverting without an event would be a belief change
     /// that leaves no trace, and re-learning requires a fresh assertion with
@@ -320,9 +396,20 @@ impl BeliefStore {
             }),
             Some(_) => None, // retracted: absence, reported as such
             None => {
-                let trope = self.baseline.get(subject)?;
+                let prior = self.baseline.get(subject)?;
+                let value_milli = if perspective.0.is_empty() {
+                    // The world reads its own live truth.
+                    trace.latest_value(prior.trope)?
+                } else {
+                    // Everyone else reads the frozen prior. Reading the ground
+                    // trope here leaks every later world event to agents that
+                    // never observed it (the Sally-Anne probe in
+                    // tests/observer.rs; the planted mutant restores exactly
+                    // this read).
+                    prior.value_milli
+                };
                 Some(BeliefView {
-                    value_milli: trace.latest_value(*trope)?,
+                    value_milli,
                     confidence: None,
                     source: None,
                 })
@@ -332,6 +419,11 @@ impl BeliefStore {
 
     /// Rebuild a store by folding a trace, with the same baseline
     /// registrations — the replay path.
+    ///
+    /// `baseline` is the original store's [`baseline`](Self::baseline), priors
+    /// included. The priors are taken as given, never re-captured from
+    /// `trace`: the ground tropes have moved since registration, and
+    /// re-capturing would hand every perspective the world's current truth.
     ///
     /// Store-managed tropes are recognised as Epistemic tropes whose
     /// assertions all carry a confidence (the store always writes one).
@@ -344,10 +436,10 @@ impl BeliefStore {
     /// order in the slice (the fold is over the canonical `(tick, id)`
     /// order).
     #[must_use]
-    pub fn rebuild(trace: &Trace, baseline: &[(Subject, TropeId)]) -> Self {
+    pub fn rebuild(trace: &Trace, baseline: &[(Subject, Prior)]) -> Self {
         let mut store = Self::new();
-        for (subject, trope) in baseline {
-            store.register_baseline(subject.clone(), *trope);
+        for (subject, prior) in baseline {
+            store.baseline.insert(subject.clone(), *prior);
         }
 
         for trope in &trace.tropes {
@@ -443,7 +535,7 @@ mod tests {
     /// A world with one registered ground fact and one perceiving agent.
     fn world() -> (Trace, BeliefStore, Subject) {
         let marble = subject("marble_location", "marble");
-        let mut trace = Trace {
+        let trace = Trace {
             tropes: vec![Trope {
                 id: TropeId(1),
                 holders: vec![],
@@ -463,9 +555,10 @@ mod tests {
             }],
         };
         let mut store = BeliefStore::new();
-        store.register_baseline(marble.clone(), TropeId(1));
+        store
+            .register_baseline(&trace, marble.clone(), TropeId(1))
+            .unwrap();
         assert_eq!(trace.validate(), Ok(()));
-        let _ = &mut trace;
         (trace, store, marble)
     }
 
@@ -494,6 +587,49 @@ mod tests {
                 source: None,
             })
         );
+    }
+
+    #[test]
+    fn a_prior_is_frozen_only_from_a_held_value() {
+        let (mut trace, mut store, _) = world();
+        let door = subject("door_state", "door");
+        trace.tropes.push(Trope {
+            id: TropeId(2),
+            holders: vec![],
+            bearer: "world".into(),
+            about: Some("door".into()),
+            kind: "door_state".into(),
+            domain: Domain::Mechanical,
+        });
+        assert_eq!(
+            store.register_baseline(&trace, door.clone(), TropeId(2)),
+            Err(StoreError::NoBaselineValue),
+            "a trope with no event has nothing to freeze"
+        );
+        trace.events.push(TraceEvent {
+            id: 2,
+            tick: 2,
+            trope: TropeId(2),
+            value_milli: 1,
+            confidence: None,
+            revision: Revision::Assert,
+            caused_by: vec![],
+        });
+        trace.events.push(TraceEvent {
+            id: 3,
+            tick: 3,
+            trope: TropeId(2),
+            value_milli: 1,
+            confidence: None,
+            revision: Revision::Retract,
+            caused_by: vec![2],
+        });
+        assert_eq!(
+            store.register_baseline(&trace, door.clone(), TropeId(2)),
+            Err(StoreError::NoBaselineValue),
+            "a withdrawn value is not a value to freeze"
+        );
+        assert_eq!(store.baseline().count(), 1, "a refusal registers nothing");
     }
 
     #[test]
@@ -532,6 +668,22 @@ mod tests {
             .assert_belief(&mut trace, &guard, &marble, 2, 2_000, mass(7_000), vec![1])
             .unwrap();
 
+        // Corrected for ADR-0022 (frozen prior). This test used to read Anya's
+        // fall-through with the world unmoved since registration, where the
+        // old live-truth read and the frozen prior both give 1_000, so it
+        // could not tell an omniscient store from a sound one. The world now
+        // moves first, in an event Anya never observes.
+        let moved = next_event_id(&trace);
+        trace.events.push(TraceEvent {
+            id: moved,
+            tick: 3,
+            trope: TropeId(1),
+            value_milli: 3_000,
+            confidence: None,
+            revision: Revision::Assert,
+            caused_by: vec![],
+        });
+
         let guards = store.belief(&trace, &guard, &marble).unwrap();
         assert_eq!(guards.value_milli, 2_000, "his delta, not the baseline");
         assert_eq!(guards.confidence, Some(mass(7_000)));
@@ -539,9 +691,18 @@ mod tests {
         let anyas = store.belief(&trace, &anya, &marble).unwrap();
         assert_eq!(
             anyas.value_milli, 1_000,
-            "no delta of her own: baseline fall-through"
+            "no delta of her own: the prior frozen at registration, not the moved world"
         );
-        assert_eq!(anyas.confidence, None, "ground truth is not graded");
+        assert_eq!(anyas.confidence, None, "a registered fact is not graded");
+
+        assert_eq!(
+            store
+                .belief(&trace, &perspective(&[]), &marble)
+                .unwrap()
+                .value_milli,
+            3_000,
+            "the world itself still reads live ground truth"
+        );
     }
 
     #[test]
@@ -759,7 +920,8 @@ mod tests {
             .retract(&mut trace, &guard, &marble, 5, vec![contradiction])
             .unwrap();
 
-        let baseline = [(marble.clone(), TropeId(1))];
+        let baseline: Vec<(Subject, Prior)> =
+            store.baseline().map(|(s, p)| (s.clone(), *p)).collect();
 
         // Through serde and back: the fold reproduces the store exactly.
         let json = serde_json::to_string(&trace).unwrap();

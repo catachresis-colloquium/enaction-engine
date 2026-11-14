@@ -1,0 +1,27 @@
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+Planted mutant: OMNISCIENCE. Restores the observer leak that ADR-0022
+(Proposed) closed: a perspective with no delta reads the ground trope's
+live value instead of the prior frozen at registration.
+
+This is deliberately NOT a Cargo feature. Features unify across
+`--all-features` and across dependents, so a feature-gated mutant could be
+switched on in a real build. This patch is only ever applied, by
+scripts/check-observer-mutant.sh, to a throwaway copy of the workspace, and
+the observer tests in crates/enaction-trace/tests/observer.rs must FAIL
+there. If they pass against this patch, they no longer guard the boundary.
+
+Everything above the `diff --git` line is ignored by patch(1).
+
+diff --git a/crates/enaction-trace/src/store.rs b/crates/enaction-trace/src/store.rs
+--- a/crates/enaction-trace/src/store.rs
++++ b/crates/enaction-trace/src/store.rs
+@@ -406,7 +406,7 @@ pub fn belief(
+                     // never observed it (the Sally-Anne probe in
+                     // tests/observer.rs; the planted mutant restores exactly
+                     // this read).
+-                    prior.value_milli
++                    trace.latest_value(prior.trope)?
+                 };
+                 Some(BeliefView {
+                     value_milli,
