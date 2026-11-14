@@ -17,6 +17,7 @@ use crate::version::{ContractVersion, ProfileRef};
 /// A diagnostic: the stable field path and the rule that failed (CAC-KERNEL
 /// §6), plus prose for a human.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Diagnostic {
     /// Stable field path, e.g. `"events[3].confidence"`.
     pub path: String,
@@ -43,6 +44,7 @@ pub enum Derived {
 /// the event itself. If it is not in here, it MUST NOT influence the result —
 /// that is what makes replay possible.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReductionContext {
     pub kernel: ContractVersion,
     pub profile: ProfileRef,

@@ -64,7 +64,7 @@ pub mod mass;
 pub mod store;
 
 pub use mass::Mass;
-pub use store::{BeliefStore, BeliefView, Perspective, StoreError, Subject};
+pub use store::{BeliefStore, BeliefView, Perspective, Prior, StoreError, Subject};
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

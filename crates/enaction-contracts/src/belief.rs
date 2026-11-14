@@ -46,6 +46,7 @@ pub struct Proposition(pub String);
 /// (deliberately) not its contents; this is the minimum that lets a reviewer
 /// ask "who said so, over what channel" without inventing a provenance theory.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Provenance {
     /// The producing source — an agent name, a sensor, a scenario author.
     pub origin: String,
@@ -62,6 +63,7 @@ pub struct Provenance {
 /// buys attention, never belief** — so the rule is enforced by construction
 /// rather than by review.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AffectAnnotation {
     /// The argmax over the profile's declared affect vocabulary.
     pub token: String,
@@ -76,6 +78,7 @@ pub struct AffectAnnotation {
 /// never leave the conative layer — so there is no utility field here to leak
 /// one through.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConativeAnnotation {
     /// The selected option, by the profile's declared tie-break.
     pub selected: String,
@@ -83,6 +86,7 @@ pub struct ConativeAnnotation {
 
 /// One epistemic event: evidence arriving, with provenance (CAC-KERNEL §3).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EpistemicEvent {
     pub event_id: EventId,
     /// Order within a tick. `(tick, sequence)` is the total reduction order.
@@ -113,6 +117,7 @@ impl EpistemicEvent {
 
 /// A belief: the durable output of reduction (CAC-KERNEL §3).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Belief {
     pub belief_id: BeliefId,
     /// The ascription path, outermost first — the SAME representation as
@@ -155,6 +160,7 @@ impl Belief {
 /// (ADR-0015). The default is the trace crate's declaration, one authority
 /// for the number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DepthPolicy {
     pub max_order: usize,
 }
@@ -173,7 +179,11 @@ impl Default for DepthPolicy {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BeliefStatus {
-    Known,
+    /// Full belief mass: `belief == FULL`. Certainty of *commitment*, not
+    /// knowledge: mass certainty never reads as truth. Factive knowledge
+    /// needs world truth, which a belief does not carry (rung 2, "Certain is
+    /// not Known"; renamed from `Known`, completion-plan step 11).
+    Certain,
     Believed,
     Suspected,
     Rejected,
@@ -195,6 +205,7 @@ pub struct BeliefInterval {
 
 /// The unvalidated wire shape of an interval.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RawInterval {
     belief: Mass,
     plausibility: Mass,
@@ -292,6 +303,7 @@ impl BeliefInterval {
 /// record *which* policy performed the mapping — the lossy step stays
 /// auditable.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StatusPolicy {
     /// Versioned policy identifier, recorded wherever the mapping is applied.
     pub id: String,
@@ -308,14 +320,14 @@ pub struct StatusPolicy {
 
 impl StatusPolicy {
     /// Map an interval to a status. The evaluation order is **normative**
-    /// (ADR-0016): Known, Rejected, Unknown-by-ignorance, Believed,
+    /// (ADR-0016): Certain, Rejected, Unknown-by-ignorance, Believed,
     /// Suspected, otherwise Unknown. Reordering it changes meaning — in
     /// particular, a wide-ignorance interval must read `Unknown` even when
     /// its belief clears the believed floor.
     #[must_use]
     pub fn status(&self, interval: BeliefInterval) -> BeliefStatus {
         if interval.belief() == Mass::FULL {
-            BeliefStatus::Known
+            BeliefStatus::Certain
         } else if interval.plausibility() <= self.rejected_ceiling {
             BeliefStatus::Rejected
         } else if interval.ignorance() >= self.unknown_band {
@@ -375,7 +387,7 @@ mod tests {
     #[test]
     fn the_normative_evaluation_order_is_walked_in_order() {
         let p = policy();
-        assert_eq!(p.status(BeliefInterval::certain()), BeliefStatus::Known);
+        assert_eq!(p.status(BeliefInterval::certain()), BeliefStatus::Certain);
         assert_eq!(p.status(interval(0, 500)), BeliefStatus::Rejected);
         assert_eq!(p.status(interval(8_000, 9_000)), BeliefStatus::Believed);
         assert_eq!(p.status(interval(2_000, 6_000)), BeliefStatus::Suspected);

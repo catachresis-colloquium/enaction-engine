@@ -1,0 +1,122 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Architecture Decision Record: 0022-baseline-is-a-frozen-prior
+
+Date: 2026-11-14
+
+== Status
+
+Proposed
+
+Default arm A (frozen prior), as the owner ruled on 2026-11-05 (completion
+plan Q2: "both, staged"). Arm A is implemented in `enaction-trace` with this
+record. Arm B is recorded below as the later generalisation; it is not
+implemented and has its own ADR when a game needs it.
+
+== Context
+
+`BeliefStore` holds a Global Baseline plus per-perspective deltas. Chronicles
+doc 20's rule is "belief is baseline plus own deltas, full stop".
+
+Until this change, `BeliefStore::belief` answered a perspective that had no
+delta by reading `trace.latest_value` of the subject's baseline trope. That
+trope is the world's ground truth, and it keeps moving. A perspective with no
+observations therefore read live world truth. The completion plan's probe
+showed it: Sally read 1000 and then 2000 in two runs that differed only in an
+event she never observed (Anne moving the marble). Every false-belief scenario
+the store exists to support was silently omniscient for any subject the agent
+had not yet asserted about.
+
+GAME-DESIGN-SYSTEM states the invariant this breaks (invariant 2, *observer
+noninterference*): for two traces that agree on every event in perspective
+P's observation set and causal closure, every belief P reads is
+byte-identical.
+
+== Decision
+
+*Arm A (default, adopted): the baseline is a frozen prior captured at
+registration.*
+
+* `BeliefStore::register_baseline(trace, subject, trope)` reads the ground
+  trope's latest event by `(tick, id)` and freezes it as a `Prior { trope,
+  value_milli, source }`. A trope with no event, or whose latest event is a
+  retraction, has nothing to freeze, and registration is refused with
+  `StoreError::NoBaselineValue`.
+* `BeliefStore::belief` answers a perspective with no delta from that prior,
+  never from the trope's current value. A held delta still answers first, and
+  a retracted delta still reads as absence.
+* The empty perspective is the Global Baseline, the world itself. It is the
+  one reader of live ground truth.
+* Replay keeps the priors. `BeliefStore::baseline()` lists them, and
+  `BeliefStore::rebuild(trace, priors)` takes them as given. Rebuild does not
+  recapture them, because by replay time the ground tropes have moved, and
+  recapturing would reintroduce the leak through the replay path.
+
+P's observation set under arm A is defined as follows:
+
+* the source event of each registered prior. Registration is the game
+  declaring common knowledge, so every perspective has seen it;
+* every world event that P's own store mutations cite in `caused_by`.
+
+The set is closed under `caused_by`.
+
+*Arm B (later): default-Unknown with a secret-types visibility lattice.* A
+perspective with no delta reads `Unknown`, not a prior. What a perspective may
+see is graded by a visibility lattice in the secret-types TINI shape (the
+`Noninterference.Statement.TINI` target, with a down-closed Observer).
+Arm B is more expressive (A+ on correctness, A on dependability) and more
+work. It opens as its own ADR when a game needs graded visibility. That ADR
+must keep this record's observer tests and planted mutant passing.
+
+=== Gates
+
+* `crates/enaction-trace/tests/observer.rs`:
+** `observer_sally_anne_two_run_probe` is the plan's two-run probe.
+** `observer_proptest_perturbs_outside_closure` runs at least 1024 cases. It
+   perturbs only world events outside P's observation set and closure, plus
+   other perspectives' beliefs, including another agent's model of P. In
+   every case a hidden witness event must change the world's own view, so the
+   property cannot pass by perturbing nothing.
+* `tests/mutants/omniscience.patch` with `scripts/check-observer-mutant.sh`.
+  The patch restores the live-truth read. The script applies it to a
+  temporary copy of the workspace and exits 0 only when both observer tests
+  FAIL there. The mutant is a patch, not a Cargo feature, because features
+  unify across `--all-features` and dependents.
+
+== Consequences
+
+=== Positive
+
+* Invariant 2 holds for the store and is pinned three ways: a deterministic
+  probe, a property and a planted mutant.
+* The rule "baseline plus own deltas" now means what it says. This arm keeps
+  that rule, which Slavia's design states (GAME-DESIGN-SYSTEM, "Observer
+  fix"). No Slavia code was checked against this change.
+* The fix is small. It adds no new theory-of-mind machinery, and
+  `divergence` and `projections` are untouched.
+
+=== Negative
+
+* *Registration order is now semantic.* Any world event already in the trace
+  at registration becomes part of every perspective's prior. The plan's
+  appendix probe registers *after* Anne's move. Under this arm, that
+  registration declares the moved marble to be common knowledge, so the probe
+  as literally written still shows Sally reading 2000. The observer test
+  registers between Sally's sighting and the move, which is when the story
+  puts it. Hosts must register a subject before the events no perspective
+  should know about.
+* `register_baseline` now needs the trace and can fail. `rebuild` takes
+  priors instead of trope ids, so the replay record must store them. Both are
+  breaking signature changes, made while the only callers are this crate's own
+  tests.
+* A perspective that has never observed a subject still "believes" the
+  prior, with no graded confidence (`None`). Arm A cannot express "Sally does
+  not know"; that is arm B's job.
+
+=== Neutral
+
+* The empty perspective still reads live truth. A host that queries an agent
+  through the empty perspective bypasses the boundary. That is a host bug, the
+  same as reading the trace directly.
+* `BeliefView` for a prior read reports `confidence: None` and `source: None`,
+  as before. The prior's `source` event is held on `Prior`, not echoed per
+  read.

@@ -133,6 +133,7 @@ fi
 
 fails=0
 unexpected_pass=0
+gated_count=0
 listed_tmp="$(mktemp)"
 trap 'rm -f "$listed_tmp"' EXIT
 
@@ -150,6 +151,7 @@ while IFS='|' read -r root rel status note; do
     fails=$((fails + 1))
     continue
   fi
+  [ "$status" = gated ] && gated_count=$((gated_count + 1))
   if check_one "$root" "$rel"; then
     if [ "$status" = gated ]; then
       echo "PASS"
@@ -193,6 +195,20 @@ if [ -n "${missing//[[:space:]]/}" ]; then
 fi
 [ -z "${unlisted//[[:space:]]/}${missing//[[:space:]]/}" ] && \
   echo "  all $(printf '%s\n' "$found" | grep -c .) .$EXT file(s) accounted for"
+
+# --- vacuity: a MANIFEST that gates nothing proves nothing ---------------------
+# A MANIFEST whose entries are all quarantined (or that lists nothing) used to
+# pass: every quarantined module "failed as expected", so the gate went green
+# having checked no proof. That is the null-check shape this script exists to
+# remove, so zero gated modules is a FAIL. The fix is a real gated proof, never
+# a quarantined template promoted or a stub added to make the count non-zero.
+# Tested both ways by tests/check-proofs-vacuous.sh.
+if [ "$gated_count" -eq 0 ]; then
+  echo
+  echo "FAIL: $MANIFEST_FILE gates zero modules, so this check would prove nothing."
+  echo "      Add a real proof as 'gated'; quarantined entries do not count."
+  fails=$((fails + 1))
+fi
 
 echo
 if [ "$fails" -gt 0 ] || [ "$unexpected_pass" -gt 0 ]; then
