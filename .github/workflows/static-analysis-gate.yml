@@ -163,7 +163,7 @@ jobs:
       - name: Build pinned Hypatia source
         run: |
           set -euo pipefail
-          readonly HYPATIA_COMMIT="9a5db53f3b22bdd3e2a10f430ead5fd8a793711d"
+          readonly HYPATIA_COMMIT="b75e313487b03349046ac4d8780a533dd6bad57b"
           git init -q "$HOME/hypatia"
           git -C "$HOME/hypatia" remote add origin https://github.com/hyperpolymath/hypatia.git
           git -C "$HOME/hypatia" fetch -q --depth=1 origin "$HYPATIA_COMMIT"
