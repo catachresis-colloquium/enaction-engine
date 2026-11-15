@@ -22,4 +22,4 @@ jobs:
   governance:
     # Includes the lock-aware gates and permissionless allowlist preflight
     # validated on standards main after #688 and #690.
-    uses: hyperpolymath/standards/.github/workflows/governance-reusable.yml@da2c748aad55c1a1dcba00b60fe4a35017bc6540
+    uses: metadatastician/standards/.github/workflows/governance-reusable.yml@da2c748aad55c1a1dcba00b60fe4a35017bc6540
