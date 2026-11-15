@@ -1,0 +1,25 @@
+{
+  "models": [
+    {
+      "belief_id": 2,
+      "timeline": [
+        {
+          "from_tick": 2,
+          "verdict": "agrees"
+        }
+      ],
+      "until": 6,
+      "stale_divergent": false
+    },
+    {
+      "belief_id": 4,
+      "timeline": [
+        {
+          "from_tick": 6,
+          "verdict": "diverges"
+        }
+      ],
+      "stale_divergent": false
+    }
+  ]
+}

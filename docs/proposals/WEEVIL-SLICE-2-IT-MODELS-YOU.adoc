@@ -1,0 +1,190 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Mind slice 2: it models you
+:toc:
+:toclevels: 2
+:sectnums:
+
+Status: **Proposed** (2026-11-14). This plan continues
+link:WEEVIL-HOST-ROUTE.adoc[WEEVIL-HOST-ROUTE]. The owner selected it through
+the selector on 2026-11-14 ("It models you (Recommended)"). `CAC-KERNEL.adoc`
+stays normative.
+
+== What slice 1 left out
+
+Slice 1 delivered three of the four effects that the owner chose: wrong for a
+reason, ill will that persists, and bodily tells. The fourth is "It models
+you": the agent visibly holds a model of the player's knowledge, acts on it,
+and can be wrong about it.
+
+Slice 1 could not carry it, for two reasons that were measured:
+
+* The kernel has no input that says whether a contact observes the agent.
+* The contract compares every belief with world truth. A belief about another
+  mind is not about the world. A reader would mark it wrong for the wrong
+  reason.
+
+== The effect, stated so that a test can check it
+
+The agent holds one first-order model for a remembered target T: *T knows
+where I am*. The model is called *exposure*.
+
+[cols="2,3,3",options="header"]
+|===
+| Case | What the agent believes | What a player sees
+
+| True concealment
+| T does not know where I am, and that is right.
+| The agent waits and closes the range. It does not attack early.
+
+| Caught in the act
+| T did not know, and T now looks at me.
+| The agent freezes for one tick. Then it acts as an exposed agent.
+
+| False exposure
+| T knows where I am, and that is wrong. T looked away or left.
+| The agent stays guarded against a gaze that is gone.
+
+| False concealment
+| T does not know, and that is wrong. The host gave no cue.
+| The agent stalks in plain sight.
+|===
+
+The two false cases are the point. An agent that is wrong about your mind,
+for a reason that the report can show, is the effect.
+
+== Mechanism in the host kernel
+
+Evil Weevil implements this as an additive change. Its own decision record
+fixes the constants and pins them by digest.
+
+. *One new input.* A contact flag says that the contact observes the agent
+  on this tick. The host sets it by its own rule (line of sight and facing,
+  for example). A new capability bit declares that the host can give the cue.
+. *One new belief.* Exposure is true on a tick with the cue. It stays true
+  for a fixed number of ticks after the last cue. The agent's own attack also
+  sets it, because an attack reveals the attacker. Each change records its
+  cause.
+. *One new candidate.* While a target is visible and exposure is false, the
+  agent can select `stalk`: hold or take cover, close the range, and engage
+  only inside strike range. Fear removes the candidate.
+. *One new tell.* `caught`: the cue arrives while the agent stalks. The agent
+  freezes for one tick.
+. *No change without the capability.* A host that does not declare the
+  capability gets ABI 1.1 behaviour exactly. Every pinned 1.0 and 1.1 digest
+  must stay the same. That is the acceptance test, chosen before the work.
+
+The rules of slice 1 still bind: integers only; affect buys attention and
+never belief; the trace carries rankings and never scores; a change carries
+its cause.
+
+Exposure is a belief and not affect. It is set by evidence (a cue, or the
+agent's own act), so the rule "affect never changes belief" holds.
+
+== Change to the contract
+
+=== A model is compared with a mind, not with the world
+
+The contract already carries nested belief. In a `Belief`, `bearer` is the
+agent whose belief it is, and `holders` is the ascription path. With
+`holders = ["guard-0"]` and `bearer = "contact-21"`, the belief is guard-0's
+model of what contact-21 believes.
+
+New rule for `CAC-KERNEL.adoc` section 9:
+
+* World truth applies to a belief of order 0 only.
+* A belief of order 1 or more is a *model*. A reader compares it with the
+  modelled bearer's own belief of one order less, about the same proposition,
+  in the same package.
+** The model *agrees* when the modelled bearer holds that proposition
+   (status certain, believed or suspected) and the model says it is held, or
+   when neither holds it.
+** The model *diverges* otherwise.
+* The package is closed over stated models. For each proposition that a model
+  states about bearer B, the package states B's own belief when B holds it. A
+  missing own belief means that B does not hold the proposition.
+* A model is never compared with world truth. Whether B's own belief is true
+  is a separate fact, decided for B's own belief at order 0.
+
+This gives four separate facts for one proposition: what the world is, what B
+believes, what A thinks B believes, and whether A is right about B. A
+designer needs all four to see a false exposure.
+
+=== What the validator and the fixtures gain
+
+* A pure function in `enaction-contracts` derives, for each model, `agrees`
+  or `diverges`. The producer does not assert it.
+* A corpus `conformance/tom/v1` with accepted cases for the four cases above
+  and an `expected.json` for each. A package whose nesting exceeds the
+  declared depth is already refused; the corpus adds that case with a depth
+  of 1.
+* No new document and no new field. The depth policy of a profile that uses
+  models declares `max_order` of 1 or more.
+
+The mind trace gains two vocabulary terms that a producer declares, `stalk`
+and `caught`. The contract owns no candidate names and no tell names, so
+version 1 of the mind trace needs no change.
+
+== Work packages
+
+[cols="1,2,1,5,4",options="header"]
+|===
+| Id | Repository | Model | Scope | done_when
+
+| C0 | enaction-engine | Opus
+| The section 9 rule, the derive function, `conformance/tom/v1`, and
+  ADR-0028 (Proposed). Owns `crates/enaction-contracts/**`,
+  `conformance/tom/v1/**`, `docs/architecture/CAC-KERNEL.adoc`,
+  `docs/decisions/0028-*`.
+| The four accepted cases derive exactly their `expected.json`. A mutant that
+  compares a model with world truth fails a test. A package of order 2 under
+  a depth of 1 is refused. Workspace tests, clippy and fmt pass.
+
+| C1 | evil-weevil | Opus
+| The kernel mechanism, its Idris2 specification, fixtures "the stalker",
+  "caught", "false exposure" and controls, and a decision record.
+| Every 1.0 and 1.1 pinned digest is unchanged. Both hosts agree on the new
+  pins. The stalker engages only inside strike range; its control engages
+  earlier. A planted constant change moves a pin.
+
+| C2 | IDApTIK | Opus
+| After C1. The adapter mirror, the cue in the corridor world, the target's
+  own beliefs and the guard's models in the runner output, golden documents.
+| The real validator accepts each document. The golden for "false exposure"
+  holds at least 1 model that diverges, and its control holds 0. Two
+  processes write identical bytes.
+
+| C3 | universal-modding-studio | Opus
+| After C0 and C2. The explain lens shows models and whether each agrees.
+  The two corpora are vendored again by digest.
+| The lens derives exactly the `expected.json` of each `conformance/tom/v1`
+  case. One golden report for each IDApTIK scenario. The real-chain test is
+  run by the coordinator.
+|===
+
+The orchestration rules of the route plan apply. Three rules were added
+during slice 1, and they bind slice 2:
+
+. A session that finds a break on a default branch reports it to the
+  coordinator and does not open a fix.
+. Two pull requests in one repository that both change `Cargo.lock` merge in
+  sequence, with a lock refresh between them.
+. A test in a `done_when` is named by its full path, or by its test target.
+  A bare unit-test name under `--exact` matches nothing and reports success.
+
+== Limits, stated in advance
+
+* One model, about one target, of order 1. No agent models what you think it
+  thinks.
+* The cue is the host's. A host that cannot tell who observes whom gets no
+  slice 2 behaviour.
+* Exposure has one lifetime. It does not weigh evidence.
+* The lens will show that a model diverges. It will not show why the target
+  looked away.
+
+== Refused
+
+* A score or a reservoir value in any document.
+* A model compared with world truth.
+* A change to ABI 1.0 or 1.1 behaviour.
+* An `enaction-*` dependency in a game or in the kernel, and any licence edit.
