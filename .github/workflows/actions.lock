@@ -59,7 +59,8 @@ workflows:
     '.github/workflows/secret-scanner.yml': []
     '.github/workflows/security-policy.yml':
         - 'actions/checkout@v7.0.1'
-    '.github/workflows/sonarcloud-queue-gate.yml': []
+    '.github/workflows/sonarcloud-queue-gate.yml':
+        - 'hyperpolymath/proven-cicd-and-workflows@43223d1e7a0eb0eb4d9b4bb3fabbb3c201d6fbb7'
     '.github/workflows/static-analysis-gate.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
@@ -144,6 +145,16 @@ dependencies:
         commit: 'sha1-3fdad0c2b027f328e784ecf08caf62bf80a784c1'
         owner_id: 6759885
         repo_id: 1274526902
+    'hyperpolymath/proven-cicd-and-workflows@43223d1e7a0eb0eb4d9b4bb3fabbb3c201d6fbb7':
+        ref: 'main'
+        commit: 'sha1-43223d1e7a0eb0eb4d9b4bb3fabbb3c201d6fbb7'
+        owner_id: 6759885
+        repo_id: 1326697643
+    'mlugg/setup-zig@v2.2.1':
+        ref: 'v2.2.1'
+        commit: 'sha1-d1434d08867e3ee9daa34448df10607b98908d29'
+        owner_id: 7289241
+        repo_id: 812112570
     'softprops/action-gh-release@v3.0.4':
         ref: 'v3.0.4'
         commit: 'sha1-8a0cd651e5b2365bd640854a3fa5dfc70e4875f3'
