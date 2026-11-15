@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
+= Patch description: Hypatia fails to compile on Elixir 1.19
+:toc:
+
+Repository:: Hypatia (`hyperpolymath`), file `lib/rules/actions_lock.ex`.
+Basis:: A CI log excerpt from enaction-engine pull request 109 (job
+132623970230, 2026-11-14). The Hypatia source file was not read, so the cause
+and the fix below are inferred and must be confirmed against the file. This is
+a description only; no change has been made to the Hypatia repository.
+
+== Symptom
+
+Compiling Hypatia fails under Elixir 1.19.4:
+
+[source]
+----
+error: cannot invoke remote function :erlang.=:=/2 inside a match
+  170 │           version in @supported_versions ->
+  └─ lib/rules/actions_lock.ex:170: Hypatia.Rules.ActionsLock.consume_line/3
+== Compilation error in file lib/rules/actions_lock.ex ==
+----
+
+== Cause (inferred)
+
+Line 170 ends in `->`, so it is the head of a `case` or `fn` clause.
+`version in @supported_versions` is written where a pattern belongs, and `in`
+expands to comparison calls, which are not allowed in a pattern. `in` is only
+allowed in guards and ordinary expressions. Elixir 1.19.4 rejects this at
+compile time.
+
+== Likely fix
+
+Move the membership test into a guard.
+
+[source,elixir]
+----
+# before (line ~170, inside consume_line/3)
+version in @supported_versions ->
+
+# after
+version when version in @supported_versions ->
+----
+
+If the clause is already inside a `cond`, `in` would be legal there. In that
+case the problem is elsewhere and the surrounding code needs a look.
+
+`x when x in @module_attribute` is valid because the attribute expands to a
+compile-time list, which the guard turns into comparisons.
+
+== Verification (in the Hypatia repository)
+
+. `mix compile --warnings-as-errors` on Elixir 1.19.4 passes, where it now
+  fails.
+. Hypatia's own tests for the actions-lock rule pass. They should cover a
+  supported version, an unsupported version, and the line-consumption path in
+  `consume_line/3`.
+. Check for the same pattern elsewhere:
+  `grep -rnE '^\s*\w+ in @\w+ ->' lib/`.
+
+== After it merges, in enaction-engine
+
+. Bump the pinned Hypatia reusable-workflow revision.
+  `tests/workflows/foundation_ci_config_test.sh` checks that the pin is an
+  immutable revision and the approved one, so that approved revision also
+  needs updating.
+. Re-run the Static Analysis Gate. The "Deposit validated findings for
+  gitbot-fleet" job should then find the `hypatia-findings` artifact; it
+  currently fails only because the scan never uploaded it.
+
+== Not in scope
+
+The SonarCloud queue attestation is a separate problem (no analysis arrives at
+SonarQube Cloud). This fix does not touch it.
