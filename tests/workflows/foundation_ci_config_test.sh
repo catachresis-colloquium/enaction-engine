@@ -13,6 +13,7 @@ CODEQL="$PROJECT_DIR/.github/workflows/codeql.yml"
 GOVERNANCE="$PROJECT_DIR/.github/workflows/governance.yml"
 HYPATIA="$PROJECT_DIR/.github/workflows/hypatia-scan.yml"
 SCORECARD="$PROJECT_DIR/.github/workflows/scorecard.yml"
+MIRROR="$PROJECT_DIR/.github/workflows/mirror.yml"
 ACTION_LOCK="$PROJECT_DIR/.github/workflows/actions.lock"
 WORKFLOW_LINTER="$PROJECT_DIR/.github/workflows/workflow-linter.yml"
 
@@ -170,9 +171,15 @@ assert_eq 'CodeQL analysis uses the locked immutable release tag' 'v4.39.3' "$co
 assert_eq 'CodeQL release tag resolves to the locked commit' \
   '33d7b85da1a04171e211befe2c739303b9a4c066' "$(locked_commit github/codeql-action@v4.39.3)"
 
-governance_ref="$(action_refs hyperpolymath/standards/.github/workflows/governance-reusable.yml "$GOVERNANCE")"
-hypatia_ref="$(action_refs hyperpolymath/standards/.github/workflows/hypatia-scan-reusable.yml "$HYPATIA")"
-scorecard_ref="$(action_refs hyperpolymath/standards/.github/workflows/scorecard-reusable.yml "$SCORECARD")"
+# The standards repository moved from hyperpolymath/ to metadatastician/
+# (the same GitHub repo_id, 1116521501). GitHub refuses to start a workflow
+# that calls the hyperpolymath/ name (startup_failure since 2026-11-04), while
+# secret-scanner.yml, which calls the metadatastician/ name, runs. The
+# reusable workflows exist at the same commit under the new name.
+governance_ref="$(action_refs metadatastician/standards/.github/workflows/governance-reusable.yml "$GOVERNANCE")"
+hypatia_ref="$(action_refs metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml "$HYPATIA")"
+scorecard_ref="$(action_refs metadatastician/standards/.github/workflows/scorecard-reusable.yml "$SCORECARD")"
+mirror_ref="$(action_refs metadatastician/standards/.github/workflows/mirror-reusable.yml "$MIRROR")"
 
 assert_sha 'Governance reusable workflow is pinned to an immutable revision' "$governance_ref"
 assert_eq 'Governance reusable workflow uses the approved revision' \
@@ -183,6 +190,20 @@ assert_eq 'Hypatia reusable workflow uses the approved revision' \
 assert_sha 'Scorecard reusable workflow is pinned to an immutable revision' "$scorecard_ref"
 assert_eq 'Scorecard reusable workflow uses the approved revision' \
   'da2c748aad55c1a1dcba00b60fe4a35017bc6540' "$scorecard_ref"
+assert_sha 'Mirror reusable workflow is pinned to an immutable revision' "$mirror_ref"
+assert_eq 'Mirror reusable workflow uses the approved revision' \
+  'da2c748aad55c1a1dcba00b60fe4a35017bc6540' "$mirror_ref"
+
+# Names GitHub refused to start here, each of which has a working
+# replacement: mlugg/setup-zig (scripts/install-zig.sh) and
+# hyperpolymath/standards (metadatastician/standards). A uses: naming one of
+# them kills its workflow before any job is created, which no job-level check
+# can report. Comment lines are not uses:. hyperpolymath/oikosbot is also
+# refused but has no replacement under an allowed owner yet, so it is not
+# listed here; oikosbot.yml stays broken until the policy admits it.
+refused_uses="$(grep -hE '^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*["'"'"']?(mlugg/|hyperpolymath/standards/)' \
+  "$PROJECT_DIR"/.github/workflows/*.yml "$PROJECT_DIR"/.github/workflows/*.yaml 2>/dev/null || true)"
+assert_eq 'No workflow uses an action or reusable workflow from a refused owner' '' "$refused_uses"
 
 printf '\nfoundation CI configuration tests: %d passed, %d failed\n' "$PASS" "$FAIL"
 exit "$FAIL"
