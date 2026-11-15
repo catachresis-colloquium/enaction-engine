@@ -26,8 +26,11 @@ extra coverage.
 == SAST tools are complementary, not redundant
 
 * `codeql.yml` — CodeQL (matrix defaults to `actions`; every repo has workflows).
-* `sonarqube.yml` — SonarCloud (shell / JS surface; see `sonar-project.properties`).
+* `sonarcloud-queue-gate.yml`: verifies a receipt of the official SonarQube Cloud
+  analysis for the exact commit. It does not scan. The official app analyses the
+  shell / JS surface (see `sonar-project.properties`). The gate stays red until
+  the owner binds the project `catachresis-colloquium_enaction-engine`.
 * `static-analysis-gate.yml` — panic-attack + Hypatia gate (see above).
 
-Each targets a different language/surface; together they cover what no single
+Each targets a different language/surface (the Sonar gate checks a receipt, not a surface); together they cover what no single
 analyser does.
