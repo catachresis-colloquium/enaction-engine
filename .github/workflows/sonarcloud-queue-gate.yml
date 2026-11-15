@@ -1,4 +1,19 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
+# This gate verifies a receipt of the official SonarQube Cloud analysis. It
+# does not scan. The official app (app id 12526) analyses the pull request and
+# posts the check "SonarCloud Code Analysis". This job accepts that check only
+# for the exact commit, from the official app, for the bound project.
+#
+# The gate stays red until the SonarQube Cloud project
+# catachresis-colloquium_enaction-engine is bound to this repository. No
+# workflow change can make it pass before then. Do not add continue-on-error,
+# a skip or a path filter: a check that cannot fail is not a check.
+#
+# Merge groups: the official app does not analyse merge-queue commits. The
+# receipt belongs to the pull request head, and no event time can show that it
+# is fresh for a merge-group event. The context step therefore fails closed for
+# merge_group events. The owner must decide whether the merge queue needs a
+# different route before a ruleset requires this check there.
 name: SonarCloud Queue Gate
 
 on:
@@ -16,75 +31,127 @@ jobs:
   attest:
     name: SonarCloud queue attestation
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The action waits at most 300 seconds, plus one bounded final request.
+    timeout-minutes: 8
     env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
+      EXPECTED_REPOSITORY: catachresis-colloquium/enaction-engine
+      SONAR_PROJECT_KEY: catachresis-colloquium_enaction-engine
     steps:
-      - name: Require the official SonarCloud result for the queued head
+      - name: Resolve the pull request head
+        id: subject
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REF: ${{ github.event.merge_group.head_ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
 
-          event_name=$(jq -r '.action as $action | if has("pull_request") then "pull_request" elif has("merge_group") then "merge_group" else empty end' "$GITHUB_EVENT_PATH")
-          case "$event_name" in
+          case "$EVENT_NAME" in
             pull_request)
-              pr_number=$(jq -r '.number' "$GITHUB_EVENT_PATH")
-              ;;
-            merge_group)
-              head_ref=$(jq -r '.merge_group.head_ref' "$GITHUB_EVENT_PATH")
-              if [[ ! "$head_ref" =~ /pr-([0-9]+)- ]]; then
-                echo "Unable to identify one pull request from merge-group ref: $head_ref" >&2
+              if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+                echo "::error::Invalid pull request number: $PR_NUMBER"
                 exit 1
               fi
-              pr_number=${BASH_REMATCH[1]}
+              pr_head="$PR_HEAD_SHA"
+              ;;
+            merge_group)
+              if [[ ! "$HEAD_REF" =~ /pr-([0-9]+)- ]]; then
+                echo "::error::Unable to identify one pull request from merge-group ref: $HEAD_REF"
+                exit 1
+              fi
+              PR_NUMBER=${BASH_REMATCH[1]}
               # shellcheck disable=SC2016 # GraphQL variables are literal here.
               queue_sha=$(gh api graphql \
                 -f query='query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){mergeQueueEntry{headCommit{oid}}}}}' \
                 -f owner="${GH_REPO%%/*}" \
                 -f repo="${GH_REPO#*/}" \
-                -F number="$pr_number" \
+                -F number="$PR_NUMBER" \
                 --jq '.data.repository.pullRequest.mergeQueueEntry.headCommit.oid')
               if [[ "$queue_sha" != "$GITHUB_SHA" ]]; then
-                echo "Queue entry $queue_sha does not match event commit $GITHUB_SHA" >&2
+                echo "::error::Queue entry $queue_sha does not match event commit $GITHUB_SHA"
                 exit 1
               fi
+              pr_head=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.head.sha')
               ;;
             *)
-              echo "Unsupported event payload" >&2
+              echo "::error::Unsupported event: $EVENT_NAME"
               exit 1
               ;;
           esac
 
-          pr_head=$(gh api "repos/$GH_REPO/pulls/$pr_number" --jq '.head.sha')
           if [[ ! "$pr_head" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Invalid pull-request head returned for #$pr_number" >&2
+            echo "::error::Invalid pull-request head returned for #$PR_NUMBER"
             exit 1
           fi
+          {
+            echo "sha=$pr_head"
+            echo "pr_number=$PR_NUMBER"
+          } >> "$GITHUB_OUTPUT"
 
-          for attempt in {1..60}; do
-            result=$(gh api --paginate "repos/$GH_REPO/commits/$pr_head/check-runs" \
-              | jq -rs '
-                  [.[].check_runs[]
-                    | select(.name == "SonarCloud Code Analysis" and .app.id == 12526)]
-                  | sort_by(.started_at)
-                  | last
-                  | if . == null then "missing\tmissing"
-                    else [.status, (.conclusion // "pending")] | @tsv
-                    end')
-            status=${result%%$'\t'*}
-            conclusion=${result#*$'\t'}
-            if [[ "$status" == "completed" ]]; then
-              if [[ "$conclusion" == "success" ]]; then
-                echo "Official SonarQubeCloud analysis passed for PR #$pr_number at $pr_head"
-                exit 0
-              fi
-              echo "Official SonarQubeCloud analysis concluded: $conclusion" >&2
-              exit 1
-            fi
-            echo "Waiting for official SonarQubeCloud analysis ($attempt/60): $status"
-            sleep 10
-          done
+      - name: Verify the official same-commit result
+        id: official
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/sonarcloud-result-check@43223d1e7a0eb0eb4d9b4bb3fabbb3c201d6fbb7
+        with:
+          repository: ${{ github.repository }}
+          sha: ${{ steps.subject.outputs.sha }}
+          wait-seconds: '300'
 
-          echo "Official SonarQubeCloud analysis did not complete within 10 minutes" >&2
-          exit 1
+      - name: Verify project and receipt context
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECK_RUN_ID: ${{ steps.official.outputs.check-run-id }}
+          SUBJECT_SHA: ${{ steps.subject.outputs.sha }}
+          PR_NUMBER: ${{ steps.subject.outputs.pr_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_TIME: ${{ github.event.pull_request.updated_at }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_REPOSITORY" != "$EXPECTED_REPOSITORY" ]]; then
+            echo "::error::This workflow is bound to $EXPECTED_REPOSITORY."
+            exit 1
+          fi
+          if [[ ! "$CHECK_RUN_ID" =~ ^[1-9][0-9]*$ || ! "$SUBJECT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo '::error::Invalid check-run ID or subject SHA.'
+            exit 1
+          fi
+          if [[ "$EVENT_NAME" != pull_request ]]; then
+            # The receipt was posted for the pull request head, before the
+            # merge group existed. No event time can show that it is fresh, so
+            # this event fails closed.
+            echo "::error::No fresh receipt can be proved for a $EVENT_NAME event. Failing closed."
+            exit 1
+          fi
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo '::error::Invalid PR number.'
+            exit 1
+          fi
+          # A prior check on the same SHA must not satisfy a later event.
+          if [[ "$EVENT_TIME" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]; then
+            event_epoch=$(date -u -d "$EVENT_TIME" +%s) || exit 1
+          else
+            echo '::error::Missing or invalid event timestamp; no fresh receipt can be verified.'
+            exit 1
+          fi
+          expected_url="https://sonarcloud.io/dashboard?id=$SONAR_PROJECT_KEY&pullRequest=$PR_NUMBER"
+          if ! gh api "repos/$GITHUB_REPOSITORY/check-runs/$CHECK_RUN_ID" | jq -e \
+            --arg id "$CHECK_RUN_ID" --arg sha "$SUBJECT_SHA" --arg url "$expected_url" \
+            --argjson event_epoch "$event_epoch" '
+              .id == ($id | tonumber) and .head_sha == $sha and
+              .name == "SonarCloud Code Analysis" and
+              .app.id == 12526 and .app.slug == "sonarqubecloud" and
+              .status == "completed" and .conclusion == "success" and
+              .details_url == $url and
+              ((try (.started_at | fromdateiso8601) catch 0) > $event_epoch) and
+              ((try (.completed_at | fromdateiso8601) catch 0) >=
+               (try (.started_at | fromdateiso8601) catch 0))
+            ' >/dev/null; then
+            echo '::error::Official receipt is unavailable, stale, or belongs to a different project, PR, commit, or quality gate.'
+            exit 1
+          fi
+          echo "Official receipt $CHECK_RUN_ID verified for $SONAR_PROJECT_KEY, PR #$PR_NUMBER at $SUBJECT_SHA"
