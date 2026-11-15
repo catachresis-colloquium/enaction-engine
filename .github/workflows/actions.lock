@@ -16,7 +16,6 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/e2e.yml':
         - 'actions/checkout@v7.0.1'
-        - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/estate-rules.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/governance.yml': []
@@ -56,7 +55,6 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/rust-ci.yml':
         - 'actions/checkout@v7.0.1'
-        - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/scorecard.yml': []
     '.github/workflows/secret-scanner.yml': []
     '.github/workflows/security-policy.yml':

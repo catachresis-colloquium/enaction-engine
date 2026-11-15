@@ -59,9 +59,8 @@ jobs:
           rustup toolchain install stable --profile minimal --component clippy
           rustup default stable
       - name: Install pinned Zig
-        uses: mlugg/setup-zig@v2.2.1
-        with:
-          version: 0.16.0
+        # A verified download, not an action: see scripts/install-zig.sh.
+        run: bash scripts/install-zig.sh
       - name: Zig unit tests (FFI seam)
         working-directory: src/interface/ffi
         run: zig build test
