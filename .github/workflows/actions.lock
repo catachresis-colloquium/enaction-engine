@@ -16,7 +16,6 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/e2e.yml':
         - 'actions/checkout@v7.0.1'
-        - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/estate-rules.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/governance.yml': []
@@ -56,7 +55,6 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/rust-ci.yml':
         - 'actions/checkout@v7.0.1'
-        - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/scorecard.yml': []
     '.github/workflows/secret-scanner.yml': []
     '.github/workflows/security-policy.yml':
@@ -146,11 +144,6 @@ dependencies:
         commit: 'sha1-3fdad0c2b027f328e784ecf08caf62bf80a784c1'
         owner_id: 6759885
         repo_id: 1274526902
-    'mlugg/setup-zig@v2.2.1':
-        ref: 'v2.2.1'
-        commit: 'sha1-d1434d08867e3ee9daa34448df10607b98908d29'
-        owner_id: 7289241
-        repo_id: 812112570
     'softprops/action-gh-release@v3.0.4':
         ref: 'v3.0.4'
         commit: 'sha1-8a0cd651e5b2365bd640854a3fa5dfc70e4875f3'
