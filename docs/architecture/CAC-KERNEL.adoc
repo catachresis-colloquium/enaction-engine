@@ -102,7 +102,8 @@ EpistemicEvent {
 
 Belief {
   belief_id: BeliefId,
-  holder: AgentId,
+  holders: [AgentId],      // ascription path, outermost first; empty = own belief
+  bearer: AgentId,         // whose belief it is (or is modelled to be)
   proposition: Proposition,
   status: Certain | Believed | Suspected | Rejected | Unknown,
   confidence: Mass,
@@ -118,8 +119,13 @@ Belief {
 . `(tick, sequence)` gives a total order for reduction.
 . Every non-derived belief has at least one provenance event.
 . A contradiction is represented explicitly; it is not silently overwritten.
-. Nested theory of mind is represented as a belief whose holder is another
-  agent, subject to a declared depth and resource policy. Per ADR-0015, any such
+. Nested theory of mind is represented as a belief with a non-empty
+  ascription path. `bearer` is the agent whose belief it is; `holders` lists,
+  outermost first, the agents whose model it lives in. Empty `holders` is the
+  bearer's own belief (order 0), `["guard-0"]` with `bearer = "contact-21"` is
+  guard-0's model of contact-21's belief (order 1), and the order is the
+  length of `holders`. On the wire an empty `holders` is omitted (§6). The
+  order is subject to a declared depth and resource policy. Per ADR-0015, any such
   cap MUST be counted in deterministic units — inferences, unifications, stream
   nodes — never in milliseconds. A nested belief is compared with a mind,
   never with world truth (§9, "Models are compared with minds").
