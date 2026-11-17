@@ -180,10 +180,13 @@ the owner. A `done_when` is a command whose failure is visible.
 | C2 (b): a fixture in which a contradiction changes later conduct. It
   depends on A3 (`evil-weevil`, crossing B).
 | Sonnet
-| The agent's intents after the contradiction differ from a control run
-  without it. A difference in trace metadata alone does not count. A planted
-  mutant that ignores the contradiction makes the two runs' intents equal
-  and fails the test.
+| At some tick after the contradiction, two things differ from a control run
+  without it: the intent that the mind returns across the host boundary, and
+  the snapshot that follows it. The intent is the mind's only output
+  (ENACTIVE-COMMITMENTS C3), and the snapshot shows that the host acted on
+  it, so together they are a difference in conduct. A difference in the
+  intent alone, or in trace metadata alone, does not count. A planted mutant
+  that ignores the contradiction makes both equal and fails the test.
 
 | F3
 | C4 zero-affect fixture. Only if the owner accepts C4 (D4).
@@ -204,7 +207,9 @@ the owner. A `done_when` is a command whose failure is visible.
 | Haiku
 | Each status file names the commit that its facts were read from. A CI job
   runs `validate-claude-md`, passes, and fails on a planted drift. R8 stays
-  open until that job exists.
+  open until that job exists. `CAC-DOCUMENT-MAP.adoc` lists this revision,
+  and the Q4 row of the completion plan records the re-ruling of
+  2026-11-17.
 
 | F6
 | A setup script for the cloud environment that provisions Lean, Verus, Zig
