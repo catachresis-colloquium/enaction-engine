@@ -9,6 +9,9 @@ Date: 2026-11-17
 Proposed. The owner chose this route on 2026-11-17, by selector, over three
 alternatives (listed below).
 
+The kernel contract version that carries these rules is set by ADR-0030
+(2.0, state `draft`), not by this record.
+
 Makes `CAC-KERNEL.adoc` section 3 invariant 4 checkable. Amends ADR-0028:
 that ADR let several unlinked beliefs of one key share a package, and let a
 successor start before the belief it supersedes. Both are now refused.
