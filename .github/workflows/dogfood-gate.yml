@@ -68,6 +68,81 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
+  # Job 1b: DEED validation and the shrink-only A2ML ledger.
+  # Brought from rsr-template-repo@0044ad9 (.github/workflows/dogfood-gate.yml
+  # job deed-validate; the PR-side base fetch is its fork-governance.yml step).
+  # Differences from the template, all forced by this repository:
+  #   * it runs on pull_request too: there is no fork-governance.yml here, and
+  #     the ledger check needs the PR base as A2ML_BASE;
+  #   * actions are pinned by tag and locked in actions.lock (gh actions-lock),
+  #     not by inline SHA;
+  #   * the standards checkout is pinned to current standards main, not the
+  #     template's f0b3cd4, whose check-a2ml-archived.sh still exempts
+  #     9-archive/ (superseded by the owner's 2026-11-13 ruling).
+  # The linter runs under Bun from the standards checkout (as in the template).
+  # ---------------------------------------------------------------------------
+  deed-validate:
+    name: Validate DEED manifests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Checkout canonical DEED validator
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: metadatastician/standards
+          ref: 9cb967650346355295b97b82e3defac93ce02cf8
+          path: .standards-deed
+          sparse-checkout: |
+            1-formats/deed
+            scripts
+          sparse-checkout-cone-mode: true
+          persist-credentials: false
+      - name: Setup Bun runtime
+        uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: '1.3.12'
+      - name: Run DEED validation hook (every .deed, and the A2ML ledger against the PR base)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          STANDARDS_ABS="$PWD/.standards-deed"
+          rm -rf "$RUNNER_TEMP/standards-deed"
+          mv "$STANDARDS_ABS" "$RUNNER_TEMP/standards-deed"
+          # The lane is the gate: a ledger with no canonical gate to read it fails.
+          if [ -f .machine_readable/a2ml-legacy-allow.txt ] && [ ! -f "$RUNNER_TEMP/standards-deed/scripts/check-a2ml-archived.sh" ]; then
+            echo "::error::A2ML ledger present but scripts/check-a2ml-archived.sh is missing from the standards checkout"
+            exit 1
+          fi
+          # Shrink-only: the base branch's ledger bounds this one. A base that
+          # cannot be fetched fails the step: skipping the comparison would let
+          # a new ledger entry through exactly when it cannot be checked.
+          A2ML_BASE=""
+          if [ -n "$BASE_REF" ]; then
+            # persist-credentials is false, so authenticate the fetch with a
+            # header (keeps the token out of .git/config, as lock-sync-gate.yml).
+            AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "${TOKEN}" | base64 -w0)"
+            if ! git -c http.extraheader="${AUTH}" fetch -q --depth=1 origin "$BASE_REF"; then
+              echo "::error::could not fetch the base branch $BASE_REF to bound the A2ML ledger"
+              exit 1
+            fi
+            A2ML_BASE=FETCH_HEAD
+          fi
+          A2ML_BASE="$A2ML_BASE" STANDARDS_DIR="$RUNNER_TEMP/standards-deed" bash .github/hooks/validate-deed.sh
+          echo "STANDARDS_DIR=$RUNNER_TEMP/standards-deed" >> "$GITHUB_ENV"
+      - name: No .a2ml outside the ledger (template check-no-a2ml.sh)
+        run: bash scripts/check-no-a2ml.sh .
+      - name: Plant test (the lane must refuse planted defects and pass the control)
+        run: bash tests/deed_lane_test.sh
+
+  # ---------------------------------------------------------------------------
   # Job 2: K9 contract validation
   # ---------------------------------------------------------------------------
   k9-validate:
