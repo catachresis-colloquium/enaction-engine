@@ -48,19 +48,17 @@ decide() {
         echo "check-contract-released: REFUSED: the host printed more than one line" >&2
         return 1
         ;;
-    'enaction-validate kernel contract '[0-9]*'.'[0-9]*' (released)')
+    esac
+    if printf '%s\n' "$line" | grep -Eq '^enaction-validate kernel contract [0-9]+\.[0-9]+ \(released\)$'; then
         echo "check-contract-released: ok: $line"
         return 0
-        ;;
-    'enaction-validate kernel contract '[0-9]*'.'[0-9]*' (draft)')
+    elif printf '%s\n' "$line" | grep -Eq '^enaction-validate kernel contract [0-9]+\.[0-9]+ \(draft\)$'; then
         echo "check-contract-released: REFUSED: the kernel contract is a draft (ADR-0030): $line" >&2
         return 1
-        ;;
-    *)
+    else
         echo "check-contract-released: REFUSED: cannot read a contract state from: $line" >&2
         return 1
-        ;;
-    esac
+    fi
 }
 
 gate() {
@@ -102,6 +100,14 @@ self_test() {
         'echo "enaction-validate kernel contract 2.0 (draft)"')"
     expect "a released host is accepted" 0 "$(plant_and_run "$tmp" released \
         'echo "enaction-validate kernel contract 2.0 (released)"')"
+    expect "draft text before a released suffix is refused" 1 "$(plant_and_run "$tmp" draft_suffix \
+        'echo "enaction-validate kernel contract 2.0 (draft) (released)"')"
+    expect "trailing draft text is refused" 1 "$(plant_and_run "$tmp" trailing_draft \
+        'echo "enaction-validate kernel contract 2.0 (released) (draft)"')"
+    expect "a non-digit major is refused" 1 "$(plant_and_run "$tmp" bad_major \
+        'echo "enaction-validate kernel contract 2x.0 (released)"')"
+    expect "a non-digit minor is refused" 1 "$(plant_and_run "$tmp" bad_minor \
+        'echo "enaction-validate kernel contract 2.0x (released)"')"
     expect "an unknown state is refused" 1 "$(plant_and_run "$tmp" unknown \
         'echo "enaction-validate kernel contract 2.0 (rc)"')"
     expect "a line with no state is refused" 1 "$(plant_and_run "$tmp" nostate \
