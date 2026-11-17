@@ -54,6 +54,13 @@ loader MUST refuse a package that breaks either rule:
   after it: `valid_from(b) >= valid_from(b.supersedes)`. A successor may
   start on the same tick.
 
+The rules are closed over one package. A package that omits an earlier
+belief of a key holds a single belief for that key, and nothing in the
+package shows that a predecessor existed, so neither rule can refuse that
+case. No gate checks continuity across packages today. The trace validator's
+checks on a retraction (a cause and a prior assertion) cover retractions
+only.
+
 The rules hold for every order, so for an agent's own beliefs and for its
 models alike. An unlinked restatement is refused even when it agrees with
 the belief it repeats. A restatement is a new belief of the key, so it must

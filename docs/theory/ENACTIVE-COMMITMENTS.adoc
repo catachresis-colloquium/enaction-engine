@@ -134,6 +134,16 @@ validator now refuses (a) as `belief-key-chained`. On that branch:
 Falsifier (a) is therefore *tested and not observed* on that branch. Its
 evidence counts once the pull request merges. (b) is unchanged.
 
+*Scope of that test.* The rule is closed over one package. A package that
+omits an earlier belief of a key holds a single belief for that key, and
+nothing in the package shows that a predecessor existed. So (a) is tested
+for beliefs that one package states. No gate checks continuity across
+packages today. The trace validator requires a retraction to have a cause
+and a prior assertion; that covers retractions, and it does not detect an
+omitted predecessor. Whether a superseding belief must also cite a
+contradiction event is an open owner decision (D1 in
+`docs/proposals/ULTRAPLAN-REVISION-2026-11-17.adoc`).
+
 === C3. Cognition is a loop through the world, not a pipeline
 
 *Claim.* What an agent comes to believe depends on what it did. Its actions
@@ -209,7 +219,7 @@ that meaning arises in the interaction itself.
 
 ADR-0028 (proposed; code merged in pull requests 111 and 112) compares a
 model of another mind with that mind over the model's whole lifetime, and
-calls a model that agrees and later diverges _stale-divergent_. That makes
+calls a model that agrees at first and later diverges _stale-divergent_. That makes
 the representational theory more exact. It does not move D3: a reader
 computes the verdict, and the interaction does not produce it.
 
