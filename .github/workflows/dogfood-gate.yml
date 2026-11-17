@@ -107,36 +107,38 @@ jobs:
         uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version: '1.3.12'
-      - name: Run DEED validation hook (every .deed, and the A2ML ledger against the PR base)
+      - name: Stage the canonical DEED validator
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/standards-deed"
+          mv "$PWD/.standards-deed" "$RUNNER_TEMP/standards-deed"
+          echo "STANDARDS_DIR=$RUNNER_TEMP/standards-deed" >> "$GITHUB_ENV"
+      - name: Assert Bun, the linter and the ledger gate are present
+        # The hook skips its deed check, with a notice and exit 0, when Bun or
+        # the linter is missing. In this lane that would be a silent green, so
+        # fail here first.
+        run: |
+          set -euo pipefail
+          command -v bun >/dev/null 2>&1 || { echo "::error::bun is not on PATH: the deed lane cannot lint"; exit 1; }
+          [ -f "$STANDARDS_DIR/1-formats/deed/tools/deed_lint.js" ] || { echo "::error::deed_lint.js is missing from the standards checkout at $STANDARDS_DIR"; exit 1; }
+          [ -f "$STANDARDS_DIR/scripts/check-a2ml-archived.sh" ] || { echo "::error::scripts/check-a2ml-archived.sh is missing from the standards checkout"; exit 1; }
+      - name: Resolve the commit that bounds the A2ML ledger
+        # Shrink-only on every event: the PR base on pull_request, the previous
+        # commit of the branch on push. Fails closed when it cannot be fetched.
         env:
+          EVENT_NAME: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
           TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          STANDARDS_ABS="$PWD/.standards-deed"
-          rm -rf "$RUNNER_TEMP/standards-deed"
-          mv "$STANDARDS_ABS" "$RUNNER_TEMP/standards-deed"
-          # The lane is the gate: a ledger with no canonical gate to read it fails.
-          if [ -f .machine_readable/a2ml-legacy-allow.txt ] && [ ! -f "$RUNNER_TEMP/standards-deed/scripts/check-a2ml-archived.sh" ]; then
-            echo "::error::A2ML ledger present but scripts/check-a2ml-archived.sh is missing from the standards checkout"
-            exit 1
-          fi
-          # Shrink-only: the base branch's ledger bounds this one. A base that
-          # cannot be fetched fails the step: skipping the comparison would let
-          # a new ledger entry through exactly when it cannot be checked.
-          A2ML_BASE=""
-          if [ -n "$BASE_REF" ]; then
-            # persist-credentials is false, so authenticate the fetch with a
-            # header (keeps the token out of .git/config, as lock-sync-gate.yml).
-            AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "${TOKEN}" | base64 -w0)"
-            if ! git -c http.extraheader="${AUTH}" fetch -q --depth=1 origin "$BASE_REF"; then
-              echo "::error::could not fetch the base branch $BASE_REF to bound the A2ML ledger"
-              exit 1
-            fi
-            A2ML_BASE=FETCH_HEAD
-          fi
-          A2ML_BASE="$A2ML_BASE" STANDARDS_DIR="$RUNNER_TEMP/standards-deed" bash .github/hooks/validate-deed.sh
-          echo "STANDARDS_DIR=$RUNNER_TEMP/standards-deed" >> "$GITHUB_ENV"
+          A2ML_BASE="$(bash scripts/fetch-a2ml-base.sh)"
+          echo "A2ML ledger bound: $A2ML_BASE"
+          echo "A2ML_BASE=$A2ML_BASE" >> "$GITHUB_ENV"
+      - name: Run DEED validation hook (every .deed, and the A2ML ledger against its bound)
+        run: bash .github/hooks/validate-deed.sh
+      - name: STATE.deed profile (--state --root --strict)
+        run: bash scripts/check-state-profile.sh .
       - name: No .a2ml outside the ledger (template check-no-a2ml.sh)
         run: bash scripts/check-no-a2ml.sh .
       - name: Plant test (the lane must refuse planted defects and pass the control)
@@ -377,7 +379,7 @@ jobs:
     name: Dogfooding compliance summary
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [a2ml-validate, k9-validate, empty-lint, groove-check, eclexiaiser-validate]
+    needs: [a2ml-validate, deed-validate, k9-validate, empty-lint, groove-check, eclexiaiser-validate]
     if: always()
 
     steps:
