@@ -1,0 +1,298 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
+= Plan audit, 2026-11-17
+:toc:
+:toclevels: 1
+
+Status: read-only audit, written by fan-out session F0 under Track F of
+link:../proposals/ULTRAPLAN-REVISION-2026-11-17.adoc[ULTRAPLAN-REVISION-2026-11-17].
+It runs the `done_when` commands of steps 1 to 11 of
+link:../proposals/ULTRACODE-COMPLETION-PLAN.adoc[ULTRACODE-COMPLETION-PLAN]
+and of work packages A1 and A2 of
+link:../proposals/WEEVIL-HOST-ROUTE.adoc[WEEVIL-HOST-ROUTE]. It changes no
+file except this one, and it fixes nothing.
+
+== Method
+
+Every command ran from the root of the repository on commit `cdf7ca1`, which
+is the head of `main` when the audit started. `3bf55cd` is an ancestor of
+that commit. Each command ran through `bash -c` with a 15-minute cap; no
+command reached the cap. Commands were run as written in the `done_when`.
+Where a `done_when` joins commands with `&&` and an earlier command failed,
+each later command was run on its own, and its row says so.
+
+Tools absent from this container: `just`, Agda, Coq (`coqc`), Idris2, Zig,
+Lean, Verus and Creusot. Nothing was installed. Steps 5, 6 and 7 belong to
+other repositories, and those repositories were not cloned.
+
+Where a `done_when` is a condition in prose rather than a command, the row
+names the check that was run in its place.
+
+== Results
+
+[cols="1,4,1,1,5",options="header"]
+|===
+| Step id | Command run | Commit | Result | Evidence
+
+| 1a
+| `bash tests/check-proofs-vacuous.sh`
+| `cdf7ca1`
+| PASSED
+| Exit 0. Last line: `PASS: check-proofs.sh fails a MANIFEST that gates zero modules and passes one that gates a compiling module`
+
+| 1b
+| `bash tests/check-cargo-test-exact.sh`
+| `cdf7ca1`
+| PASSED
+| Exit 0. Last line: `PASS: cargo-test-exact.sh passes exactly one real test and fails otherwise`
+
+| 1c
+| `cargo test --locked --all-targets`
+| `cdf7ca1`
+| PASSED
+| Exit 0. The output has 16 test-binary results and none reads `FAILED`. Last line: `test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.65s`
+
+| 2a
+| `bash scripts/cargo-test-exact.sh enaction-trace observer_sally_anne_two_run_probe`
+| `cdf7ca1`
+| PASSED
+| `cargo-test-exact: PASS -- exactly 1 test run and passed`
+
+| 2b
+| `bash scripts/cargo-test-exact.sh enaction-trace observer_proptest_perturbs_outside_closure`
+| `cdf7ca1`
+| PASSED
+| `cargo-test-exact: PASS -- exactly 1 test run and passed`
+
+| 2c
+| `bash scripts/check-observer-mutant.sh`
+| `cdf7ca1`
+| PASSED
+| Exit 0. Last line: `RESULT: PASS -- the patched copy reports test result: FAILED; both observer tests catch the mutant`
+
+| 3a
+| `cargo test --locked -p enaction-contracts --test package_fault_coverage`
+| `cdf7ca1`
+| PASSED
+| Exit 0. Last test-result line: `test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s`
+
+| 3b
+| `! rg -q 'computed_digest: Option' crates/enaction-contracts/src/package.rs`
+| `cdf7ca1`
+| PASSED
+| `rg` exits 1, meaning no match, so the negation exits 0. The string `computed_digest` does not occur in that file at all; see Notes.
+
+| 4a
+| `cargo test --locked -p enaction-contracts --test trace_package_seam --test canonical_bytes`
+| `cdf7ca1`
+| FAILED
+| `error: no test target named \`trace_package_seam\` in \`enaction-contracts\` package`. Cargo stopped before any test ran.
+
+| 4b
+| `while read -r id; do if ! grep -qF "$id" docs/status/DEFECTS.adoc; then exit 1; fi; done < target/e1-mismatches.txt`
+| `cdf7ca1`
+| FAILED
+| Run on its own, because it follows the failed command 4a with `&&`. `/bin/bash: line 6: target/e1-mismatches.txt: No such file or directory`. The file is written only by the test that 4a could not run.
+
+| 5a
+| `bash scripts/check-architecture-boundaries.sh`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: universal-modding-studio (UMS). The script is not in this repository, and the repository was not cloned.
+
+| 5b
+| `bash tests/boundaries-planted-violation.sh`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: universal-modding-studio (UMS).
+
+| 6a
+| `IDAPTIK_ROOT=… just roundtrip-idaptik`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: UMS, run against an IDApTIK checkout. Also `just` is absent here.
+
+| 6b
+| `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core most_likely_ties_resolve_to_first_declared`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: IDApTIK. The test would run in an IDApTIK checkout.
+
+| 6c
+| `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_conserves_mass`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: IDApTIK.
+
+| 6d
+| `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_over_full`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: IDApTIK.
+
+| 6e
+| `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_out_of_frame_focal_set`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: IDApTIK.
+
+| 6f
+| `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core bpa_new_rejects_under_full`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: IDApTIK.
+
+| 6g
+| `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_into_vacuous_is_from_bpa`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: IDApTIK.
+
+| 6h
+| `bash "$ENACTION_ROOT/scripts/cargo-test-exact.sh" idaptik-core absorb_rejects_frame_mismatch`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: IDApTIK.
+
+| 7a
+| `cargo test --locked -p slavia-core`
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: Chronicles of Slavia.
+
+| 8a
+| Check of the Status block, `awk '/^== Status/{p=1;next} p&&/^==/{exit} p&&NF{print; exit}' docs/decisions/0022-baseline-is-a-frozen-prior.adoc`, plus a read of its default-arm sentence
+| `cdf7ca1`
+| PASSED
+| The status line reads `Proposed`. The text reads `Default arm A (frozen prior), as the owner ruled on 2026-11-05`.
+
+| 8b
+| The same check on `docs/decisions/0024-canonical-bytes-jcs.adoc`
+| `cdf7ca1`
+| PASSED
+| The status line reads `Proposed`. The text reads `Default arm: owner ruling Q1, arm A`.
+
+| 8c
+| `ls docs/decisions/0023-*.adoc`
+| `cdf7ca1`
+| FAILED
+| `ls: cannot access 'docs/decisions/0023-*.adoc': No such file or directory`. Step 8 names ADR-0023 as a file that must be Proposed.
+
+| 8d
+| `ls docs/decisions/0025-*.adoc`
+| `cdf7ca1`
+| FAILED
+| `ls: cannot access 'docs/decisions/0025-*.adoc': No such file or directory`. Step 8 names ADR-0025 as a file that must be Proposed.
+
+| 8e
+| The same check on `docs/decisions/0015-kernel-determinism-contract.adoc`
+| `cdf7ca1`
+| FAILED
+| The status line reads `Accepted`, not `Proposed`. Step 8 asks for an amendment to this record, so it should be Proposed.
+
+| 8f
+| The same check on `docs/decisions/0016-mass-is-the-kernel-confidence-type.adoc`
+| `cdf7ca1`
+| FAILED
+| The status line reads `Accepted`, not `Proposed`. Step 8 asks for an amendment to this record, so it should be Proposed.
+
+| 8g
+| The same check on UMS ADR-0019
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: UMS.
+
+| 9a
+| No command in the `done_when`. It is the prose condition "every repository gate green except the Lean proof gate" and a session ledger.
+| `cdf7ca1`
+| NOT RUNNABLE
+| The condition spans several repositories and a ledger that this container does not hold. `just` is absent, so the golden-path gate cannot be run here.
+
+| 10a
+| `sha256sum -c conformance/time/v1/SHA256SUMS`
+| `cdf7ca1`
+| FAILED
+| `sha256sum: conformance/time/v1/SHA256SUMS: No such file or directory`. The directory `conformance/time` does not exist. The directories under `conformance/` are `accelerator`, `mind` and `tom`.
+
+| 10b
+| `cargo test --locked -p enaction-time --test conformance_time`
+| `cdf7ca1`
+| FAILED
+| `error: no test target named \`conformance_time\` in \`enaction-time\` package`
+
+| 10c
+| Check of the workflow file, `ls .github/workflows/conformance-time.yml`
+| `cdf7ca1`
+| FAILED
+| `ls: cannot access '.github/workflows/conformance-time.yml': No such file or directory`. This checks only the tree at this commit. The run history on GitHub was not queried.
+
+| 11a
+| `for t in canonical_bytes_match_jcs_vectors frame_over_64_is_rejected frame_of_64_with_bit_63_is_admitted conflicting_truth_atoms_are_rejected qualified_hypotheses_disambiguate_frames runner_cannot_supply_its_own_policies profile_mismatch_is_refused unknown_fields_are_rejected_before_hashing ambiguous_frames_are_rejected confidence_must_match_payload dependent_evidence_is_refused shared_group_across_perspectives_is_admitted mutated_package_with_stale_digest_is_rejected u64_boundaries_follow_q1 every_integer_field_is_bounded_including_max_order counterfactual_envelope_is_validated_strictly independence_group_must_match_source focal_sets_are_id_arrays_on_the_wire; do if ! bash scripts/cargo-test-exact.sh enaction-contracts "$t"; then exit 1; fi; done`
+| `cdf7ca1`
+| FAILED
+| The first name, `canonical_bytes_match_jcs_vectors`, passed. The second, `frame_over_64_is_rejected`, fails: `cargo-test-exact: FAIL -- wanted exactly 1 test run and passed` after `ran=0`. That name occurs nowhere in `crates/` or `tests/`. The loop stopped there.
+
+| 11b
+| `for t in 'enaction-runner-output/1' 'enaction-counterfactual/1' policy_digest PolicyDigestMismatch ProfileMismatch '--policies' '--expect-profile' 'exit 0' 'exit 1' 'exit 2'; do if ! rg -qF -- "$t" docs/architecture/CAC-KERNEL.adoc; then exit 1; fi; done`
+| `cdf7ca1`
+| FAILED
+| `MISS: PolicyDigestMismatch`. Checked by hand after the loop stopped: `ProfileMismatch` is also absent from `docs/architecture/CAC-KERNEL.adoc`.
+
+| A1.1
+| `bash scripts/cargo-test-exact.sh enaction-trace observer_sally_anne_two_run_probe` (the same command as 2a, run once)
+| `cdf7ca1`
+| PASSED
+| See row 2a.
+
+| A1.2
+| `bash scripts/cargo-test-exact.sh enaction-trace observer_proptest_perturbs_outside_closure` (the same command as 2b, run once)
+| `cdf7ca1`
+| PASSED
+| See row 2b.
+
+| A1.3
+| `bash scripts/check-observer-mutant.sh` (the same command as 2c, run once)
+| `cdf7ca1`
+| PASSED
+| See row 2c.
+
+| A2.1
+| `cargo test --locked -p enaction-contracts --test package_fault_coverage --test canonical_bytes --test mind_trace --test validate_cli`
+| `cdf7ca1`
+| PASSED
+| Exit 0. The four test binaries report 3, 7, 7 and 15 passed, with 0 failed in each.
+
+| A2.2
+| `! rg -q 'computed_digest: Option' crates/enaction-contracts/src`
+| `cdf7ca1`
+| PASSED
+| `rg` exits 1, so the negation exits 0.
+
+| A2.3
+| `ls conformance/mind/v1/rejected`, a check of the prose clause "one fixture exists for every rule name"
+| `cdf7ca1`
+| PASSED
+| Ten directories: BadRanking, BadVocabulary, DanglingCause, IntegerOutOfRange, MassOutOfRange, NonMonotonicTick, UncausedAffectChange, UndeclaredTerm, UnexplainedSelection and UnknownField. The refusal clause is covered by `every_rejected_case_is_refused_with_exactly_its_rule` in `mind_trace` and `each_rejected_mind_case_exits_1_and_prints_exactly_its_rule` in `validate_cli`, and both binaries passed in A2.1.
+|===
+
+== Summary
+
+PASSED: 16. FAILED: 11. NOT RUNNABLE: 13. Total rows: 40.
+
+== Notes
+
+* Rows A1.1 to A1.3 repeat the commands of rows 2a to 2c. The commands ran
+  once, and the A1 rows report that run.
+* Row 3b passes, but only because the string `computed_digest` does not occur
+  in `package.rs`. Step 3 asks for `computed_digest: &str` to be present, and
+  this command does not check for it.
+* Row 4b was run on its own, so its failure is its own and not a result of
+  4a. Its input file is written by the test that 4a could not run.
+* `ULTRAPLAN-REVISION-2026-11-17` records steps 1 to 3 and 11 as landed as
+  work packages A1 and A2, and it says that their `done_when` commands were
+  not all re-run. This audit re-ran them. A1 and A2 pass their own
+  `done_when` (rows A1.1 to A2.3). Step 11's wider `done_when` fails (rows 11a
+  and 11b). A2's scope, as the Weevil route states it, covers only the mind
+  trace validator and step 3, not step 11's full list.
+* Row 10c checks the tree, not the workflow run history on GitHub, so a
+  `conformance-time` run that exists elsewhere would not change this row.
