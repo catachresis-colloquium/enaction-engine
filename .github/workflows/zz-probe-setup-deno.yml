@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# TEMPORARY measurement probe for pull request 133. Remove before merge.
+#
+# GitHub does not report why it refuses a run at startup. This workflow names
+# one action and runs nothing from it: the step is disabled. If the run
+# creates a job, the Actions policy that applies to this repository admits the
+# action. If it ends startup_failure with zero jobs, the policy refuses it.
+#
+# Needed by the standards reusable workflow(s): governance.
+name: "Probe: setup-deno"
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: "probe setup-deno"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Named so the policy is consulted; never executed
+        if: ${{ false }}
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+      - name: Report that the run started
+        run: echo "started"
