@@ -1,0 +1,321 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Ultraplan revision, 2026-11-17
+:toc:
+:toclevels: 2
+:sectnums:
+
+Status: **Proposed**, written by an advisory agent on 2026-11-17 for the
+owner. It revises
+link:ULTRACODE-COMPLETION-PLAN.adoc[ULTRACODE-COMPLETION-PLAN] and
+link:WEEVIL-HOST-ROUTE.adoc[WEEVIL-HOST-ROUTE]. It does not replace them:
+where this document is silent, they stand.
+
+Each claim below is marked *[run]* when this session ran the check on
+2026-11-17, and *[read]* when it rests on a commit title, a status file or a
+handoff note that this session did not re-run.
+
+== What changed
+
+[cols="1,3,3",options="header"]
+|===
+| Item | Was | Now
+
+| Q7, identity
+| Ruled 2026-11-09: move to the UUIDv5 of the current path.
+| Superseded by canon (U1, V8, V9, L1, B1, Q2). The id is the birth-path
+  UUIDv8 `aa4cefc5…`. Pull request 121; CI green *[run]*. Registration is
+  the owner's act.
+
+| Q8, commitments
+| "Write the document."
+| The document exists (pull request 101, merged). Pull request 120 re-checks
+  it at `724e502`. Pull request 122 closes falsifier C2 (a) with ADR-0029
+  and a proof.
+
+| Q4, independence (T1)
+| Ruled 2026-11-05: a named person writes the independent specification.
+| Re-ruled 2026-11-17: *independence by formalism*, in Rocq and Agda,
+  cross-checked. ADR-0025 is not written yet (section <<adr25>>).
+
+| Invariant 4
+| Stated in prose; no package rule.
+| Two package rules and a proved consequence (ADR-0029, pull request 122).
+  This amends ADR-0028.
+
+| CI gates
+| SonarCloud gate cannot start; Creusot not provisioned.
+| Owner chose: allow-list the exact SonarCloud pin (owner setting), and adopt
+  `creusot-gate.yml` here. Neither is done.
+|===
+
+== State on 2026-11-17
+
+* `main` is at `724e502`. Pull requests 98, 101 to 104, 107 to 117 and 119
+  are merged *[read]*.
+* *Open pull requests*, all from this session:
+** 120, commitments re-verified. CI green *[run]*. The owner marked it ready.
+   CodeRabbit left 3 findings, not yet answered (section <<review>>).
+** 121, identity. CI green *[run]*, including the two new identity steps.
+** 122, ADR-0029, stacked on 120. CI was still running when this was
+   written; the Rust job had passed *[run]*.
+* *Commitments:* C1 has passing evidence on `main` *[run]*. C2 (a) has
+  passing evidence on a branch. C2 (b), C3 and C4 have no test.
+* *Plan steps 1 to 3 and 11* landed as Weevil packages A1 and A2 (pull
+  requests 102, 103) *[read]*. Their `done_when` commands were not all
+  re-run here. A3, A4 and Wave B live in other repositories and were not
+  checked.
+* *Waves 1 to 5:* no step outside A1 and A2 is known to be done.
+
+[[review]]
+== Review findings to settle first
+
+These come from this session's own review and from the review bots. None is
+fixed yet.
+
+[cols="1,4,3",options="header"]
+|===
+| Id | Finding | Proposed handling
+
+| R1
+| CodeRabbit, pull request 120 (minor): the key-chain rule cannot see a
+  predecessor that the package omits. True. A package validator sees one
+  package.
+| State the scope in ADR-0029 and in the commitments document. The trace
+  validator already requires a retraction to have a prior assertion; say
+  which layer owns continuity across packages.
+
+| R2
+| CodeRabbit, pull request 120 (major, marked unverified): a chain links two
+  contradictory beliefs, but nothing requires a contradiction _event_. C2
+  says that a contradiction is a first-class event.
+| Owner decision D1. Either the `supersedes` link is the record (current
+  contract text), or a superseding belief of different status must cite an
+  event of kind `correction`.
+
+| R3
+| CodeRabbit, pull request 120 (minor): say that a stale-divergent model
+  agrees _at first_.
+| Wording fix in the next push.
+
+| R4
+| Two new refusal rules change what a 1.0 package may contain. The kernel
+  contract version did not move.
+| Owner decision D2: bump the minor version, or record why refusals of
+  previously undefined packages need none.
+
+| R5
+| Pull request 121 writes the birth path into `CLADE.a2ml` so that the gate
+  has a preimage. U4 keeps the birth path out of deeds. `CLADE.a2ml` is not a
+  deed, but the spirit of U4 may reach it.
+| Owner decision D3. The alternative is the transitional
+  `#u8"gv-clade-index:github.com/…"` form that Q2a allows in the deed, with
+  no path in CLADE.
+
+| R6
+| ADR-0029 proves uniqueness for a chain. That the validator's checks yield
+  one chain is tested (512 generated cases, mutants), not proved.
+| Close it: prove over lists in Rocq that in-degree at most 1, out-degree at
+  most 1, no cycle and `n − 1` edges give one path. Or state the checks as
+  Creusot contracts once `creusot-gate` runs here.
+
+| R7
+| Every commit of this session is signed by the session's key, not by
+  `id_ed25519_signing`. GitHub's verification status was not checked.
+| Owner to say whether that satisfies doctrine 9.
+
+| R8
+| `just validate-claude-md` fails on `main` *[run]* and no CI job runs it.
+  Pull request 121 repairs the drift but not the missing gate.
+| Add it to the Estate Rules workflow (fan-out F5).
+
+| R9
+| The IDApTIK corridor runner's packages were not re-validated under
+  ADR-0029.
+| Cross-repository: a draft pull request or a note to the session that owns
+  IDApTIK, before pull request 122 merges.
+|===
+
+== Sequence
+
+=== Track 0: this session (design and proofs), before 2026-11-30
+
+. Answer R1 to R3 on pull request 120, then rebase 122. Settle R4 to R6.
+. Write ADR-0025 (section <<adr25>>), with its experiment first.
+. Write the one-page dossier for the review: the state of C1 to C4 and D1
+  to D3, and a recommended outcome. On today's evidence that is outcome 2 of
+  the commitments document (keep the name, on condition that C1 to C3 pass
+  by a new date), unless C2 (b) and C3 land in time.
+. Review every fan-out pull request against its `done_when`.
+
+=== Track F: fan-out (doctrine 16)
+
+One session, one branch, one draft pull request each. Nothing merges without
+the owner. A `done_when` is a command whose failure is visible.
+
+[cols="1,3,1,4",options="header"]
+|===
+| Id | Scope | Model | done_when
+
+| F0
+| Audit: run the `done_when` of plan steps 1 to 11 and of A1 and A2 on
+  `main`. Report each as passed, failed or not runnable, with the reason.
+  Change nothing.
+| Haiku
+| A table in `docs/status/` that names the commit and the command for each
+  row.
+
+| F1
+| C3 intent-ablation fixture. First find a closed loop that runs in this
+  repository. The mind slice lives in `evil-weevil`, so the fixture may
+  belong there; if so, stop and report.
+| Sonnet
+| One scenario, run twice: live intents and frozen intents. The belief
+  trajectories differ, and a planted open-loop mutant makes them equal and
+  fails the test.
+
+| F2
+| C2 (b): a fixture in which a contradiction changes later conduct. It
+  depends on A3 (`evil-weevil`, crossing B).
+| Sonnet
+| The trace after the contradiction differs from a control run without it.
+
+| F3
+| C4 zero-affect fixture. Only if the owner accepts C4 (D4).
+| Sonnet
+| With every reservoir at zero, at least one fixture's belief trajectory
+  changes.
+
+| F4
+| Adopt `creusot-gate.yml` at `d415d8b` in `proof-gates.yml`, and update
+  `actions.lock`.
+| Sonnet
+| The gate's planted false contract is refused in CI, and
+  `check-lock-sync.sh` passes.
+
+| F5
+| Upkeep after merges: `STATE.a2ml`, `CAC-DOCUMENT-MAP`, `ROADMAP`, the Q4
+  and Q7 rows of the plan, and `validate-claude-md` in CI (R8).
+| Haiku
+| Each status file names the commit that its facts were read from.
+
+| F6
+| A setup script for the cloud environment that provisions Lean, Verus, Zig
+  0.16, Nickel and just, so that every local gate can run.
+| Sonnet
+| `just proof-check-all` and `cargo test --workspace` run in a fresh
+  session.
+|===
+
+F0 runs first. F1, F4, F5 and F6 can start at once. F2 waits for A3. F3
+waits for D4.
+
+=== Waves 1 to 5 of the completion plan
+
+The waves stand, with these changes:
+
+* *Wave 1.* Steps 1 to 3 are A1 and A2. F0 decides what remains of them.
+  Steps 4 to 7 and 10 are unchanged. Step 8 loses ADR-0025 to Track 0.
+* *Wave 2.* Step 15 (Creusot and Verus in CI) starts with F4. Steps 12 and
+  13 can reuse the pinned Agda setup that the KeyChain proof used.
+* *Waves 3 and 4.* Unchanged. They depend on other repositories, which the
+  "Game project structure" session now owns for structure.
+* *Wave 5.* T1 changes with ADR-0025: the reference semantics and its
+  cross-checked vectors must be merged before the first reducer-design pull
+  request. T2 and T3 are unchanged. This session reads the re-ruling as
+  replacing only part (2) of the Q4 ruling; part (1), the dated want in a
+  second consumer, still stands (D8 asks the owner to confirm).
+
+[[adr25]]
+== ADR-0025: independence by formalism (design sketch)
+
+The owner's ruling: the specification that the reducer must pass is a
+mechanised reference semantics, written and proved before any reducer
+design, in Rocq and in Agda, cross-checked.
+
+* *Shape.* One prose statement of the reduction contract (CAC-KERNEL
+  section 2 and the rung-4 and rung-6 laws). Two mechanisations of it:
+  `Reducer.v` and `Reducer.agda`. Each defines the state, the step over
+  ordered events, and the expected beliefs of each scenario.
+* *Cross-check.* Rocq extracts the expected beliefs of every scenario to
+  `conformance/esm/v1/independent/`. Agda computes the same values by
+  normalisation. A gate requires byte-equal output. A disagreement is a
+  finding about the prose, not a tie to break.
+* *Where independence comes from.* The owner declined the "different
+  author" route, so the two mechanisations share an author unless care is
+  taken. Proposed: two sessions with no shared context each write one
+  mechanisation from the prose alone. That is N-version specification, with
+  the provers as referees.
+* *What it does not give.* Two formal models can agree and both misread the
+  intent. The prose statement stays the owner's to accept.
+* *Chronology gate.* As Q4 required: both mechanisations and the vectors are
+  merged before the first reducer-design pull request is created, read from
+  the forge API.
+* *Experiment first.* Before the full semantics: mechanise only "holds at a
+  tick" and the model timeline (CAC-KERNEL section 9), extract the timelines
+  of the 7 accepted `conformance/tom/v1` cases, and compare them with the
+  hand-written `expected.json` files. If extraction or the byte comparison
+  is impractical, ADR-0025 changes before it is accepted.
+
+== Owner decisions outstanding
+
+[cols="1,5",options="header"]
+|===
+| Id | Decision
+
+| D1 | R2: is the `supersedes` link the contradiction record, or must a
+  correction event be cited?
+| D2 | R4: bump the kernel contract's minor version for ADR-0029?
+| D3 | R5: birth path in `CLADE.a2ml`, or the `#u8` form in the deed?
+| D4 | Accept or decline commitment C4 (no attention without stakes).
+| D5 | The outcome of the review of 2026-11-30.
+| D6 | Owner-only setting: allow
+  `hyperpolymath/proven-cicd-and-workflows/actions/sonarcloud-result-check@43223d1e…`
+  in the organisation's Actions policy, and bind the SonarQube Cloud
+  project.
+| D7 | Owner-only: the late registration of this repository in the registry
+  seed (L1), or hand it to the #u5 fixer thread.
+| D8 | Confirm that T1 part (1), the dated want in Slavia, still stands.
+| D9 | Launch the fan-out sessions F0 to F6, and say which.
+|===
+
+== Beyond this repository
+
+For the estate list. *[read]* items come from the handoff note and were not
+verified by this session.
+
+* The identity migration of Q7 applies to UMS, IDApTIK and Slavia in the
+  same way (birth path, L1, `#uuid` literals). One pull request each.
+* `scripts/check-identity.sh` and `check-uuid-v8-canon.sh` are candidates
+  for the repository template in `standards`, so that every repository gates
+  its own id.
+* The deed emitter (standards issue 837) wrote a 1159-octet line here, over
+  the 998-octet limit of the current `deed_lint.js` *[run]*. Other
+  repositories generated by it probably carry the same line.
+* The `CLADE.a2ml` template still teaches that the id follows the current
+  owner. ADR 0008 of the registry notes this.
+* No CI job runs `validate-claude-md`; the arrival pack drifted on `main`
+  *[run]*. Probably true of every repository built from the template.
+* CI installs Agda 2.6.3 from Ubuntu 24.04 *[run]*; the handoff speaks of a
+  2.6.4.3 pin that 4 sibling repositories do not check *[read]*.
+* `choreographic-types` and `occupancy-types` pin different
+  `resource-algebra` commits *[read]*.
+* The `secret-types` template proof is mis-wired *[read]*.
+* The `occupancy-types` root allow-list lacks 2 files *[read]*.
+* Lean and Verus are not provisioned in agent containers *[run]*; F6
+  proposes the fix for this repository's environment.
+
+== Resuming after a context compaction
+
+* Branches: `docs/enactive-commitments-reverify-2026-11-17` (120),
+  `chore/identity-uuid-v8-l1` (121), `feat/c2a-belief-key-chain` (122,
+  stacked on 120), and this document's branch.
+* Local tools installed outside the repository in this container, lost when
+  it is reclaimed: Coq 8.18, Agda 2.6.3 with agda-stdlib `8326c74`, just,
+  nickel 1.10.0, asciidoctor, shellcheck. F6 makes them durable.
+* Canon read for the identity work: `standards`
+  `2-protocols/chora/CHORA-SPEC.adoc` section 9, and `gv-clade-index`
+  ADR 0008.
+* The old thread (`session_01J4QvDiW9ZxqpeWwmoVAANo`) stopped on 2026-11-09
+  at a usage limit. Its reply to CodeRabbit on pull request 98 was never
+  posted; that pull request has since merged.
