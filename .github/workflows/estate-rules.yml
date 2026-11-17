@@ -7,6 +7,9 @@
 #   * root shape (allowlist of permitted root entries)
 #   * AsciiDoc-by-default (no .md files under docs/)
 #   * V-lang is banned (no V-lang scaffolding or references; Zig is the FFI default)
+#   * arrival pack: the CLAUDE.md region must match its a2ml sources (verify.sh,
+#     nickel 1.10.0 sha256-pinned); tests/arrival_pack_drift_test.sh proves a
+#     planted drift is refused
 #
 # Each rule is enforced by an executable check script under scripts/. Failures
 # are surfaced as workflow errors so the rule can't silently regress.
