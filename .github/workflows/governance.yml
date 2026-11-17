@@ -24,12 +24,12 @@ jobs:
     # validated on standards main after #688 and #690.
     #
     # Pinned to the standards commit secret-scanner.yml already runs on.
-    # GitHub validates a reusable workflow against the DEFINING repository's
-    # own .github/workflows/actions.lock at the pinned commit. At the previous
+    # The actions a reusable workflow uses are covered by the lock of the
+    # repository that DEFINES it, read at the pinned commit. At the previous
     # pin (da2c748, 2026-09-10) that lock recorded each action this workflow
-    # uses with `ref:` equal to its own SHA, a record the runner refuses, so
-    # every run ended startup_failure with zero jobs (standards
-    # docs/GOVERNANCE-STARTUP-REPAIR.adoc lists da2c748 as POISON). At b8f6051
-    # each record names a reviewed tag. Re-pin only to a commit whose lock has
-    # been checked the same way; "newest" is not a safe default.
+    # uses with `ref:` equal to its own SHA, a record the runner rejects
+    # (standards docs/GOVERNANCE-STARTUP-REPAIR.adoc lists da2c748 as POISON).
+    # At b8f6051 each record names a reviewed tag that still points at the
+    # locked commit. Re-pin only to a commit whose lock has been checked the
+    # same way; "newest" is not a safe default.
     uses: metadatastician/standards/.github/workflows/governance-reusable.yml@b8f60511e76c9015d86990317162dce653c92fe1

@@ -303,18 +303,37 @@ assert_codeql_pin_plant_rejected 'plant: branch name instead of a tag is rejecte
 # The standards repository moved from hyperpolymath/ to metadatastician/
 # (the same GitHub repo_id, 1116521501); metadatastician/ is its name now.
 #
-# The name was not why these four workflows created no jobs. GitHub validates
-# a reusable workflow against the defining repository's own
-# .github/workflows/actions.lock at the pinned commit. At da2c748 that lock
-# recorded each action these workflows use with `ref:` equal to its own SHA,
-# which the runner refuses ("invalid lockfile pin"), so the runs created zero
-# jobs under either owner name: `failure` under hyperpolymath/ and
-# `startup_failure` under metadatastician/. standards
-# docs/GOVERNANCE-STARTUP-REPAIR.adoc lists da2c748 as POISON. b8f6051 is the
-# commit secret-scanner.yml already ran on; its lock names a reviewed tag in
-# every one of those records.
+# Two separate defects kept Governance, Hypatia, Mirror and Scorecard from
+# creating a job. Both were measured on pull request 133 (2026-11-17).
+#
+# 1. The pin. The actions a reusable workflow uses are covered by the lock of
+#    the repository that defines it, read at the pinned commit. At da2c748
+#    that lock recorded each action these workflows use with `ref:` equal to
+#    its own SHA, a record the runner rejects. standards
+#    docs/GOVERNANCE-STARTUP-REPAIR.adoc lists da2c748 as POISON. At b8f6051,
+#    the commit secret-scanner.yml already ran on, every one of those records
+#    names a reviewed tag that still points at the locked commit. This file
+#    asserts that pin.
+#
+# 2. The Actions policy in force for this repository, which this repository
+#    cannot change. It refuses, at startup and before any lock is read:
+#      - every standards reusable workflow measured except
+#        secret-scanner-reusable.yml (governance, hypatia-scan, scorecard,
+#        allowlist-preflight, provisioning-check, elixir-ci, js-runtimes);
+#        two of those use only actions/checkout, as the admitted one does, so
+#        the refusal follows the workflow's path and not its actions;
+#      - dtolnay/rust-toolchain and webfactory/ssh-agent, which
+#        mirror-reusable.yml uses;
+#      - hyperpolymath/oikosbot, by tag and by commit.
+#    It admits actions/*, github/*, erlef/setup-beam, editorconfig-checker,
+#    denoland/setup-deno, oven-sh/setup-bun and ossf/scorecard-action. The
+#    estate's canonical allow-list (standards
+#    rhodium-standard-repositories/actions-allowlist/allowed-actions.json)
+#    admits everything refused here, so the live list is not a superset of
+#    it. Until the owner widens the live list, the pin below is necessary
+#    and not sufficient, and no assertion in this file can show otherwise:
+#    a run refused at startup creates no job to report from.
 SECRET_SCANNER="$PROJECT_DIR/.github/workflows/secret-scanner.yml"
-OIKOSBOT="$PROJECT_DIR/.github/workflows/oikosbot.yml"
 STANDARDS_PIN='b8f60511e76c9015d86990317162dce653c92fe1'
 governance_ref="$(action_refs metadatastician/standards/.github/workflows/governance-reusable.yml "$GOVERNANCE")"
 hypatia_ref="$(action_refs metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml "$HYPATIA")"
@@ -356,24 +375,6 @@ assert_eq 'Mirror caller does not forward every secret with secrets: inherit' ''
 mirror_named="$(grep -cE '^[[:space:]]+(GITLAB_SSH_KEY|BITBUCKET_SSH_KEY|CODEBERG_SSH_KEY|SOURCEHUT_SSH_KEY|DISROOT_SSH_KEY|GITEA_SSH_KEY|RADICLE_KEY|R2_ACCESS_KEY_ID|R2_SECRET_ACCESS_KEY|R2_AGE_RECIPIENT): \$\{\{ secrets\.[A-Z0-9_]+ \}\}$' "$MIRROR" || true)"
 assert_eq 'Mirror caller passes the ten declared secrets by name' '10' "$mirror_named"
 
-# OikosBot is named by commit, and the lock record for that commit must name
-# the reviewed tag in `ref:`. A record whose `ref:` repeats the 40-hex SHA in
-# its own key is the form the runner refuses.
-oikosbot_ref="$(action_refs hyperpolymath/oikosbot "$OIKOSBOT")"
-assert_sha 'OikosBot action is pinned to an immutable revision' "$oikosbot_ref"
-oikosbot_lock_ref="$(awk -v key="    'hyperpolymath/oikosbot@$oikosbot_ref':" '
-  $0 == key { found = 1; next }
-  found && /^        ref:/ { gsub(/\047/, "", $2); print $2; exit }
-  found && /^    \047/ { exit }
-' "$ACTION_LOCK")"
-assert_eq 'OikosBot lock record names the reviewed tag, not its own SHA' 'v0.1.3' "$oikosbot_lock_ref"
-oikosbot_lock_commit="$(awk -v key="    'hyperpolymath/oikosbot@$oikosbot_ref':" '
-  $0 == key { found = 1; next }
-  found && /^        commit:/ { gsub(/\047/, "", $2); print $2; exit }
-  found && /^    \047/ { exit }
-' "$ACTION_LOCK")"
-assert_eq 'OikosBot lock record commit agrees with the pinned SHA' "sha1-$oikosbot_ref" "$oikosbot_lock_commit"
-
 # No leaf record in this repository's own lock may repeat its key's SHA in
 # `ref:`. That is the defect that made da2c748 unusable, and nothing else here
 # checks for it: check-lock-sync.sh verifies coverage and closure, not the
@@ -395,6 +396,9 @@ assert_eq 'No lock record repeats its own SHA as ref' '' "$self_sha_records"
 # Names with a working replacement that must not come back: mlugg/setup-zig
 # (scripts/install-zig.sh) and hyperpolymath/standards (the repository is
 # metadatastician/standards now). Comment lines are not uses:.
+# hyperpolymath/oikosbot is refused by the policy as well, but it has no
+# replacement, so it is not listed: oikosbot.yml creates no job until the
+# owner admits it.
 refused_uses="$(grep -hE '^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*["'"'"']?(mlugg/|hyperpolymath/standards/)' \
   "$PROJECT_DIR"/.github/workflows/*.yml "$PROJECT_DIR"/.github/workflows/*.yaml 2>/dev/null || true)"
 assert_eq 'No workflow uses a replaced action or the old standards name' '' "$refused_uses"
