@@ -145,9 +145,10 @@ fixed yet.
 . Answer R1 to R3 on pull request 120, then rebase 122. Settle R4 to R6.
 . Write ADR-0025 (section <<adr25>>), with its experiment first.
 . Write the one-page dossier for the review: the state of C1 to C4 and D1
-  to D3, and a recommended outcome. On today's evidence that is outcome 2 of
-  the commitments document (keep the name, on condition that C1 to C3 pass
-  by a new date), unless C2 (b) and C3 land in time.
+  to D3, and the three outcomes of the commitments document, with no
+  recommendation (ruling D5 replaced the earlier instruction to recommend
+  an outcome). It is written close to the review, so that its evidence is
+  current.
 . Review every fan-out pull request against its `done_when`.
 
 === Track F: fan-out (doctrine 16)
