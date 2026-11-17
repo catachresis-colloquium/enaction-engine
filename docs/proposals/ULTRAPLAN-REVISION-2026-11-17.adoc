@@ -24,8 +24,8 @@ handoff note that this session did not re-run.
 | Q7, identity
 | Ruled 2026-11-09: move to the UUIDv5 of the current path.
 | Superseded by canon (U1, V8, V9, L1, B1, Q2). The id is the birth-path
-  UUIDv8 `aa4cefc5…`. Pull request 121; CI green *[run]*. Registration is
-  the owner's act.
+  UUIDv8 `aa4cefc5…`. Pull request 121, merged on 2026-11-17 as `3bf55cd`
+  *[run]*. Registration is the owner's act.
 
 | Q8, commitments
 | "Write the document."
@@ -51,14 +51,16 @@ handoff note that this session did not re-run.
 
 == State on 2026-11-17
 
-* `main` is at `724e502`. Pull requests 98, 101 to 104, 107 to 117 and 119
-  are merged *[read]*.
-* *Open pull requests*, all from this session:
-** 120, commitments re-verified. CI green *[run]*. The owner marked it ready.
-   CodeRabbit left 3 findings, not yet answered (section <<review>>).
-** 121, identity. CI green *[run]*, including the two new identity steps.
-** 122, ADR-0029, stacked on 120. CI was still running when this was
-   written; the Rust job had passed *[run]*.
+* `main` is at `3bf55cd` (pull request 121, identity) *[run]*. Pull requests
+  98, 101 to 104, 107 to 117 and 119 are merged *[read]*.
+* *Open pull requests*, all from this session and all marked ready by the
+  owner:
+** 120, commitments re-verified. CodeRabbit left 3 findings (section
+   <<review>>).
+** 122, ADR-0029, stacked on 120.
+** 123, this document.
+* Pull requests 120 and 122 were rebased onto `3bf55cd` after 121 merged.
+  Their evidence still names `724e502`, the commit it was run on.
 * *Commitments:* C1 has passing evidence on `main` *[run]*. C2 (a) has
   passing evidence on a branch. C2 (b), C3 and C4 have no test.
 * *Plan steps 1 to 3 and 11* landed as Weevil packages A1 and A2 (pull
@@ -178,7 +180,10 @@ the owner. A `done_when` is a command whose failure is visible.
 | C2 (b): a fixture in which a contradiction changes later conduct. It
   depends on A3 (`evil-weevil`, crossing B).
 | Sonnet
-| The trace after the contradiction differs from a control run without it.
+| The agent's intents after the contradiction differ from a control run
+  without it. A difference in trace metadata alone does not count. A planted
+  mutant that ignores the contradiction makes the two runs' intents equal
+  and fails the test.
 
 | F3
 | C4 zero-affect fixture. Only if the owner accepts C4 (D4).
@@ -197,7 +202,9 @@ the owner. A `done_when` is a command whose failure is visible.
 | Upkeep after merges: `STATE.a2ml`, `CAC-DOCUMENT-MAP`, `ROADMAP`, the Q4
   and Q7 rows of the plan, and `validate-claude-md` in CI (R8).
 | Haiku
-| Each status file names the commit that its facts were read from.
+| Each status file names the commit that its facts were read from. A CI job
+  runs `validate-claude-md`, passes, and fails on a planted drift. R8 stays
+  open until that job exists.
 
 | F6
 | A setup script for the cloud environment that provisions Lean, Verus, Zig
@@ -220,11 +227,20 @@ The waves stand, with these changes:
   13 can reuse the pinned Agda setup that the KeyChain proof used.
 * *Waves 3 and 4.* Unchanged. They depend on other repositories, which the
   "Game project structure" session now owns for structure.
-* *Wave 5.* T1 changes with ADR-0025: the reference semantics and its
-  cross-checked vectors must be merged before the first reducer-design pull
-  request. T2 and T3 are unchanged. This session reads the re-ruling as
-  replacing only part (2) of the Q4 ruling; part (1), the dated want in a
-  second consumer, still stands (D8 asks the owner to confirm).
+* *Wave 5.* T1 changes with ADR-0025. The owner's re-ruling of 2026-11-17
+  replaces part (2) of the Q4 ruling in full. That includes the requirement
+  that a named person other than the owner writes the scenarios and opens
+  the pull request from that person's own forge account. In its place: both
+  mechanisations and the cross-checked vectors are merged before the first
+  reducer-design pull request is created, and the chronology is still read
+  from the forge API, never from `git log`. T2 and T3 are unchanged.
+** Two passages of the completion plan still carry the replaced
+   requirement: the `done_when` of step 25, and the last paragraph of the
+   prompt in "Running it as an ultracode session". Until the pull request
+   that adds ADR-0025 rewrites them, this revision governs where they
+   conflict.
+** This session reads the re-ruling as leaving part (1) in force: the dated
+   want in a second, non-donor consumer. D8 asks the owner to confirm.
 
 [[adr25]]
 == ADR-0025: independence by formalism (design sketch)
