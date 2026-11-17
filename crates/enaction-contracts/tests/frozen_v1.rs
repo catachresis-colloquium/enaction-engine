@@ -12,10 +12,10 @@
 //!   it. These vectors are never blessed (`ENACTION_BLESS` does not touch
 //!   them).
 //! * The old vectors are a regression test: a 2.0 host refuses every package
-//!   in them, accepted and rejected. A package without a supersession link is
-//!   refused by the tag rule and by `kernel-version-compatible`; one with a
-//!   link (a bare belief id, the 1.x form) fails to decode, because the link
-//!   is now a record that names its cause (ADR-0030, stage B).
+//!   in them, accepted and rejected, for its tag alone. A host dispatches on
+//!   the tag before it decodes the body, so a 1.x envelope is never reported
+//!   as a malformed 2.0 one, whether or not it carries a 1.x supersession
+//!   link (ADR-0030).
 
 use std::path::{Path, PathBuf};
 
@@ -160,27 +160,6 @@ fn pair(rule: &str, path: &str) -> (String, String) {
     (rule.to_string(), path.to_string())
 }
 
-/// The frozen cases that carry a 1.x supersession link (a bare belief id),
-/// with the path of the first one. Stage B of ADR-0030 changed the link to a
-/// record of `belief` and `because`, so the decoder refuses these before the
-/// tag or the version is ever read. ADR-0030 "Limits" says so: a 1.x package
-/// with a link fails to decode; one without a link is refused by rule.
-const LINKED: [(&str, &str); 4] = [
-    ("tom/v1/accepted/caught", "package.beliefs[2].supersedes"),
-    (
-        "tom/v1/accepted/false-exposure",
-        "package.beliefs[2].supersedes",
-    ),
-    (
-        "tom/v1/accepted/false-exposure-restated",
-        "package.beliefs[2].supersedes",
-    ),
-    (
-        "tom/v1/rejected/supersession-monotone",
-        "package.beliefs[1].supersedes",
-    ),
-];
-
 #[test]
 fn a_2_0_host_refuses_every_package_in_the_frozen_v1_corpora() {
     let packages = frozen_packages();
@@ -194,45 +173,17 @@ fn a_2_0_host_refuses_every_package_in_the_frozen_v1_corpora() {
         packages.iter().map(|p| &p.0).collect::<Vec<_>>()
     );
 
-    // Both refusals a 1.x envelope without a link earns: the tag, then the
-    // version.
+    // A host dispatches on the tag before it decodes the body (ADR-0030).
+    // Every frozen envelope names `enaction-runner-output/1`, so each is
+    // refused for that alone: with one fault, whether or not it carries a
+    // 1.x supersession link (a bare belief id, which the 2.0 shape has no
+    // form for) and whether it was an accepted or a rejected 1.x case. Its
+    // body is never read as a 2.0 package, so no shape fault, version fault
+    // or rule of its own is reported.
     let tag = pair("UnknownField", "contract");
-    let version = pair(
-        "kernel-version-compatible",
-        "package.manifest.kernel_version",
-    );
-
-    let mut linked = Vec::new();
-    for (label, rejected_for, policies, bytes) in packages {
+    for (label, _rejected_for, policies, bytes) in packages {
         let found = refusal(&policies, &bytes);
         eprintln!("{label}: {found:?}");
-        if let Some((_, path)) = LINKED.iter().find(|(l, _)| *l == label) {
-            // Refused at decode, as one fault, whatever else the case holds:
-            // its own rule is never reached (the rejected case
-            // `supersession-monotone` names a rule that no longer exists).
-            assert_eq!(found, [pair("BadShape", path)], "{label}");
-            linked.push(label);
-            continue;
-        }
-        match rejected_for {
-            // An accepted 1.x case, or the mind runner output, is refused by
-            // those two rules and by nothing else.
-            None => assert_eq!(found, [tag.clone(), version.clone()], "{label}"),
-            // A rejected 1.x case is still refused for its own rule too. The
-            // 2.0 host adds the tag and the version in front of it.
-            Some(rule) => {
-                assert_eq!(&found[..2], [tag.clone(), version.clone()], "{label}");
-                assert_eq!(found.len(), 3, "{label}: {found:?}");
-                assert_eq!(found[2].0, rule, "{label}: its own rule is still reported");
-            }
-        }
+        assert_eq!(found, std::slice::from_ref(&tag), "{label}");
     }
-    // Exactly the cases that carry a link were refused by shape.
-    assert_eq!(
-        linked,
-        LINKED
-            .iter()
-            .map(|(l, _)| (*l).to_string())
-            .collect::<Vec<_>>()
-    );
 }

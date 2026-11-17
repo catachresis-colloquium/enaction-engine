@@ -295,6 +295,47 @@ fn the_contract_tag_must_match() {
 }
 
 #[test]
+fn the_tag_is_read_before_the_body_is_decoded() {
+    // A host dispatches on the tag (ADR-0030). An envelope that names
+    // another contract is refused for that alone, even when its body has a
+    // shape this contract cannot decode: the body is not read as a 2.0
+    // package, so no shape fault is reported for it.
+    let mut env = envelope(&package());
+    env["contract"] = "enaction-runner-output/1".into();
+    env["package"] = serde_json::json!({ "not": "a 2.0 package" });
+    let out = validate(env.to_string().as_bytes());
+    assert_eq!(out.status.code(), Some(1), "{}", show(&out));
+    assert_eq!(
+        faults(&out),
+        [fault("UnknownField", "contract")],
+        "{}",
+        show(&out)
+    );
+
+    // With the right tag the same body is refused for its shape, so the
+    // check above is not passing for want of a decoder.
+    env["contract"] = "enaction-runner-output/2".into();
+    let out = validate(env.to_string().as_bytes());
+    assert_eq!(out.status.code(), Some(1), "{}", show(&out));
+    let found = faults(&out);
+    assert!(
+        !found.is_empty()
+            && found
+                .iter()
+                .all(|f| f != &fault("UnknownField", "contract")),
+        "{}",
+        show(&out)
+    );
+
+    // An envelope with no tag at all is left to the decoder.
+    let mut env = envelope(&package());
+    env.as_object_mut().unwrap().remove("contract");
+    let out = validate(env.to_string().as_bytes());
+    assert_eq!(out.status.code(), Some(1), "{}", show(&out));
+    assert!(!faults(&out).is_empty(), "{}", show(&out));
+}
+
+#[test]
 fn version_prints_the_contract_version_with_its_state() {
     let out = run(&["--version"], b"");
     assert_eq!(out.status.code(), Some(0), "{}", show(&out));

@@ -136,8 +136,9 @@ no holder. Section 6 gives the six rules that constrain the cause.
   evidence for the successor (ADR-0030, section 6). The cause lies between the
   two starts, so a successor never starts before the belief it replaces. That
   is a consequence of two cause rules, not a rule of its own. Then at most one
-  belief of a key holds at any tick (`verification/proofs/{coq,agda}/KeyChain`;
-  those proofs take monotonicity as a hypothesis).
+  belief of a key holds at any tick. `verification/proofs/{coq,agda}/KeyChain`
+  proves both steps: the two cause rules give the order, and the order
+  gives uniqueness.
 . Nested theory of mind is represented as a belief with a non-empty
   ascription path. `bearer` is the agent whose belief it is; `holders` lists,
   outermost first, the agents whose model it lives in. Empty `holders` is the
@@ -389,8 +390,11 @@ Policies {                           // contract "enaction-policies/1"
   hashed, so a digest always covers every member that was supplied. A
   missing member or a wrong type is `BadShape`.
 * **The contract tag.** A `contract` other than `enaction-runner-output/2` is
-  refused as `UnknownField` at `contract`. The tag was `/1` under kernel 1.0
-  (ADR-0030); an envelope tagged `/1` is refused by this rule.
+  refused as `UnknownField` at `contract`. The tag is read before the body is
+  decoded, and a document that names another contract is refused for that
+  alone: its body is not read as this contract's shape. The tag was `/1`
+  under kernel 1.0 (ADR-0030). A document with no `contract` member, or one
+  that is not a string, is left to the decoder.
 * **The package** is validated by every §6 rule, with the digest computed by
   the validator. Its fault paths are prefixed `package.`.
 * **World truth** is a set: a repeated atom is refused as
@@ -509,9 +513,7 @@ section 6.
 
 `conformance/tom/v1/` and `conformance/mind/v1/` hold the 1.x form of the
 same cases. They are frozen: no file in them changes. A 2.0 host refuses
-every package in them (ADR-0030), and a test says so. A 1.x package that
-carries a supersession link, a bare belief id, is refused earlier still: it
-fails to decode as `BadShape` at the link.
+every package in them for its tag alone (ADR-0030), and a test says so.
 
 === The binary
 
