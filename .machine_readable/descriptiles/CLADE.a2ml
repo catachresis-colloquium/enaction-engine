@@ -6,32 +6,38 @@
 # The identity below is DERIVED. The clade is NOT — a human must choose it.
 
 [identity]
-# THE UUID IS DERIVED, NOT ALLOCATED, NOT INVENTED. The registry spec
-# (gv-clade-index: docs/SPEC-clade-verisim-portal.adoc §Identity Model):
+# THE ID IS MINTED ONCE, FROM THE BIRTH PATH, AND NEVER MOVES.
+# Canon: hyperpolymath/standards 2-protocols/chora/CHORA-SPEC.adoc (rules U1,
+# U4, V8, V9, L1, B1, Q2) and gv-clade-index ADR 0008 ("Identity is minted
+# once"), which superseded the earlier rule that the id follows the current
+# owner. The id is the ADR-008 profile C UUIDv8 of
 #
-#     uuid = UUIDv5(namespace = URL, name = "github.com/<owner>/<name>")
+#     <minted-in>:github.com/<birth-path>
 #
-# "The same repo always produces the same UUID without a lookup table." It is a
-# fact anyone can recompute and check — never copy one from another repo, and
-# never make one up. Recompute this one any time with:
+# (first 16 bytes of SHA-256, version 8, variant 10). This repo was born
+# before ruling V9 and was never registered, so under L1 it is registered
+# late in the `gv-clade-index` domain. GitHub redirects the birth path
+# metadatastician/enaction-engine to the current location, which is the
+# evidence for the birth owner. A move changes the location below, never
+# the id.
 #
-#     uuidgen --sha1 --namespace @url --name "github.com/metadatastician/enaction-engine"
+# Mint with standards' scripts/uuid-v8.js (gv-clade-index sync/uuid-v8.sh);
+# check with scripts/check-identity.sh, which reproduces the spec's known
+# answers first. The deed carries this id as an opaque #uuid literal, and the
+# birth path appears in no deed (U4).
 #
-# Verify the method first by reproducing a known worked example. Running the
-# command above with the name "github.com/hyperpolymath/januskey" must print a
-# uuid beginning e216170e and ending 15e61c8190c8. (Written out in prose rather
-# than as a literal: a bare uuid sitting next to the word "key" trips the
-# generic-api-key entropy heuristic in secret scanners. It is not a secret --
-# it is recomputable from public inputs, which is precisely the tell -- but
-# rewording the comment is better than teaching the scanner to ignore the
-# pattern, which would blind it to real random-uuid credentials.)
+# The earlier values were UUIDv5s of a path (the 2026-11-09 Q7 ruling
+# targeted one of the current path). U1, V8 and Q2 retired that form; they are
+# kept only as history in docs/proposals/ULTRACODE-COMPLETION-PLAN.adoc,
+# shortened to 8 hex digits.
 #
-# The owner segment is part of the derived name, so it is part of the IDENTITY:
-# the same repo hosted under a different owner has a different uuid. Record the
-# owner that is TRUE TODAY, and re-derive if it ever moves.
-uuid = "e5a96521-5d5a-5fc1-946b-b12a79f3f173"
+# REGISTRATION IS STILL THE OWNER'S ACT (see the end of this file).
+uuid = "aa4cefc5-1955-8821-ab3f-cdae5c79fd69"
+minted-in = "gv-clade-index"
+birth-path = "metadatastician/enaction-engine"
+beholding-estate = "1642c392-8eac-8e3f-b762-2898b9344228"
 primary-forge = "github"
-primary-owner = "metadatastician"
+primary-owner = "catachresis-colloquium"
 canonical-name = "enaction-engine"
 prefixed-name = "gm-enaction-engine"
 
@@ -89,7 +95,7 @@ assigned = "2026-07-25"
 rationale = "The core value proposition is a complete game engine for interactive worlds; Rust and deterministic simulation are implementation properties, not its clade."
 
 [forges]
-github = "metadatastician/enaction-engine"
+github = "catachresis-colloquium/enaction-engine"
 gitlab = ""       # populated if/when mirrored
 bitbucket = ""    # populated if/when mirrored
 
@@ -105,7 +111,7 @@ instantiated-from = "rsr-template-repo"
 phase = "incubating"          # a repo created today has not proven anything yet
 since = "2026-07-22"
 present = true
-aliases = []
+aliases = ["metadatastician/enaction-engine"]
 merged-into = ""
 superseded-by = ""
 successors = []
