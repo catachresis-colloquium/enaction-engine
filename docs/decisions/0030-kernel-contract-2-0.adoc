@@ -8,7 +8,9 @@ Date: 2026-11-17
 
 Proposed. The owner ruled each point on 2026-11-17, by selector, after an
 experiment on a branch (section <<evidence>>). Stage A below is
-implemented with this record. Stages B and C are not.
+implemented with this record. Stage B is implemented by the change that
+follows it, except the Coq and Agda proofs, which another change carries.
+Stage C is not.
 
 Amends ADR-0029 (the rule `supersession-monotone` becomes a theorem in
 stage B) and ADR-0009 (a contract version gains a state).
@@ -117,7 +119,8 @@ the cause rules has a successor that starts early.
 
 | B
 | The typed link, the six rules, the proofs, and the `v2` corpora
-  regenerated. A pull request stacked on stage A.
+  regenerated. A pull request stacked on stage A. Implemented for the Rust
+  code, the corpora and the prose; the proofs are not part of that change.
 
 | C
 | The state becomes `released`. The owner rules it, after IDApTIK and UMS
