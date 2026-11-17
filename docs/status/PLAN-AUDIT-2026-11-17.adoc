@@ -80,7 +80,7 @@ names the check that was run in its place.
 | `! rg -q 'computed_digest: Option' crates/enaction-contracts/src/package.rs`
 | `cdf7ca1`
 | PASSED
-| `rg` exits 1, meaning no match, so the negation exits 0. The string `computed_digest` does not occur in that file at all; see Notes.
+| `rg` exits 1, meaning no match, so the negation exits 0. The string `computed_digest` does not occur in that file at all. Commit `51a9aa4` (A2, PR #103) removed the `computed_digest: Option<&str>` parameter, and `validate_package` now computes the digest itself. That is the design that step 11 describes, so the absence matches step 11 and is not a gap. Step 3's own intermediate form, a mandatory `computed_digest: &str`, has no commit of its own in the history. See Notes.
 
 | 4a
 | `cargo test --locked -p enaction-contracts --test trace_package_seam --test canonical_bytes`
@@ -154,6 +154,12 @@ names the check that was run in its place.
 | NOT RUNNABLE
 | Other repository: IDApTIK.
 
+| 6i
+| No command in the `done_when`. It is the prose clause "goldens unchanged", which concerns IDApTIK's golden files.
+| `cdf7ca1`
+| NOT RUNNABLE
+| Other repository: IDApTIK. Its golden files are not in this repository.
+
 | 7a
 | `cargo test --locked -p slavia-core`
 | `cdf7ca1`
@@ -188,13 +194,13 @@ names the check that was run in its place.
 | The same check on `docs/decisions/0015-kernel-determinism-contract.adoc`
 | `cdf7ca1`
 | FAILED
-| The status line reads `Accepted`, not `Proposed`. Step 8 asks for an amendment to this record, so it should be Proposed.
+| The status line reads `Accepted`. The record already carries the amendment that step 8 asks for, in a section `== Amendment, 2026-11-14` at line 128. The literal `done_when` ("each file has `Status: Proposed`") does not fit an amendment to an accepted record, and this row does not suggest that the accepted record should be demoted.
 
 | 8f
 | The same check on `docs/decisions/0016-mass-is-the-kernel-confidence-type.adoc`
 | `cdf7ca1`
 | FAILED
-| The status line reads `Accepted`, not `Proposed`. Step 8 asks for an amendment to this record, so it should be Proposed.
+| The status line reads `Accepted`. The record already carries the amendment that step 8 asks for, in a section `== Amendment, 2026-11-14` at line 133. The literal `done_when` does not fit an amendment to an accepted record, and this row does not suggest that the accepted record should be demoted.
 
 | 8g
 | The same check on UMS ADR-0019
@@ -238,6 +244,18 @@ names the check that was run in its place.
 | FAILED
 | `MISS: PolicyDigestMismatch`. Checked by hand after the loop stopped: `ProfileMismatch` is also absent from `docs/architecture/CAC-KERNEL.adoc`.
 
+| 10d
+| `rg -n -- '--target' .github/workflows`, a check of the prose clause "each matrix leg built with `--target <triple>`"
+| `cdf7ca1`
+| FAILED
+| No match. No workflow in `.github/workflows` contains `--target`, and no `conformance-time` workflow exists (row 10c).
+
+| 11c
+| `test -d tests/fixtures/cli`, a check of the prose clause "the binary is exercised five ways, through fixtures under `tests/fixtures/cli/`"
+| `cdf7ca1`
+| FAILED
+| `test` exits 1. The directory does not exist at this commit.
+
 | A1.1
 | `bash scripts/cargo-test-exact.sh enaction-trace observer_sally_anne_two_run_probe` (the same command as 2a, run once)
 | `cdf7ca1`
@@ -260,7 +278,7 @@ names the check that was run in its place.
 | `cargo test --locked -p enaction-contracts --test package_fault_coverage --test canonical_bytes --test mind_trace --test validate_cli`
 | `cdf7ca1`
 | PASSED
-| Exit 0. The four test binaries report 3, 7, 7 and 15 passed, with 0 failed in each.
+| Exit 0. In the order cargo prints them: `canonical_bytes` 7 passed, `mind_trace` 7 passed, `package_fault_coverage` 3 passed, `validate_cli` 15 passed. Each reports 0 failed.
 
 | A2.2
 | `! rg -q 'computed_digest: Option' crates/enaction-contracts/src`
@@ -277,15 +295,17 @@ names the check that was run in its place.
 
 == Summary
 
-PASSED: 16. FAILED: 11. NOT RUNNABLE: 13. Total rows: 40.
+PASSED: 16. FAILED: 13. NOT RUNNABLE: 14. Total rows: 43.
 
 == Notes
 
 * Rows A1.1 to A1.3 repeat the commands of rows 2a to 2c. The commands ran
   once, and the A1 rows report that run.
-* Row 3b passes, but only because the string `computed_digest` does not occur
-  in `package.rs`. Step 3 asks for `computed_digest: &str` to be present, and
-  this command does not check for it.
+* Row 3b passes because the string `computed_digest` does not occur in
+  `package.rs`. Commit `51a9aa4` removed the parameter, and step 11 is the step
+  that removes it by design, so the absence is not a gap. The command does not
+  check that a mandatory `computed_digest: &str` exists, and no commit in the
+  history introduces one.
 * Row 4b was run on its own, so its failure is its own and not a result of
   4a. Its input file is written by the test that 4a could not run.
 * `ULTRAPLAN-REVISION-2026-11-17` records steps 1 to 3 and 11 as landed as
