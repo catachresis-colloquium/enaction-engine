@@ -9,8 +9,10 @@
     - [belief-key-chained]: the beliefs of the key form ONE chain under
       [supersedes], so they can be listed oldest first as b_0, ..., b_(n-1)
       with b_(i+1) superseding b_i; and
-    - [supersession-monotone]: a belief never supersedes one that starts
-      after it, so valid_from(b_i) <= valid_from(b_(i+1)).
+    - the edge check: a belief never supersedes one that starts
+      after it, so valid_from(b_i) <= valid_from(b_(i+1)). ADR-0029 made
+      this the rule [supersession-monotone]. Since ADR-0030 it follows
+      from two rules about the cause of a link (last section).
 
     The ToM reader (CAC-KERNEL §9) says that b_i HOLDS at tick t when
     valid_from(b_i) <= t and no belief that supersedes b_i has
@@ -103,4 +105,80 @@ Example monotone_is_needed :
   holds 3 vf 0 3 /\ holds 3 vf 2 3 /\ 0 <> 2.
 Proof.
   simpl. unfold holds. repeat split; intros; lia.
+Qed.
+
+(** * The edge check is a theorem (ADR-0030 stage B)
+
+    From kernel contract 2.0 a supersession link names its cause: an event
+    of the package. Write [c i] for the tick of the event that b_(i+1)
+    names as its cause for replacing b_i. The validator checks, on every
+    link:
+
+    - [supersession-cause-not-earlier]: the cause is not before the belief
+      it ends, valid_from(b_i) <= c_i; and
+    - [supersession-cause-not-later]: the cause is not after the belief it
+      starts, c_i <= valid_from(b_(i+1)).
+
+    Together they give the edge check of the section above. So
+    [supersession-monotone] is no longer a rule that the validator runs:
+    it follows, and with it the uniqueness theorem. *)
+
+Section Causes.
+
+  Variable n : nat.
+  Variable vf : nat -> nat.
+  (** [c i] is the tick of the cause of the link from b_i to b_(i+1). *)
+  Variable c : nat -> nat.
+
+  Definition cause_not_earlier : Prop :=
+    forall i, S i < n -> vf i <= c i.
+
+  Definition cause_not_later : Prop :=
+    forall i, S i < n -> c i <= vf (S i).
+
+  Theorem cause_rules_give_monotone :
+    cause_not_earlier -> cause_not_later -> adjacent_monotone n vf.
+  Proof.
+    intros Hearly Hlate i Hi.
+    eapply Nat.le_trans; [ apply Hearly | apply Hlate ]; exact Hi.
+  Qed.
+
+  (** Uniqueness, from the two cause rules alone. *)
+  Theorem at_most_one_holds_by_cause :
+    cause_not_earlier -> cause_not_later ->
+    forall i j t, holds n vf i t -> holds n vf j t -> i = j.
+  Proof.
+    intros Hearly Hlate.
+    apply at_most_one_holds.
+    apply cause_rules_give_monotone; assumption.
+  Qed.
+
+End Causes.
+
+(** Neither cause rule is enough alone. Both witnesses use the chain of
+    [monotone_is_needed], valid_from 1, 9, 3, where b_0 and b_2 both hold
+    at tick 3. *)
+
+(** Causes at ticks 5 and 3 pass [supersession-cause-not-later]
+    (5 <= 9 and 3 <= 3). The second is earlier than the belief it ends. *)
+Example not_later_alone_is_not_enough :
+  let vf := fun i => match i with 0 => 1 | 1 => 9 | _ => 3 end in
+  let c := fun i => match i with 0 => 5 | _ => 3 end in
+  cause_not_later 3 vf c /\ holds 3 vf 0 3 /\ holds 3 vf 2 3 /\ 0 <> 2.
+Proof.
+  simpl. unfold cause_not_later, holds.
+  repeat split; try lia.
+  intros i Hi. destruct i as [| [| i]]; simpl; lia.
+Qed.
+
+(** Causes at ticks 5 and 9 pass [supersession-cause-not-earlier]
+    (1 <= 5 and 9 <= 9). The second is later than the belief it starts. *)
+Example not_earlier_alone_is_not_enough :
+  let vf := fun i => match i with 0 => 1 | 1 => 9 | _ => 3 end in
+  let c := fun i => match i with 0 => 5 | _ => 9 end in
+  cause_not_earlier 3 vf c /\ holds 3 vf 0 3 /\ holds 3 vf 2 3 /\ 0 <> 2.
+Proof.
+  simpl. unfold cause_not_earlier, holds.
+  repeat split; try lia.
+  intros i Hi. destruct i as [| [| i]]; simpl; lia.
 Qed.
