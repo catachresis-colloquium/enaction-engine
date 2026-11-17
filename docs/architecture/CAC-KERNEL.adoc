@@ -402,15 +402,22 @@ belief-id order). The producer does not assert them, and the document has no
 member for them. The closed-world rule is the producer's to keep; the
 validator cannot check it, because a missing belief and a belief that the
 bearer does not hold look the same. `enaction-validate` does not run the
-derivation: a package with an undecidable model is still a valid package.
+derivation. It does refuse the package shapes that make a model
+undecidable: beliefs of one key with no link between them
+(`belief-key-chained`) and a successor that starts before the belief it
+supersedes (`supersession-monotone`, ADR-0029). The reader keeps its own
+refusal (`model-counterpart-unique`) for an invalid package that is handed
+to it directly.
 
 `conformance/tom/v1/` holds seven accepted cases (`true-concealment`,
 `caught`, `false-exposure`, `false-exposure-restated`,
 `false-concealment`, `no-claim`, and `second-order` under its own depth of
 2), each with an `expected.json` that lists every model with its timeline,
-its `until` when superseded, and whether it is stale-divergent; and one
-rejected case: an order-2 package under a declared depth of 1, refused as
-`nesting-bounded`.
+its `until` when superseded, and whether it is stale-divergent; and three
+rejected cases: an order-2 package under a declared depth of 1, refused as
+`nesting-bounded`; two own beliefs of one key with no link, refused as
+`belief-key-chained`; and a successor that starts before the belief it
+supersedes, refused as `supersession-monotone`.
 
 === The binary
 
