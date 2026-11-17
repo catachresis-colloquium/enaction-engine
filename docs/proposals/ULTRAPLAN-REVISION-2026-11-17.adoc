@@ -244,8 +244,8 @@ The waves stand, with these changes:
    prompt in "Running it as an ultracode session". Until the pull request
    that adds ADR-0025 rewrites them, this revision governs where they
    conflict.
-** This session reads the re-ruling as leaving part (1) in force: the dated
-   want in a second, non-donor consumer. D8 asks the owner to confirm.
+** Part (1) stays in force: the dated want in a second, non-donor consumer.
+   The owner confirmed this on 2026-11-17 (D8), for any non-donor consumer.
 
 [[adr25]]
 == ADR-0025: independence by formalism (design sketch)
@@ -278,27 +278,84 @@ design, in Rocq and in Agda, cross-checked.
   hand-written `expected.json` files. If extraction or the byte comparison
   is impractical, ADR-0025 changes before it is accepted.
 
-== Owner decisions outstanding
+== Owner decisions
 
-[cols="1,5",options="header"]
+The owner ruled on all nine on 2026-11-17, by selector. The second column
+states the question; the third states the ruling and what follows from it.
+
+[cols="1,3,5",options="header"]
 |===
-| Id | Decision
+| Id | Question | Ruling of 2026-11-17
 
 | D1 | R2: is the `supersedes` link the contradiction record, or must a
   correction event be cited?
-| D2 | R4: bump the kernel contract's minor version for ADR-0029?
-| D3 | R5: birth path in `CLADE.a2ml`, or the `#u8` form in the deed?
+| *The link is typed and names its cause.* `supersedes` becomes a pair of
+  the superseded belief and the event that caused the revision, so that the
+  link and the event are one object. This is a wire-format change. It needs
+  its own ADR, and the proof of ADR-0029 must be re-checked against it.
+
+| D2 | R4: does the kernel contract version move for ADR-0029?
+| *Major bump, to 2.0.* The refusals are a breaking change. Every
+  conformance fixture is re-blessed, because the version is part of the
+  digest. IDApTIK and UMS must follow (other repositories).
+
+| D3 | R5: where does the birth path live?
+| *The question was wrong.* The owner's correction: CLADE is a deed
+  document, and `CLADE.a2ml` must be converted to deed form until A2ML is
+  gone. Roles and machinery have changed, so the conversion starts from the
+  deed grammar, the CLADE mapping and the chora specification in
+  `standards`, not from this session's reading of 2026-11-17. Where the
+  preimage lives follows from that canon. Not done yet.
+
 | D4 | Accept or decline commitment C4 (no attention without stakes).
-| D5 | The outcome of the review of 2026-11-30.
-| D6 | Owner-only setting: allow
+| *Make it structural: attention as a typed budget.* An observation spends
+  an affect budget, a resource type, so the claim holds by construction and
+  not by a behavioural test. This needs a design and reaches the
+  type-system thread (other repositories). Fan-out item F3 (the zero-affect
+  fixture) is superseded by that design.
+
+| D5 | Which outcome of the review of 2026-11-30 to prepare for.
+| *A neutral dossier.* It states the evidence and the three outcomes, with
+  no recommendation. The review decides.
+
+| D6 | The SonarCloud gate: allow-list the exact pin and bind the project.
+| *Partly done, not yet effective.* The owner reports the pin
   `hyperpolymath/proven-cicd-and-workflows/actions/sonarcloud-result-check@43223d1e…`
-  in the organisation's Actions policy, and bind the SonarQube Cloud
-  project.
-| D7 | Owner-only: the late registration of this repository in the registry
-  seed (L1), or hand it to the #u5 fixer thread.
-| D8 | Confirm that T1 part (1), the dated want in Slavia, still stands.
-| D9 | Launch the fan-out sessions F0 to F6, and say which.
+  as allow-listed at organisation level, and did not do the SonarQube Cloud
+  binding because the step was unclear. Run 163 of the gate (2026-11-17
+  15:06 UTC, on `77cfdd6`) still ended as `startup_failure` *[run]*. The
+  gate stays `OPEN`. This session owes the owner plain steps.
+
+| D7 | The late registration of this repository in the registry seed (L1).
+| *Hand it to the #u5 fixer thread.* No session of that name was found, so
+  the record was sent to the estate hub session on 2026-11-17 to route. No
+  registry pull request was opened from here.
+
+| D8 | Does T1 part (1), the dated want, still stand?
+| *Yes, in any non-donor consumer.* Evil Weevil, the first host (ADR-0026),
+  can record it; Slavia is no longer required.
+
+| D9 | Launch the fan-out.
+| *F0, F4, F5 and F6, as cloud sessions.* Started on 2026-11-17. F1 is held,
+  because its fixture may belong in `evil-weevil`. F2 waits for A3.
+
+| Order | How does contract 2.0 land relative to pull request 122?
+| *Experiment first.* Prototype the typed link on a branch, measure what
+  breaks (fixtures, digests, the output of IDApTIK's runner), then put the
+  ordering question to the owner again with the numbers.
 |===
+
+=== What the rulings change in this plan
+
+* *Track 0* gains three pieces of design work, in this order: the D3
+  conversion (after the canon is read), the typed-link experiment and then
+  its ADR with contract 2.0 (D1, D2), and the typed attention budget (D4).
+  ADR-0025 follows, with D8 settled.
+* *Pull request 122* stays open until the owner rules on the order.
+* *R4 and R5* in section <<review>> are answered by D2 and D3. *R2* is
+  answered by D1.
+* *F3* is withdrawn. *F5* must not touch `CLADE.a2ml` or the deed, which
+  the D3 conversion owns.
 
 == Beyond this repository
 
