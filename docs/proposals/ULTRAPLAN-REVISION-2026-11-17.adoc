@@ -364,11 +364,137 @@ states the question; the third states the ruling and what follows from it.
   conversion (after the canon is read), the typed-link experiment and then
   its ADR with contract 2.0 (D1, D2), and the typed attention budget (D4).
   ADR-0025 follows, with D8 settled.
-* *Pull request 122* stays open until the owner rules on the order.
+* *Pull request 122* takes the bump to 2.0 (second round, E4).
 * *R4 and R5* in section <<review>> are answered by D2 and D3. *R2* is
   answered by D1.
 * *F3* is withdrawn. *F5* must not touch `CLADE.a2ml` or the deed, which
   the D3 conversion owns.
+
+=== Second round of rulings, 2026-11-17 (after the experiments)
+
+The owner asked for experiments before the larger decisions. Each row gives
+the measurement and then the ruling. *[run]* marks a result that this
+session ran or re-ran; *[agent]* marks a result that a delegated agent ran
+and this session did not repeat.
+
+[cols="1,4,4",options="header"]
+|===
+| Id | Measured | Ruling
+
+| E1
+| *A2ML here against upstream.* `rsr-template-repo` at `0044ad9` and `kyx`
+  at `731e63a` track no `.a2ml` file; this repository tracks 124, of which
+  84 are AI manifests *[run]*. The template's repo deed has 23 clauses;
+  this one had 2 *[run]*. Thirteen files here read or name `CLADE.a2ml`,
+  and the template has rewritten each to read the deed *[run]*. kyX
+  translates only `ECOSYSTEM.a2ml` *[read]*.
+| *Template upgrade, family by family.* First adopt the template's deed
+  lane: the `deed-validate` job and the shrink-only ledger
+  `.machine_readable/a2ml-legacy-allow.txt` listing all 124 files. Then one
+  family at a time, with the template's own readers, each `.a2ml` deleted in
+  its own commit. A Sonnet session executes; this session reviews.
+
+| E2
+| Pull request 129 applied the CLADE mapping by hand. Both deeds pass
+  `deed_lint.js` at standards `819ef67`, `STATE.deed` in strict mode; the
+  linter refuses two planted faults and the parity gate refuses seven
+  planted drifts *[run]*.
+| *Keep it.* Ruling D3 covers the exception to "never convert by hand".
+
+| E3
+| After `CLADE.a2ml` goes, nothing in the repository holds the birth path,
+  and the repository is not registered, so nothing else checks that the id
+  is derived from it.
+| *The birth path stays in the gate until registration*, as a constant in
+  `scripts/check-identity.sh`. The pull request that follows the L1
+  registration deletes it and adopts the template's form-only check.
+
+| E4
+| *Typed link, on a branch off pull request 122* (commit `3f5cceb`, not
+  pushed). `supersedes` became `{belief, because}` and the contract went to
+  2.0: 25 files, +615/-120. `cargo test --locked --all-targets`: 226 passed,
+  0 failed; clippy and fmt clean *[run]*. No accepted fixture needed an
+  invented event, no `expected.json` changed, and the Coq and Agda proofs
+  and the two rules of ADR-0029 did not change *[agent]*. A package already
+  has an event id (`EpistemicEvent.event_id`), so nothing was invented
+  *[agent]*.
+| *Pull request 122 takes the bump to 2.0 now.* Its rules already refuse
+  some 1.0 packages. `main` is then "2.0 draft, unreleased" until the typed
+  link lands inside the same 2.0. A draft state is new: the version check
+  does not model it today, so it needs a decision record and a release gate.
+
+| E5
+| *The cause was only nominal as first built.* Any event that the reviser
+  received by then passed, and in all 5 links of the accepted corpus
+  `because` equals the successor's only source event *[agent]*. A probe of
+  three tightenings on the corpus: the cause is among the successor's
+  sources; it is not among the old belief's sources; it is not earlier than
+  the old belief's `valid_from`. All 5 links satisfy all three *[run]*. The
+  corpus is small, so this shows only that the rules do not refuse it.
+| *All three tightenings.* The cause must be new evidence. With the third,
+  `old.valid_from <= cause.tick <= new.valid_from`, so
+  `supersession-monotone` becomes a theorem. It is to be proved in Coq and
+  Agda, with a rejected fixture and a property test for each new rule.
+
+| E6
+| The experiment left the envelope tag `enaction-runner-output/1` and the
+  directories `conformance/tom/v1` and `mind/v1`, although the package shape
+  changed. An old linked package then fails at decode with a positional
+  path and not with the version rule *[agent]*.
+| *New tag `enaction-runner-output/2` and new `v2` corpora.* The `v1`
+  directories stay frozen, and a test asserts that a 2.0 host refuses them.
+  IDApTIK and UMS must emit the new tag (other repositories).
+
+| E7
+| *ADR-0025 method.* Two writers with no shared context, one in Rocq and
+  one in Agda, each given only the prose (`CAC-KERNEL.adoc`, ADR-0028,
+  ADR-0029, the corpus README) and the seven accepted input packages, and
+  forbidden the Rust reader and every `expected.json`. Both specifications
+  compile with no axiom or postulate *[run]*. Both reproduce all 7
+  `expected.json` files after key order is normalised, and agree with each
+  other; the bytes differ because the prose fixes no file format *[run]*.
+  The two writers listed 12 and 11 gaps in the prose and resolved some
+  differently with no effect on this corpus *[agent]*. Limit: the corpus
+  README states each case's verdicts in prose, so the writers were
+  independent of the implementation and not of the README.
+| No ruling asked yet. The result goes into ADR-0025: the method works on
+  this slice; the vector format must be fixed (JCS); the prose gaps must be
+  closed; the README must stop stating answers; and the corpus needs cases
+  that pin the gaps (same-tick successor, cross-key link, an `unknown`
+  model with an ambiguous counterpart, agree-diverge-agree).
+|===
+
+==== Review of the fan-out pull requests
+
+An agent with no part in the work checked each `done_when` by running it
+*[agent]*.
+
+* *Pull request 128 (F0, audit): met.* 18 of 40 rows re-run at `cdf7ca1`,
+  all matching. Corrections sent to the worker: rows 8e and 8f, and three
+  prose clauses with no row.
+* *Pull request 127 (F5, arrival-pack gate): CI clauses met.* The job ran
+  and passed in CI, and three planted drifts are refused. Its Q4 note cites
+  D8 as read at `cdf7ca1`, where D8 was still open; corrections sent. It
+  merges after pull request 126. `STATE.a2ml` is left to the template
+  upgrade.
+* *Pull request 125 (F4, Creusot gate): not met.* The planted false
+  contract never ran. The upstream gate's detector
+  (`actions/creusot-check/check.sh` lines 118-119 at `d415d8b`) does not
+  match `creusot-std.workspace = true`, selects no package and exits 2. A
+  fix of that line would then run Creusot on two whole production crates,
+  where this repository proves a narrow harness. That is a proof-scope
+  decision for the owner. The pin `d415d8b` is on a side branch of the
+  gate's repository, not on its `main`. The pull request stays a draft.
+* *F6 (environment setup)* was still running.
+
+==== Holes found on the way
+
+* Five workflows (Governance, Hypatia Security Scan, Mirror, Scorecard,
+  OikosBot) end as `startup_failure` on every run, since 2026-11-15 and
+  2026-11-04 *[agent]*. Their gates do not run. The cause is not
+  established. A task card was raised for a dedicated session.
+* This repository's `dogfood-gate.yml` has no `deed-validate` job, so no
+  deed is linted in CI *[run]*. E1 closes this first.
 
 == Beyond this repository
 
