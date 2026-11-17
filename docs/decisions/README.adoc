@@ -28,8 +28,9 @@ new numbered ADR rather than silently rewriting its outcome.
 * `0021` — bounded BEAM integration through the estate SNIF boundary
 * `0022` — the baseline is a frozen prior (Proposed)
 * `0024` — canonical parity bytes are RFC 8785 JCS (Proposed)
+* `0025` — independence by formalism: two mechanisations written apart, cross-checked by vectors (Proposed)
 * `0026` — Evil Weevil is the first host (Proposed)
 * `0027` — the mind-trace contract (Proposed)
 * `0028` — models are compared with minds (Proposed)
-* `0023` and `0025` are reserved by ULTRACODE-COMPLETION-PLAN step 8 and are
+* `0023` is reserved by ULTRACODE-COMPLETION-PLAN step 8 and is
   not written.

@@ -1,4 +1,5 @@
 # Coq proof manifest — read by scripts/check-proofs.sh coq
 # Format: <source-root>|<module-relative-to-source-root>|gated|quarantine|<note>
 # Ground-truthed 2026-07-17 with coqc.
+verification/proofs/coq|TomSpec.v|gated| independent mechanisation of the model timeline (ADR-0025); written from the prose alone, ground-truthed 2026-11-17
 verification/proofs/coq|TypeSafety.v|gated| compiles under `coqc`

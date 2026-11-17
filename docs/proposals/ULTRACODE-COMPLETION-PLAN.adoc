@@ -710,10 +710,12 @@ as parallel agents on disjoint files. One coordinator owns the shared files
 | every accepted `conformance/esm/v1` case replays byte-identically via
   `cmp`, and every `rejected/<rule>/` case is refused with its rule; every
   scenario in the independent specification (`conformance/esm/v1/independent/`,
-  Q4) yields its expected beliefs, and the forge API shows that set merged
-  through a reviewed PR opened by its named author's account before the
-  first reducer-design PR was created (never `git log`, whose authors and
-  dates are self-asserted); a
+  Q4 as re-ruled on 2026-11-17, ADR-0025) yields its expected beliefs; the
+  Rocq and the Agda mechanisation of the reduction contract each emit those
+  vectors, byte-equal to each other and to the files; and the forge API
+  shows both mechanisations and the vectors merged before the first
+  reducer-design PR was created (never `git log`, whose authors and dates
+  are self-asserted); a
   scalar-only package is refused with `MissingEvidencePayload`; the planted
   locality mutant fails; Creusot obligations are stated for the reducer's
   core and gated; the rung-8 `Correspondence` check passes for the reducer's
@@ -1004,11 +1006,12 @@ only as recorded expected-red legs that block nothing: the Lean proof gate
 is reported CI-only, never passed. Open draft PRs per repository; merge
 nothing without the owner. Do not start a step whose owner question
 (Q1-Q8) is unanswered; do every other step. Stop before Wave 5 unless all
-three ADR-0017 triggers are on record: T1 (the owner's dated want in a
-second, non-donor consumer's repository, and the independent specification
-in conformance/esm/v1/independent/ merged through a reviewed PR opened by its
-named non-owner author's own forge account before any reducer-design PR was
-created, checked through the forge API, per ADR-0025), T2 (step 23 merged, with every
+three ADR-0017 triggers are on record: T1 (the owner's dated want in the
+repository of any consumer that is not the donor, and the independent
+specification of ADR-0025: a Rocq and an Agda mechanisation of the reduction
+contract, written apart from the prose alone, whose vectors in
+conformance/esm/v1/independent/ are byte-equal, all merged before any
+reducer-design PR was created, checked through the forge API), T2 (step 23 merged, with every
 repository's digest check passing) and T3 (the recorded surprises from steps
 4 and 6 merged).
 ----
