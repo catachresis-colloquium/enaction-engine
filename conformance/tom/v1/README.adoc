@@ -55,6 +55,14 @@ where it is superseded (`until`), or to the end of the package.
   guard-0, of order 2, under the corpus depth of 1. Refused by the existing
   `nesting-bounded` rule with path
   `package.beliefs[belief_id=1].holders`.
+* `rejected/belief-key-chained`: the `false-exposure` story with its link
+  dropped. contact-21 knows (1); on tick 6 it loses track (2, unknown), but
+  2 supersedes nothing. Two own beliefs of one key with no contradiction
+  record are a silent overwrite (CAC-KERNEL §3 invariant 4, ADR-0029),
+  refused with path `package.beliefs[belief_id=2].supersedes`.
+* `rejected/supersession-monotone`: 2 supersedes 1 but starts on tick 2,
+  before 1 starts on tick 6. A contradiction record never runs backwards
+  (ADR-0029), refused with path `package.beliefs[belief_id=2].supersedes`.
 
 == Layout
 
@@ -84,6 +92,8 @@ enaction-validate --policies policies.json \
   < accepted/false-exposure/runner-output.json      # exit 0
 enaction-validate --policies policies.json \
   < rejected/nesting-bounded/runner-output.json     # exit 1, nesting-bounded
+enaction-validate --policies policies.json \
+  < rejected/belief-key-chained/runner-output.json  # exit 1, belief-key-chained
 enaction-validate --policies accepted/second-order/policies.json \
   < accepted/second-order/runner-output.json        # exit 0
 ----

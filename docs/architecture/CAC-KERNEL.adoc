@@ -119,6 +119,11 @@ Belief {
 . `(tick, sequence)` gives a total order for reduction.
 . Every non-derived belief has at least one provenance event.
 . A contradiction is represented explicitly; it is not silently overwritten.
+  The checkable form is ADR-0029. The beliefs that share a key (`holders`,
+  `bearer`, `proposition`) form one chain under `supersedes`
+  (`belief-key-chained`), and a belief never supersedes one that starts after
+  it (`supersession-monotone`). Then at most one belief of a key holds at any
+  tick (proved in `verification/proofs/{coq,agda}/KeyChain`).
 . Nested theory of mind is represented as a belief with a non-empty
   ascription path. `bearer` is the agent whose belief it is; `holders` lists,
   outermost first, the agents whose model it lives in. Empty `holders` is the
@@ -196,7 +201,8 @@ guarantees.
 
 Loaders MUST reject unknown incompatible major versions, invalid provenance,
 duplicate event identifiers, non-monotonic ordering, unbounded nested-belief
-expansion, and packages whose digest does not match their contents. A diagnostic
+expansion, silent overwrites and backward supersession (ADR-0029), and packages
+whose digest does not match their contents. A diagnostic
 should identify the stable field path and the compatibility rule that failed.
 
 === Canonical bytes and the package digest
@@ -363,8 +369,9 @@ model of what contact-21 believes.
   tick where a belief of the compared kind starts or stops holding.
   Consecutive segments always differ in verdict, so a timeline of one
   segment means that the verdict never changed. A model with status
-  `unknown` has one segment, `no-claim`. A model whose successor starts no
-  later than its own `valid_from` has one segment, at its `valid_from`.
+  `unknown` has one segment, `no-claim`. A model whose successor starts on
+  its own `valid_from` has one segment, at its `valid_from`. A successor
+  never starts earlier (`supersession-monotone`, ADR-0029).
 * **Stale divergence.** A model is *stale-divergent* when its first segment
   agrees and a later segment diverges: it was right when it was stated and
   went wrong without being restated. This is the checkable form of a false
@@ -379,7 +386,8 @@ model of what contact-21 believes.
   the package rules cannot decide which is meant. A reader MUST refuse the
   whole model (`model-counterpart-unique`, naming the first such tick), and
   MUST NOT choose one. An ambiguity outside the lifetime does not refuse
-  it.
+  it. On a package that passes the section 6 rules this cannot happen
+  (ADR-0029), so the refusal is defence in depth.
 * **Never world truth.** A model is never compared with world truth. Whether
   b's own belief is true is a separate fact, decided for that belief at
   order 0.

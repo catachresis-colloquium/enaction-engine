@@ -31,5 +31,6 @@ new numbered ADR rather than silently rewriting its outcome.
 * `0026` — Evil Weevil is the first host (Proposed)
 * `0027` — the mind-trace contract (Proposed)
 * `0028` — models are compared with minds (Proposed)
+* `0029` — one key, one chain: silent overwrites are refused (Proposed)
 * `0023` and `0025` are reserved by ULTRACODE-COMPLETION-PLAN step 8 and are
   not written.

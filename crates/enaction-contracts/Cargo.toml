@@ -27,4 +27,5 @@ serde_path_to_error = "0.1"
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(creusot)'] }
 
 [dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std"] }
 # serde_json is now a normal dependency (above); tests use it too.

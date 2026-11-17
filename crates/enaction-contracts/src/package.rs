@@ -94,6 +94,24 @@ pub enum PackageFault {
     /// Supersession chains must not loop: contradiction history is a line,
     /// not a circle.
     SupersessionCycle(BeliefId),
+    /// The beliefs that share one key (`holders`, `bearer`, `proposition`)
+    /// do not form one chain under `supersedes` (CAC-KERNEL §3 invariant 4,
+    /// ADR-0029). `superseded: None` is a silent overwrite: `belief` is a
+    /// later belief of the key that supersedes no belief of the key.
+    /// `superseded: Some(t)` is a fork: `belief` supersedes `t`, which
+    /// another belief of the key already supersedes.
+    BeliefKeyNotChained {
+        belief: BeliefId,
+        superseded: Option<BeliefId>,
+    },
+    /// `belief` supersedes a belief that starts after it: a contradiction
+    /// record that runs backwards in time (ADR-0029). With
+    /// `belief-key-chained` this makes at most one belief of a key hold at
+    /// any tick (`verification/proofs/{coq,agda}/KeyChain`).
+    SupersedesALaterBelief {
+        belief: BeliefId,
+        superseded: BeliefId,
+    },
     EmptyNameInAscriptionPath(BeliefId),
     DigestMismatch {
         declared: String,
@@ -135,7 +153,9 @@ impl PackageFault {
             PackageFault::UnknownSourceEvent { belief, .. } => {
                 format!("beliefs[belief_id={}].source_events", belief.0)
             }
-            PackageFault::SupersedesUnknownBelief { belief, .. } => {
+            PackageFault::SupersedesUnknownBelief { belief, .. }
+            | PackageFault::BeliefKeyNotChained { belief, .. }
+            | PackageFault::SupersedesALaterBelief { belief, .. } => {
                 format!("beliefs[belief_id={}].supersedes", belief.0)
             }
             PackageFault::StatusDisagreesWithInterval { belief, .. } => {
@@ -158,6 +178,8 @@ impl PackageFault {
         "source-events-present",
         "supersedes-present",
         "supersession-acyclic",
+        "belief-key-chained",
+        "supersession-monotone",
         "ascription-names-nonempty",
         "digest-matches",
         "status-agrees-with-interval",
@@ -177,6 +199,8 @@ impl PackageFault {
             PackageFault::UnknownSourceEvent { .. } => "source-events-present",
             PackageFault::SupersedesUnknownBelief { .. } => "supersedes-present",
             PackageFault::SupersessionCycle(_) => "supersession-acyclic",
+            PackageFault::BeliefKeyNotChained { .. } => "belief-key-chained",
+            PackageFault::SupersedesALaterBelief { .. } => "supersession-monotone",
             PackageFault::EmptyNameInAscriptionPath(_) => "ascription-names-nonempty",
             PackageFault::DigestMismatch { .. } => "digest-matches",
             PackageFault::StatusDisagreesWithInterval { .. } => "status-agrees-with-interval",
@@ -306,14 +330,27 @@ pub fn validate_package(
             }
         }
     }
+    let valid_from: BTreeMap<BeliefId, u64> = package
+        .beliefs
+        .iter()
+        .map(|b| (b.belief_id, b.valid_from))
+        .collect();
     for belief in &package.beliefs {
-        if let Some(target) = belief.supersedes
-            && !belief_ids.contains(&target)
-        {
-            faults.push(PackageFault::SupersedesUnknownBelief {
-                belief: belief.belief_id,
-                superseded: target,
-            });
+        if let Some(target) = belief.supersedes {
+            match valid_from.get(&target) {
+                None => faults.push(PackageFault::SupersedesUnknownBelief {
+                    belief: belief.belief_id,
+                    superseded: target,
+                }),
+                // ADR-0029: a successor never starts before what it replaces.
+                Some(&starts) if belief.valid_from < starts => {
+                    faults.push(PackageFault::SupersedesALaterBelief {
+                        belief: belief.belief_id,
+                        superseded: target,
+                    });
+                }
+                Some(_) => {}
+            }
         }
     }
     // Supersession cycles: `supersedes` is a functional graph (out-degree at
@@ -367,10 +404,81 @@ pub fn validate_package(
         }
     }
 
+    key_chain_faults(&package.beliefs, &mut faults);
+
     if faults.is_empty() {
         Ok(())
     } else {
         Err(faults)
+    }
+}
+
+/// CAC-KERNEL §3 invariant 4, made checkable (ADR-0029): the beliefs that
+/// share one key (`holders`, `bearer`, `proposition`) form one chain under
+/// `supersedes`.
+///
+/// Only edges that stay inside the key count, so a supersession across keys
+/// is neither required nor refused here. For a key with `n` beliefs, an
+/// acyclic set of in-key edges with out-degree at most 1 (a belief
+/// supersedes at most one) and in-degree at most 1 (no fork) is a union of
+/// disjoint paths, and it is one path exactly when it has `n − 1` edges.
+/// Cycles are `supersession-acyclic`'s to report; this rule is checked on
+/// in-degree and on the number of chain starts, which is cheap and needs no
+/// graph search.
+///
+/// Reported, in a stable order:
+/// * each fork: every belief that supersedes an already-superseded belief
+///   of its key, after the first by id (`superseded: Some(t)`);
+/// * each silent overwrite: every belief of the key that supersedes no
+///   belief of the key, other than the earliest by (`valid_from`, id)
+///   (`superseded: None`).
+fn key_chain_faults(beliefs: &[Belief], faults: &mut Vec<PackageFault>) {
+    type Key<'a> = (&'a [String], &'a str, &'a str);
+    let mut keys: BTreeMap<Key<'_>, Vec<&Belief>> = BTreeMap::new();
+    for belief in beliefs {
+        keys.entry((&belief.holders, &belief.bearer, &belief.proposition.0))
+            .or_default()
+            .push(belief);
+    }
+    for members in keys.values() {
+        if members.len() < 2 {
+            continue;
+        }
+        let ids: BTreeSet<BeliefId> = members.iter().map(|b| b.belief_id).collect();
+        // Forks: one superseded belief claimed twice inside the key.
+        let mut superseders: BTreeMap<BeliefId, Vec<BeliefId>> = BTreeMap::new();
+        for belief in members {
+            if let Some(target) = belief.supersedes
+                && ids.contains(&target)
+            {
+                superseders
+                    .entry(target)
+                    .or_default()
+                    .push(belief.belief_id);
+            }
+        }
+        for (target, mut by) in superseders {
+            by.sort_unstable();
+            for &extra in by.iter().skip(1) {
+                faults.push(PackageFault::BeliefKeyNotChained {
+                    belief: extra,
+                    superseded: Some(target),
+                });
+            }
+        }
+        // Silent overwrites: more than one chain start in the key.
+        let mut starts: Vec<&Belief> = members
+            .iter()
+            .copied()
+            .filter(|b| !b.supersedes.is_some_and(|t| ids.contains(&t)))
+            .collect();
+        starts.sort_unstable_by_key(|b| (b.valid_from, b.belief_id));
+        for start in starts.iter().skip(1) {
+            faults.push(PackageFault::BeliefKeyNotChained {
+                belief: start.belief_id,
+                superseded: None,
+            });
+        }
     }
 }
 
@@ -486,6 +594,8 @@ mod tests {
                 | PackageFault::UnknownSourceEvent { .. }
                 | PackageFault::SupersedesUnknownBelief { .. }
                 | PackageFault::SupersessionCycle(_)
+                | PackageFault::BeliefKeyNotChained { .. }
+                | PackageFault::SupersedesALaterBelief { .. }
                 | PackageFault::EmptyNameInAscriptionPath(_)
                 | PackageFault::DigestMismatch { .. }
                 | PackageFault::StatusDisagreesWithInterval { .. }
@@ -521,6 +631,14 @@ mod tests {
                 superseded: b,
             },
             PackageFault::SupersessionCycle(b),
+            PackageFault::BeliefKeyNotChained {
+                belief: b,
+                superseded: None,
+            },
+            PackageFault::SupersedesALaterBelief {
+                belief: b,
+                superseded: b,
+            },
             PackageFault::EmptyNameInAscriptionPath(b),
             PackageFault::DigestMismatch {
                 declared: String::new(),
@@ -540,6 +658,150 @@ mod tests {
     #[test]
     fn a_valid_package_validates() {
         assert_eq!(validate(&ghost_lobby()), Ok(()));
+    }
+
+    // ------------------------------------------------ belief-key-chained
+
+    /// The guard's own belief about the lobby, held from `valid_from`.
+    fn own(id: u64, valid_from: u64, supersedes: Option<u64>) -> Belief {
+        Belief {
+            valid_from,
+            supersedes: supersedes.map(BeliefId),
+            ..belief(id, &[], &[1])
+        }
+    }
+
+    fn key_faults(beliefs: Vec<Belief>) -> Vec<PackageFault> {
+        let package = EpistemicPackage {
+            beliefs,
+            ..ghost_lobby()
+        };
+        match validate(&package) {
+            Ok(()) => Vec::new(),
+            Err(faults) => faults
+                .into_iter()
+                .filter(|f| f.rule() == "belief-key-chained")
+                .collect(),
+        }
+    }
+
+    #[test]
+    fn a_linked_chain_of_one_key_is_accepted() {
+        assert_eq!(
+            validate(&EpistemicPackage {
+                beliefs: vec![own(1, 1, None), own(2, 3, Some(1)), own(3, 5, Some(2))],
+                ..ghost_lobby()
+            }),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn an_unlinked_second_belief_of_one_key_is_a_silent_overwrite() {
+        // The falsifier of ENACTIVE-COMMITMENTS C2 (a), as a package.
+        assert_eq!(
+            key_faults(vec![own(1, 1, None), own(2, 3, None)]),
+            [PackageFault::BeliefKeyNotChained {
+                belief: BeliefId(2),
+                superseded: None
+            }]
+        );
+    }
+
+    #[test]
+    fn an_unlinked_restatement_is_refused_even_when_it_agrees() {
+        // Same status, same interval, no link: still two heads for one key.
+        let faults = key_faults(vec![own(1, 1, None), own(2, 1, None)]);
+        assert_eq!(faults.len(), 1, "{faults:?}");
+        assert_eq!(faults[0].path(), "beliefs[belief_id=2].supersedes");
+    }
+
+    #[test]
+    fn the_earliest_start_is_kept_whatever_the_listing_order() {
+        assert_eq!(
+            key_faults(vec![own(7, 9, None), own(3, 2, None)]),
+            [PackageFault::BeliefKeyNotChained {
+                belief: BeliefId(7),
+                superseded: None
+            }]
+        );
+    }
+
+    #[test]
+    fn two_successors_of_one_belief_are_a_fork() {
+        assert_eq!(
+            key_faults(vec![
+                own(1, 1, None),
+                own(2, 3, Some(1)),
+                own(3, 3, Some(1))
+            ]),
+            [PackageFault::BeliefKeyNotChained {
+                belief: BeliefId(3),
+                superseded: Some(BeliefId(1))
+            }]
+        );
+    }
+
+    #[test]
+    fn different_keys_never_need_a_link() {
+        // Same bearer and proposition, different ascription path; and the
+        // same path about a different proposition.
+        let mut other_prop = own(3, 1, None);
+        other_prop.proposition = Proposition("intruder in hall".into());
+        let mut other_bearer = own(4, 1, None);
+        other_bearer.bearer = "observer".into();
+        assert_eq!(
+            key_faults(vec![
+                own(1, 1, None),
+                belief(2, &["observer"], &[1]),
+                other_prop,
+                other_bearer,
+            ]),
+            []
+        );
+    }
+
+    #[test]
+    fn a_successor_that_starts_before_its_predecessor_is_refused() {
+        let faults = validate(&EpistemicPackage {
+            beliefs: vec![own(1, 6, None), own(2, 5, Some(1))],
+            ..ghost_lobby()
+        })
+        .unwrap_err();
+        assert_eq!(
+            faults,
+            [PackageFault::SupersedesALaterBelief {
+                belief: BeliefId(2),
+                superseded: BeliefId(1)
+            }]
+        );
+        assert_eq!(faults[0].rule(), "supersession-monotone");
+    }
+
+    #[test]
+    fn a_successor_may_start_on_the_same_tick() {
+        assert_eq!(
+            validate(&EpistemicPackage {
+                beliefs: vec![own(1, 4, None), own(2, 4, Some(1))],
+                ..ghost_lobby()
+            }),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn a_supersession_across_keys_does_not_link_a_key() {
+        // 2 supersedes a belief of another key, so inside its own key it is
+        // a second start: the cross-key edge does not excuse the overwrite.
+        let mut elsewhere = own(9, 1, None);
+        elsewhere.proposition = Proposition("intruder in hall".into());
+        assert_eq!(
+            key_faults(vec![own(1, 1, None), elsewhere, own(2, 3, Some(9))]),
+            [PackageFault::BeliefKeyNotChained {
+                belief: BeliefId(2),
+                superseded: None
+            }]
+        );
     }
 
     #[test]

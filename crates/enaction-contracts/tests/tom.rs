@@ -20,9 +20,9 @@ use enaction_contracts::tom::{
 };
 use enaction_contracts::{
     Belief, BeliefId, BeliefInterval, BeliefStatus, ContractVersion, DepthPolicy, EpistemicEvent,
-    EpistemicPackage, EventId, EventKind, KERNEL_CONTRACT_VERSION, Mass, PackageManifest,
-    ProfileRef, Proposition, Provenance, RUNNER_OUTPUT_CONTRACT, RunnerOutput, SeedPolicy,
-    StatusPolicy, Subject, package_digest, parse_policies, validate_package,
+    EpistemicPackage, EventId, EventKind, KERNEL_CONTRACT_VERSION, Mass, PackageFault,
+    PackageManifest, ProfileRef, Proposition, Provenance, RUNNER_OUTPUT_CONTRACT, RunnerOutput,
+    SeedPolicy, StatusPolicy, Subject, package_digest, parse_policies, validate_package,
     validate_runner_output,
 };
 
@@ -371,6 +371,46 @@ fn corpus() -> Vec<(&'static str, RunnerOutput)> {
                 &[WHERE],
             ),
         ),
+        // The false-exposure story with its link dropped: on tick 6
+        // contact-21 loses track (3, unknown), but 3 supersedes nothing. Two
+        // own beliefs of one key, no contradiction record: a silent
+        // overwrite (CAC-KERNEL §3 invariant 4, ADR-0029).
+        (
+            "rejected/belief-key-chained",
+            output(
+                package(
+                    "belief-key-chained",
+                    vec![
+                        event(1, 2, "contact-21", "guard-0", Observation, WHERE, 9_000),
+                        event(2, 6, "contact-21", "guard-0", Observation, WHERE, 0),
+                    ],
+                    &[
+                        bw(1, &[], "contact-21", Believed, 2, &[1]),
+                        bw(2, &[], "contact-21", Unknown, 6, &[2]),
+                    ],
+                ),
+                &[WHERE],
+            ),
+        ),
+        // The record runs backwards: 2 supersedes 1 but starts on tick 2,
+        // before 1 starts on tick 6 (ADR-0029).
+        (
+            "rejected/supersession-monotone",
+            output(
+                package(
+                    "supersession-monotone",
+                    vec![
+                        event(1, 2, "contact-21", "guard-0", Observation, WHERE, 0),
+                        event(2, 6, "contact-21", "guard-0", Observation, WHERE, 9_000),
+                    ],
+                    &[
+                        bw(1, &[], "contact-21", Believed, 6, &[2]),
+                        superseding(bw(2, &[], "contact-21", Unknown, 2, &[1]), 1),
+                    ],
+                ),
+                &[WHERE],
+            ),
+        ),
     ]
 }
 
@@ -465,6 +505,8 @@ fn sha256sums_covers_the_sorted_complete_file_set() {
         "accepted/second-order/policies.json",
         "accepted/second-order/expected.json",
         "rejected/nesting-bounded/runner-output.json",
+        "rejected/belief-key-chained/runner-output.json",
+        "rejected/supersession-monotone/runner-output.json",
     ] {
         assert!(names.iter().any(|n| n == required), "covers {required}");
     }
@@ -687,7 +729,14 @@ fn every_rejected_case_is_refused_with_exactly_its_rule() {
         assert_eq!(rules, [rule.as_str()], "rejected/{rule}: {faults:?}");
         seen.push(rule);
     }
-    assert_eq!(seen, ["nesting-bounded"]);
+    assert_eq!(
+        seen,
+        [
+            "belief-key-chained",
+            "nesting-bounded",
+            "supersession-monotone"
+        ]
+    );
 }
 
 /// The corpus separates a mind reader from a world reader. A world reader
@@ -981,36 +1030,39 @@ fn a_timeline_follows_the_counterpart_through_supersession() {
         event(1, 1, "contact-21", "guard-0", Observation, WHERE, 9_000),
         event(2, 4, "contact-21", "guard-0", Observation, WHERE, 0),
     ];
-    let model =
-        |id, status, valid_from| bw(id, &["guard-0"], "contact-21", status, valid_from, &[1]);
-    let p = package(
-        "supersession",
-        events,
-        &[
-            bw(1, &[], "contact-21", Believed, 1, &[1]),
-            superseding(bw(2, &[], "contact-21", Rejected, 4, &[2]), 1),
-            model(10, Believed, 1),
-            model(11, Believed, 3),
-            model(12, Believed, 4),
-            model(13, Rejected, 9),
-        ],
-    );
-    assert_eq!(
-        timelines(&p, 1),
-        [
-            (10, vec![(1, Agrees), (4, Diverges)], None),
-            (11, vec![(3, Agrees), (4, Diverges)], None),
-            (12, vec![(4, Diverges)], None),
-            (13, vec![(9, Agrees)], None),
-        ]
-    );
-    let stale: Vec<u64> = model_timelines(&p)
-        .unwrap()
-        .iter()
-        .filter(|t| stale_divergence(t))
-        .map(|t| t.model.0)
-        .collect();
-    assert_eq!(stale, [10, 11]);
+    // One model per package: under ADR-0029 the models of one key form one
+    // chain, so four unlinked models of the same key cannot share a package.
+    let with_model = |id, status, valid_from| {
+        package(
+            "supersession",
+            events.clone(),
+            &[
+                bw(1, &[], "contact-21", Believed, 1, &[1]),
+                superseding(bw(2, &[], "contact-21", Rejected, 4, &[2]), 1),
+                bw(id, &["guard-0"], "contact-21", status, valid_from, &[1]),
+            ],
+        )
+    };
+    let cases = [
+        (
+            with_model(10, Believed, 1),
+            vec![(1, Agrees), (4, Diverges)],
+            true,
+        ),
+        (
+            with_model(11, Believed, 3),
+            vec![(3, Agrees), (4, Diverges)],
+            true,
+        ),
+        (with_model(12, Believed, 4), vec![(4, Diverges)], false),
+        (with_model(13, Rejected, 9), vec![(9, Agrees)], false),
+    ];
+    for (p, line, stale) in cases {
+        let got = timelines(&p, 1);
+        assert_eq!(got.len(), 1, "{got:?}");
+        assert_eq!((&got[0].1, got[0].2), (&line, None), "model {}", got[0].0);
+        assert_eq!(stale_divergence(&model_timelines(&p).unwrap()[0]), stale);
+    }
 
     // Before any own belief is valid, the bearer holds nothing. Diverging
     // first and agreeing later is not stale divergence.
@@ -1071,10 +1123,6 @@ fn a_superseded_model_ends_where_its_successor_begins() {
             superseding(bw(2, &[], "contact-21", Rejected, 4, &[2]), 1),
             bw(20, &["guard-0"], "contact-21", Believed, 1, &[1]),
             superseding(bw(21, &["guard-0"], "contact-21", Believed, 3, &[1]), 20),
-            // A successor that starts no later than its model: the model is
-            // judged at its own valid_from only.
-            bw(30, &["guard-0"], "contact-21", Believed, 6, &[1]),
-            superseding(bw(31, &["guard-0"], "contact-21", Rejected, 5, &[1]), 30),
         ],
     );
     assert_eq!(
@@ -1082,10 +1130,43 @@ fn a_superseded_model_ends_where_its_successor_begins() {
         [
             (20, vec![(1, Agrees)], Some(3)),
             (21, vec![(3, Agrees), (4, Diverges)], None),
-            (30, vec![(6, Diverges)], Some(5)),
-            (31, vec![(5, Agrees)], None),
         ]
     );
+}
+
+/// Before ADR-0029 a successor could start before the model it supersedes
+/// (30 from tick 6, 31 from tick 5). That lets two beliefs of one chain hold
+/// at once (`verification/proofs/coq/KeyChain.v`, `monotone_is_needed`), so
+/// the package is now refused.
+#[test]
+fn a_successor_that_starts_before_its_model_is_refused() {
+    let p = package(
+        "backwards",
+        vec![event(
+            1,
+            1,
+            "contact-21",
+            "guard-0",
+            Observation,
+            WHERE,
+            9_000,
+        )],
+        &[
+            bw(1, &[], "contact-21", Believed, 1, &[1]),
+            bw(30, &["guard-0"], "contact-21", Believed, 6, &[1]),
+            superseding(bw(31, &["guard-0"], "contact-21", Rejected, 5, &[1]), 30),
+        ],
+    );
+    let faults = validate_package(
+        &p,
+        KERNEL_CONTRACT_VERSION,
+        &DepthPolicy { max_order: 1 },
+        &status_policy(),
+    )
+    .expect_err("a backwards supersession is refused");
+    let rules: Vec<_> = faults.iter().map(PackageFault::rule).collect();
+    assert_eq!(rules, ["supersession-monotone"], "{faults:?}");
+    assert_eq!(faults[0].path(), "beliefs[belief_id=31].supersedes");
 }
 
 #[test]
@@ -1111,13 +1192,36 @@ fn an_ambiguity_inside_the_lifetime_refuses_the_model() {
             superseding(bw(6, &["guard-0"], "contact-21", Believed, 3, &[1]), 5),
         ],
     );
-    validate_package(
+    // ADR-0029: the package rules refuse it at load. Belief 2 is a second
+    // start for contact-21's own key (a silent overwrite of 1), and models
+    // 4 and 5 are further starts for guard-0's key, whose first start is 3.
+    let load = validate_package(
         &p,
         KERNEL_CONTRACT_VERSION,
         &DepthPolicy { max_order: 1 },
         &status_policy(),
     )
-    .expect("the package rules allow it");
+    .expect_err("an unlinked overwrite is refused at load");
+    let refused: Vec<_> = load.iter().map(|f| (f.rule(), f.path())).collect();
+    assert_eq!(
+        refused,
+        [
+            (
+                "belief-key-chained",
+                "beliefs[belief_id=2].supersedes".to_string()
+            ),
+            (
+                "belief-key-chained",
+                "beliefs[belief_id=4].supersedes".to_string()
+            ),
+            (
+                "belief-key-chained",
+                "beliefs[belief_id=5].supersedes".to_string()
+            ),
+        ]
+    );
+    // Defence in depth: handed the invalid package anyway, the reader still
+    // refuses rather than pick a counterpart.
     let faults = model_timelines(&p).unwrap_err();
     // Model 6 also reaches tick 4.
     assert_eq!(faults.len(), 2, "{faults:?}");
@@ -1127,4 +1231,136 @@ fn an_ambiguity_inside_the_lifetime_refuses_the_model() {
     assert_eq!(faults[0].candidates, [BeliefId(1), BeliefId(2)]);
     assert_eq!(faults[1].path(), "beliefs[belief_id=6]");
     assert_eq!(MODEL_RULES, ["model-counterpart-unique"]);
+}
+
+// ------------------------------------------------ ADR-0029, the Rust side
+
+/// The documented reader rule (CAC-KERNEL §9): a belief holds at `t` when it
+/// starts by `t` and nothing that supersedes it has started by `t`.
+fn in_force(package: &EpistemicPackage, belief: &Belief, t: u64) -> bool {
+    belief.valid_from <= t
+        && !package
+            .beliefs
+            .iter()
+            .any(|b| b.supersedes == Some(belief.belief_id) && b.valid_from <= t)
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Break {
+    Unchanged,
+    Unlink,
+    Fork,
+    Backwards,
+}
+
+/// contact-21's own beliefs about `WHERE` as one chain (ids 1..=k, each
+/// superseding the one before, `valid_from` non-decreasing), plus guard-0's
+/// model of it (id 100), with one planted break or none.
+fn chain_case(steps: &[u64], believed: &[bool], model_from: u64, brk: Break) -> EpistemicPackage {
+    let mut from = Vec::with_capacity(steps.len());
+    let mut t = 0;
+    for step in steps {
+        t += step;
+        from.push(t);
+    }
+    if let Break::Backwards = brk {
+        // The last belief starts one tick before the one it supersedes.
+        let k = from.len();
+        from[k - 1] = from[k - 2] - 1;
+    }
+    let status = |i: usize| if believed[i] { Believed } else { Rejected };
+    let mut beliefs: Vec<B<'_>> = (0..steps.len())
+        .map(|i| {
+            let b = bw(i as u64 + 1, &[], "contact-21", status(i), from[i], &[1]);
+            if i == 0 { b } else { superseding(b, i as u64) }
+        })
+        .collect();
+    match brk {
+        Break::Unlink => beliefs[1].supersedes = None,
+        Break::Fork => beliefs[2].supersedes = Some(1),
+        Break::Unchanged | Break::Backwards => {}
+    }
+    beliefs.push(bw(
+        100,
+        &["guard-0"],
+        "contact-21",
+        Believed,
+        model_from,
+        &[1],
+    ));
+    package(
+        "adr-0029-property",
+        vec![event(
+            1,
+            1,
+            "contact-21",
+            "guard-0",
+            Observation,
+            WHERE,
+            9_000,
+        )],
+        &beliefs,
+    )
+}
+
+fn load(p: &EpistemicPackage) -> Result<(), Vec<PackageFault>> {
+    validate_package(
+        p,
+        KERNEL_CONTRACT_VERSION,
+        &DepthPolicy { max_order: 1 },
+        &status_policy(),
+    )
+}
+
+proptest::proptest! {
+    #![proptest_config(proptest::prelude::ProptestConfig::with_cases(512))]
+
+    /// The Rust half of `verification/proofs/{coq,agda}/KeyChain`: every
+    /// package the validator accepts has at most one belief of a key in
+    /// force at any tick, so the real reader never meets an ambiguous
+    /// counterpart. Each planted break is refused with exactly its rule.
+    #[test]
+    fn one_key_one_holder_at_a_time(
+        // First step from 1 so a backwards break never underflows; later
+        // steps may be 0 (same-tick successors are allowed).
+        first in 1u64..4,
+        rest in proptest::collection::vec(1u64..4, 2..6),
+        zero_steps in proptest::collection::vec(proptest::bool::ANY, 6),
+        believed in proptest::collection::vec(proptest::bool::ANY, 7),
+        model_from in 0u64..20,
+        which in 0usize..4,
+    ) {
+        let mut steps = vec![first];
+        for (i, s) in rest.iter().enumerate() {
+            // A zero step makes a same-tick successor, except before the
+            // last belief, which a backwards break must be able to move.
+            let last = i + 2 == rest.len() + 1;
+            steps.push(if zero_steps[i] && !last { 0 } else { *s });
+        }
+        let brk = [Break::Unchanged, Break::Unlink, Break::Fork, Break::Backwards][which];
+        let p = chain_case(&steps, &believed, model_from, brk);
+        match brk {
+            Break::Unchanged => {
+                proptest::prop_assert_eq!(load(&p), Ok(()));
+                let end = p.beliefs.iter().map(|b| b.valid_from).max().unwrap() + 2;
+                for t in 0..=end {
+                    let holding = p
+                        .beliefs
+                        .iter()
+                        .filter(|b| b.holders.is_empty() && in_force(&p, b, t))
+                        .count();
+                    proptest::prop_assert!(holding <= 1, "tick {}: {} in force", t, holding);
+                }
+                proptest::prop_assert!(model_timelines(&p).is_ok());
+            }
+            Break::Unlink | Break::Fork => {
+                let rules: Vec<_> = load(&p).unwrap_err().iter().map(PackageFault::rule).collect();
+                proptest::prop_assert_eq!(rules, ["belief-key-chained"]);
+            }
+            Break::Backwards => {
+                let rules: Vec<_> = load(&p).unwrap_err().iter().map(PackageFault::rule).collect();
+                proptest::prop_assert_eq!(rules, ["supersession-monotone"]);
+            }
+        }
+    }
 }

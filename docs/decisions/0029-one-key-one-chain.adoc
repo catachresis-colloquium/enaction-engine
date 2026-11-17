@@ -1,0 +1,123 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Architecture Decision Record: 0029-one-key-one-chain
+
+Date: 2026-11-17
+
+== Status
+
+Proposed. The owner chose this route on 2026-11-17, by selector, over three
+alternatives (listed below).
+
+Makes `CAC-KERNEL.adoc` section 3 invariant 4 checkable. Amends ADR-0028:
+that ADR let several unlinked beliefs of one key share a package, and let a
+successor start before the belief it supersedes. Both are now refused.
+
+== Context
+
+Invariant 4 says that a contradiction is represented explicitly and is not
+silently overwritten. No package rule enforced it. The validator checked
+that a `supersedes` link names a belief that exists
+(`supersedes-present`) and that links do not loop (`supersession-acyclic`).
+It accepted two beliefs of one holder about one proposition with no link
+between them.
+
+`docs/theory/ENACTIVE-COMMITMENTS.adoc` commitment C2 ("breakdown
+constitutes meaning") names that gap as its falsifier (a). The theory-of-mind
+reader of ADR-0028 met the same gap from the other side. It refuses a model
+whose compared belief is ambiguous at some tick
+(`model-counterpart-unique`), at read time and only when a model points at
+the ambiguous mind. Its unit tests built valid packages with unlinked
+beliefs of one key on purpose.
+
+ADR-0028 also allowed a successor to start before the belief it supersedes.
+That breaks uniqueness even inside a single chain. With three beliefs of one
+key starting on ticks 1, 9 and 3, each superseding the one before, the first
+and the third both hold at tick 3. `monotone_is_needed` in
+`verification/proofs/coq/KeyChain.v` checks this witness.
+
+== Decision
+
+Call the triple (`holders`, `bearer`, `proposition`) a belief's _key_. A
+loader MUST refuse a package that breaks either rule:
+
+. *`belief-key-chained`.* The beliefs that share a key form one chain under
+  `supersedes`. Only links between beliefs of the same key count. A link
+  across keys is neither required nor refused here; its meaning stays an
+  open point of ADR-0028. The rule reports two shapes, at
+  `beliefs[belief_id=b].supersedes`:
+  ** a *silent overwrite*: `b` is a belief of the key that supersedes no
+     belief of the key, other than the earliest by (`valid_from`, id);
+  ** a *fork*: `b` supersedes a belief of the key that another belief of the
+     key already supersedes, after the first by id.
+. *`supersession-monotone`.* A belief never supersedes one that starts
+  after it: `valid_from(b) >= valid_from(b.supersedes)`. A successor may
+  start on the same tick.
+
+The rules hold for every order, so for an agent's own beliefs and for its
+models alike. An unlinked restatement is refused even when it agrees with
+the belief it repeats. A restatement is a new belief of the key, so it must
+name the belief it replaces. The corpus already did this
+(`false-exposure-restated`).
+
+== Consequence: one key, one holder at a time
+
+Under both rules, at most one belief of a key holds at any tick, in the
+sense of CAC-KERNEL section 9 ("Holding at a tick").
+
+* *Proved* for a chain, in Coq (`KeyChain.at_most_one_holds`, closed under
+  the global context) and independently in Agda (`KeyChain.agda`, `--safe
+  --without-K`). The premise is the validator's edge check, and the proof
+  derives the global order from it (`chain_monotone_le`). A superseder from
+  another key only stops a belief from holding, so it never adds a holder
+  (`at_most_one_holds_guarded`).
+* *Not proved:* that the validator's checks yield one chain (in-key edge
+  count, no fork, no cycle). Code enforces it, and these tests check it:
+  unit tests in `package.rs`, the planted packages in
+  `package_fault_coverage.rs`, and the property test
+  `one_key_one_holder_at_a_time` in `tests/tom.rs`. That property test
+  runs the real validator and reader on 512 generated chains, with a planted
+  unlink, fork or backward link, or none.
+
+So `model-counterpart-unique` cannot fire on a package that passes the
+section 6 rules. The reader keeps it as defence in depth, and a test still
+hands it an invalid package.
+
+== Alternatives considered
+
+* *All orders, no monotone rule.* This closes the silent overwrite. But
+  uniqueness is then false (the witness above), and
+  `model-counterpart-unique` stays reachable on valid packages.
+* *Order 0 only.* This refuses the overwrite of an agent's own beliefs and
+  lets several models of one key coexist. A model could still be overwritten
+  silently.
+* *No contract change before the review of 2026-11-30.* This records C2 (a)
+  as failing by design.
+
+== Consequences
+
+* *Producers.* A producer that restates a belief must link the restatement
+  to the belief it replaces, and must not date a successor before what it
+  replaces. No host emits models yet (`conformance/tom/v1/README.adoc`), and
+  every accepted fixture already met both rules. The IDApTIK corridor runner
+  emits order-0 packages. Its output must be re-validated in that
+  repository; this change does not do that.
+* *Readers.* Readers in other repositories that re-implement the section 6
+  rules, such as the UMS explain lens, must add both rules. They prove
+  conformance against `conformance/tom/v1/rejected/belief-key-chained` and
+  `rejected/supersession-monotone`.
+* *Tests.* Three ToM unit tests of ADR-0028 built packages that the rules
+  now refuse. They were split into one model per package, or turned into
+  refusals, with the same intent. The ambiguity test now checks that the
+  package is refused at load, and still checks the reader's refusal.
+* *ENACTIVE-COMMITMENTS C2.* Falsifier (a) now has a test: the validator
+  refuses the overwrite. Falsifier (b), that a contradiction changes later
+  conduct, is unchanged.
+
+== References
+
+* `docs/architecture/CAC-KERNEL.adoc` section 3 invariant 4, section 6 and
+  section 9.
+* ADR-0028, models are compared with minds.
+* `verification/proofs/coq/KeyChain.v`, `verification/proofs/agda/KeyChain.agda`.
+* `docs/theory/ENACTIVE-COMMITMENTS.adoc`, commitment C2.
