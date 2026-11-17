@@ -112,9 +112,27 @@ two cases: an overwrite with no link (two heads) and a fork (two beliefs that
 supersede the same one). A probe outside the repository applied the rule to
 every package in `conformance/` on 2026-11-17. All 5 groups of beliefs that
 share a key passed, and the probe refused a planted unlinked pair and a
-planted fork. The corpus is small, so this shows only that the rule does not
-refuse the current fixtures. The rule has no name, no code and no fixture
-yet.
+planted fork.
+
+*Test for (a), on the ADR-0029 branch.* The owner chose on 2026-11-17 to
+enforce the rule for every order, with a second rule that a belief never
+supersedes one that starts after it (ADR-0029, which amends ADR-0028). The
+validator now refuses (a) as `belief-key-chained`. On that branch:
+
+* the corpus fixture `conformance/tom/v1/rejected/belief-key-chained` is the
+  `false-exposure` story with its link dropped, and `enaction-validate`
+  refuses it with exit 1;
+* the property test `one_key_one_holder_at_a_time` passes over 512
+  generated chains, and refuses each planted unlink, fork or backward link
+  with exactly its rule;
+* with the rule disabled, 8 tests fail; with the monotone rule disabled, 4
+  tests fail;
+* under both rules, at most one belief of a key holds at any tick. This is
+  proved in Coq and in Agda (`verification/proofs/{coq,agda}/KeyChain`).
+  That the validator's checks yield one chain is tested, not proved.
+
+Falsifier (a) is therefore *tested and not observed* on that branch. Its
+evidence counts once the pull request merges. (b) is unchanged.
 
 === C3. Cognition is a loop through the world, not a pipeline
 
@@ -208,10 +226,11 @@ This section is an assessment by the author of the draft. It is not a ruling.
   `724e502`, with the registration-order limit of ADR-0022.
 | Nothing more for the weak claim. Arm B of ADR-0022 removes the limit.
 
-| C2 | The link structure is tested. Neither falsifier has a test. The
-  rule for (a) is specified above and probed against the corpus.
-| The key-chain rule for (a) in the package validator, with a rejected
-  fixture, and a fixture in which a contradiction changes later conduct.
+| C2 | (a) is refused by `belief-key-chained` on the ADR-0029 branch (a
+  fixture, a property test, mutant runs and a proof of the consequence).
+  Not on `main` until that pull request merges. (b) has no test.
+| The merge of ADR-0029, and a fixture in which a contradiction changes
+  later conduct (b).
 
 | C3 | Designed.
 | The intent-ablation fixture.
@@ -221,8 +240,8 @@ This section is an assessment by the author of the draft. It is not a ruling.
 |===
 
 On 2026-11-17, one commitment of four (C1) has passing evidence on
-`main`. For the other three the name is still an aspiration, as ADR-0018
-says. Two of the remaining falsifiers (C2 and C3) can have tests within the
+`main`. Half of C2 has passing evidence on a branch that is not yet merged.
+For the rest the name is still an aspiration, as ADR-0018 says. Two of the remaining falsifiers (C2 and C3) can have tests within the
 current route. If C1 to C3 pass by the review, the engine can
 defend a *weak enactive* reading: closure of the epistemic state, breakdown
 as a first-class event, and a loop through the world. It cannot defend the
