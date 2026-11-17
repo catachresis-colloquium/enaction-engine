@@ -17,7 +17,8 @@ permissions:
 jobs:
   oikosbot:
     name: Sustainability Analysis
-    # Runs the published composite action (hyperpolymath/oikosbot@v0.1.1).
+    # Runs the published composite action, hyperpolymath/oikosbot v0.1.3,
+    # named by the commit that tag points at rather than by the tag.
     # This repo is the proven pilot: 101 SARIF results ingested on PR #21.
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -29,14 +30,16 @@ jobs:
       # it pinned ghcr.io/hyperpolymath/oikos:v2.0.0 (a tag that has never
       # existed on the package) as a `container:` image, and masked the
       # resulting failure with `|| echo`. Config comes from .oikos.yml.
+      # The action has no nested `uses:`; it is one `docker run` step.
       - name: Run OikosBot analysis
-        uses: hyperpolymath/oikosbot@v0.1.3
+        uses: hyperpolymath/oikosbot@3fdad0c2b027f328e784ecf08caf62bf80a784c1 # v0.1.3
         with:
           mode: report
           path: .
           output: results.sarif
-          # v0.1.1 defaults to a removed manifest. This is the current public
-          # amd64 image, resolved from GHCR's registry and pinned immutably.
+          # The action's default image is not the one wanted here. This is
+          # the current public amd64 image, resolved from GHCR's registry and
+          # pinned immutably.
           image: ghcr.io/hyperpolymath/oikos@sha256:35eb0aca8dd4baee3fdba9967c323ab17afc3911fda2b369ce61ac1aa75da03c
 
       # No `if: always()` here: when the analysis step fails (e.g. the oikos

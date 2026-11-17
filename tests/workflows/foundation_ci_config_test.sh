@@ -301,38 +301,103 @@ assert_codeql_pin_plant_rejected 'plant: branch name instead of a tag is rejecte
   'not an immutable release tag' "$plant_dir/branch.yml" "$plant_dir/branch.lock"
 
 # The standards repository moved from hyperpolymath/ to metadatastician/
-# (the same GitHub repo_id, 1116521501). GitHub refuses to start a workflow
-# that calls the hyperpolymath/ name (startup_failure since 2026-11-04), while
-# secret-scanner.yml, which calls the metadatastician/ name, runs. The
-# reusable workflows exist at the same commit under the new name.
+# (the same GitHub repo_id, 1116521501); metadatastician/ is its name now.
+#
+# The name was not why these four workflows created no jobs. GitHub validates
+# a reusable workflow against the defining repository's own
+# .github/workflows/actions.lock at the pinned commit. At da2c748 that lock
+# recorded each action these workflows use with `ref:` equal to its own SHA,
+# which the runner refuses ("invalid lockfile pin"), so the runs created zero
+# jobs under either owner name: `failure` under hyperpolymath/ and
+# `startup_failure` under metadatastician/. standards
+# docs/GOVERNANCE-STARTUP-REPAIR.adoc lists da2c748 as POISON. b8f6051 is the
+# commit secret-scanner.yml already ran on; its lock names a reviewed tag in
+# every one of those records.
+SECRET_SCANNER="$PROJECT_DIR/.github/workflows/secret-scanner.yml"
+OIKOSBOT="$PROJECT_DIR/.github/workflows/oikosbot.yml"
+STANDARDS_PIN='b8f60511e76c9015d86990317162dce653c92fe1'
 governance_ref="$(action_refs metadatastician/standards/.github/workflows/governance-reusable.yml "$GOVERNANCE")"
 hypatia_ref="$(action_refs metadatastician/standards/.github/workflows/hypatia-scan-reusable.yml "$HYPATIA")"
 scorecard_ref="$(action_refs metadatastician/standards/.github/workflows/scorecard-reusable.yml "$SCORECARD")"
 mirror_ref="$(action_refs metadatastician/standards/.github/workflows/mirror-reusable.yml "$MIRROR")"
+secret_scanner_ref="$(action_refs metadatastician/standards/.github/workflows/secret-scanner-reusable.yml "$SECRET_SCANNER")"
 
 assert_sha 'Governance reusable workflow is pinned to an immutable revision' "$governance_ref"
 assert_eq 'Governance reusable workflow uses the approved revision' \
-  'da2c748aad55c1a1dcba00b60fe4a35017bc6540' "$governance_ref"
+  "$STANDARDS_PIN" "$governance_ref"
 assert_sha 'Hypatia reusable workflow is pinned to an immutable revision' "$hypatia_ref"
 assert_eq 'Hypatia reusable workflow uses the approved revision' \
-  'da2c748aad55c1a1dcba00b60fe4a35017bc6540' "$hypatia_ref"
+  "$STANDARDS_PIN" "$hypatia_ref"
 assert_sha 'Scorecard reusable workflow is pinned to an immutable revision' "$scorecard_ref"
 assert_eq 'Scorecard reusable workflow uses the approved revision' \
-  'da2c748aad55c1a1dcba00b60fe4a35017bc6540' "$scorecard_ref"
+  "$STANDARDS_PIN" "$scorecard_ref"
 assert_sha 'Mirror reusable workflow is pinned to an immutable revision' "$mirror_ref"
 assert_eq 'Mirror reusable workflow uses the approved revision' \
-  'da2c748aad55c1a1dcba00b60fe4a35017bc6540' "$mirror_ref"
+  "$STANDARDS_PIN" "$mirror_ref"
+# One pin for every standards caller: a commit is either safe to pin a caller
+# to or it is not, and that is a property of the commit's lock, not of the
+# workflow file called from it. Moving one caller means moving all five.
+assert_sha 'Secret scanner reusable workflow is pinned to an immutable revision' "$secret_scanner_ref"
+assert_eq 'Secret scanner reusable workflow uses the approved revision' \
+  "$STANDARDS_PIN" "$secret_scanner_ref"
 
-# Names GitHub refused to start here, each of which has a working
-# replacement: mlugg/setup-zig (scripts/install-zig.sh) and
-# hyperpolymath/standards (metadatastician/standards). A uses: naming one of
-# them kills its workflow before any job is created, which no job-level check
-# can report. Comment lines are not uses:. hyperpolymath/oikosbot is also
-# refused but has no replacement under an allowed owner yet, so it is not
-# listed here; oikosbot.yml stays broken until the policy admits it.
+# No workflow may call standards at a commit known to carry a lock the runner
+# refuses. Each of these is listed POISON in standards
+# docs/GOVERNANCE-STARTUP-REPAIR.adoc (the "consumer census" table).
+poisoned_pins="$(grep -hnE '^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*["'"'"']?[^#]*/standards/[^#]*@(fad242d3|da2c748a|e3b9929c|e16a2317)' \
+  "$PROJECT_DIR"/.github/workflows/*.yml "$PROJECT_DIR"/.github/workflows/*.yaml 2>/dev/null || true)"
+assert_eq 'No workflow calls standards at a commit whose lock the runner refuses' '' "$poisoned_pins"
+
+# mirror-reusable.yml at the approved revision declares its secrets and says
+# callers must pass them by name; `secrets: inherit` forwards every secret
+# this repository can see (standards#1108 section 6b).
+mirror_inherit="$(grep -nE '^[[:space:]]*secrets:[[:space:]]*inherit[[:space:]]*(#.*)?$' "$MIRROR" || true)"
+assert_eq 'Mirror caller does not forward every secret with secrets: inherit' '' "$mirror_inherit"
+mirror_named="$(grep -cE '^[[:space:]]+(GITLAB_SSH_KEY|BITBUCKET_SSH_KEY|CODEBERG_SSH_KEY|SOURCEHUT_SSH_KEY|DISROOT_SSH_KEY|GITEA_SSH_KEY|RADICLE_KEY|R2_ACCESS_KEY_ID|R2_SECRET_ACCESS_KEY|R2_AGE_RECIPIENT): \$\{\{ secrets\.[A-Z0-9_]+ \}\}$' "$MIRROR" || true)"
+assert_eq 'Mirror caller passes the ten declared secrets by name' '10' "$mirror_named"
+
+# OikosBot is named by commit, and the lock record for that commit must name
+# the reviewed tag in `ref:`. A record whose `ref:` repeats the 40-hex SHA in
+# its own key is the form the runner refuses.
+oikosbot_ref="$(action_refs hyperpolymath/oikosbot "$OIKOSBOT")"
+assert_sha 'OikosBot action is pinned to an immutable revision' "$oikosbot_ref"
+oikosbot_lock_ref="$(awk -v key="    'hyperpolymath/oikosbot@$oikosbot_ref':" '
+  $0 == key { found = 1; next }
+  found && /^        ref:/ { gsub(/\047/, "", $2); print $2; exit }
+  found && /^    \047/ { exit }
+' "$ACTION_LOCK")"
+assert_eq 'OikosBot lock record names the reviewed tag, not its own SHA' 'v0.1.3' "$oikosbot_lock_ref"
+oikosbot_lock_commit="$(awk -v key="    'hyperpolymath/oikosbot@$oikosbot_ref':" '
+  $0 == key { found = 1; next }
+  found && /^        commit:/ { gsub(/\047/, "", $2); print $2; exit }
+  found && /^    \047/ { exit }
+' "$ACTION_LOCK")"
+assert_eq 'OikosBot lock record commit agrees with the pinned SHA' "sha1-$oikosbot_ref" "$oikosbot_lock_commit"
+
+# No leaf record in this repository's own lock may repeat its key's SHA in
+# `ref:`. That is the defect that made da2c748 unusable, and nothing else here
+# checks for it: check-lock-sync.sh verifies coverage and closure, not the
+# shape of a record.
+self_sha_records="$(awk '
+  /^dependencies:/ { in_deps = 1; next }
+  in_deps && /^    \047[^\047]+\047:/ {
+    key = $0; sub(/^    \047/, "", key); sub(/\047:.*/, "", key)
+    sha = key; sub(/^.*@/, "", sha)
+    next
+  }
+  in_deps && /^        ref:/ {
+    ref = $2; gsub(/\047/, "", ref)
+    if (ref == sha && sha ~ /^[0-9a-f]{40}$/) print key
+  }
+' "$ACTION_LOCK")"
+assert_eq 'No lock record repeats its own SHA as ref' '' "$self_sha_records"
+
+# Names with a working replacement that must not come back: mlugg/setup-zig
+# (scripts/install-zig.sh) and hyperpolymath/standards (the repository is
+# metadatastician/standards now). Comment lines are not uses:.
 refused_uses="$(grep -hE '^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*["'"'"']?(mlugg/|hyperpolymath/standards/)' \
   "$PROJECT_DIR"/.github/workflows/*.yml "$PROJECT_DIR"/.github/workflows/*.yaml 2>/dev/null || true)"
-assert_eq 'No workflow uses an action or reusable workflow from a refused owner' '' "$refused_uses"
+assert_eq 'No workflow uses a replaced action or the old standards name' '' "$refused_uses"
 
 printf '\nfoundation CI configuration tests: %d passed, %d failed\n' "$PASS" "$FAIL"
 exit "$FAIL"
