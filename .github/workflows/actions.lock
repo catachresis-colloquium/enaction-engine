@@ -82,6 +82,10 @@ workflows:
         - 'github/codeql-action@b96794f015dfd88f77b49b1c93e0fa7110f94c63'
     '.github/workflows/zz-probe-editorconfig.yml':
         - 'editorconfig-checker/action-editorconfig-checker@51f63319f592f97930c73d9c46184d20bd206393'
+    '.github/workflows/zz-probe-r-elixir.yml': []
+    '.github/workflows/zz-probe-r-js-runtimes.yml': []
+    '.github/workflows/zz-probe-r-preflight.yml': []
+    '.github/workflows/zz-probe-r-provisioning.yml': []
     '.github/workflows/zz-probe-rust-toolchain.yml':
         - 'dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8'
     '.github/workflows/zz-probe-scorecard-action.yml':

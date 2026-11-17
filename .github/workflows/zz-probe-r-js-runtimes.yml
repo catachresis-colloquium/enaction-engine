@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# TEMPORARY measurement probe for pull request 133. Remove before merge.
+#
+# Every action governance-reusable.yml and hypatia-scan-reusable.yml use is
+# admitted when named directly (see the zz-probe-* action probes), yet those
+# two callers still create no job. This probe calls another standards reusable
+# workflow at the same commit to find out whether the refusal follows the
+# reusable workflow's path or the actions inside it.
+#
+# Callee uses: actions/checkout, denoland/setup-deno, oven-sh/setup-bun: two actions governance uses.
+# What the called jobs conclude is not the measurement; whether any job is
+# created is.
+name: "Probe: r-js-runtimes"
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    permissions:
+      contents: read
+    uses: metadatastician/standards/.github/workflows/js-runtimes-reusable.yml@b8f60511e76c9015d86990317162dce653c92fe1
