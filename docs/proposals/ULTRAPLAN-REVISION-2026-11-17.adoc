@@ -305,7 +305,13 @@ states the question; the third states the ruling and what follows from it.
   gone. Roles and machinery have changed, so the conversion starts from the
   deed grammar, the CLADE mapping and the chora specification in
   `standards`, not from this session's reading of 2026-11-17. Where the
-  preimage lives follows from that canon. Not done yet.
+  preimage lives follows from that canon. *First half done in pull request
+  129* (2026-11-17): the facts are in the chora deed and a new `STATE.deed`,
+  with a parity gate. `CLADE.a2ml` is not deleted: thirteen files here still
+  read or name it, and the upstream template has already rewritten each of
+  them to read the deed. This repository tracks 124 `.a2ml` files; the
+  template tracks none *[run]*. The removal is therefore a template upgrade,
+  and its route is a new owner decision.
 
 | D4 | Accept or decline commitment C4 (no attention without stakes).
 | *Make it structural: attention as a typed budget.* An observation spends
@@ -319,12 +325,19 @@ states the question; the third states the ruling and what follows from it.
   no recommendation. The review decides.
 
 | D6 | The SonarCloud gate: allow-list the exact pin and bind the project.
-| *Partly done, not yet effective.* The owner reports the pin
+| *Allow-list effective; binding open.* The owner reports the pin
   `hyperpolymath/proven-cicd-and-workflows/actions/sonarcloud-result-check@43223d1e…`
   as allow-listed at organisation level, and did not do the SonarQube Cloud
-  binding because the step was unclear. Run 163 of the gate (2026-11-17
-  15:06 UTC, on `77cfdd6`) still ended as `startup_failure` *[run]*. The
-  gate stays `OPEN`. This session owes the owner plain steps.
+  binding because the step was unclear. Runs 145 to 163 of the gate ended as
+  `startup_failure`; run 164 (2026-11-17 16:58 UTC) is the first that started,
+  so the allow-list took effect *[run]*. Runs 164 to 168 fail at the step
+  "Verify the official same-commit result" with `No completed official
+  same-commit SonarCloud result (status=missing)` *[run]*: no SonarCloud
+  check exists on the commit, which is what an unbound project gives. The
+  gate stays `OPEN` until the binding. Three other workflows (Governance,
+  Hypatia Security Scan, OikosBot) also end as `startup_failure`; their
+  streaks began on 2026-11-15 and 2026-11-04, before the allow-list change,
+  and the cause is not established *[run]*.
 
 | D7 | The late registration of this repository in the registry seed (L1).
 | *Hand it to the #u5 fixer thread.* No session of that name was found, so
