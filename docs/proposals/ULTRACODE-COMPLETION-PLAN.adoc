@@ -10,6 +10,11 @@ link:../architecture/GAME-DESIGN-SYSTEM.adoc[GAME-DESIGN-SYSTEM]. Brief for
 the parallel AffineScript session:
 link:AFFINESCRIPT-SESSION-BRIEF.adoc[AFFINESCRIPT-SESSION-BRIEF].
 
+Revised on 2026-11-17 by
+link:ULTRAPLAN-REVISION-2026-11-17.adoc[ULTRAPLAN-REVISION-2026-11-17]
+(Proposed): Q7 is superseded by canon, Q4 is re-ruled as independence by
+formalism, and the fan-out is restated. Read that document first.
+
 This plan was produced by an ultracode run. Twenty-two agents mapped 21
 estate repositories plus the two proving-ground games. Three independent
 architecture proposals followed (elegance-first, dependability-first,
