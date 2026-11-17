@@ -135,6 +135,12 @@ These are asked through the selector. The default arm is labelled on each.
   Independence then comes from a specification the owner did not write, not
   from a whole second game, so it can be scheduled. ADR-0025 amends ADR-0017
   to say so, and step 25's gate requires the reducer to pass that set.
+  *Re-ruled 2026-11-17: independence by formalism.* A reference semantics,
+  mechanised in Rocq and in Agda and cross-checked, replaces part (2) in full,
+  including the named non-owner author and that author's own forge account.
+  Part (1), the dated want, still stands and may be recorded in any non-donor
+  consumer (owner ruling D8 of 2026-11-17). ADR-0025 is not written yet. Facts
+  read at `cdf7ca1`.
 | Wave 5
 
 | Q5 | UMS `apps/studio` is TypeScript, against policy
