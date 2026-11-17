@@ -496,6 +496,58 @@ An agent with no part in the work checked each `done_when` by running it
 * This repository's `dogfood-gate.yml` has no `deed-validate` job, so no
   deed is linted in CI *[run]*. E1 closes this first.
 
+=== Third round, 2026-11-17 (evening): what was done and what was ruled
+
+* *Contract 2.0, stage A* is in pull request 122 (head `ea791a2`): version
+  2.0 as a draft, the tag `enaction-runner-output/2`, the `v2` corpora, the
+  frozen `v1` corpora with a freeze test and a refusal test, and a release
+  gate that refuses a draft. ADR-0030 records it. 224 tests pass *[run]*.
+* *Contract 2.0, stage B* is pull request 132, stacked on 122: the typed
+  link, six cause rules, `supersession-monotone` removed and proved from two
+  of them in Coq and Agda (9 obligations, each closed) *[run]*. 242 tests
+  pass *[run]*. The mutants were run by the implementing worker *[agent]*.
+* *A finding inside stage B.* With the typed link, a 1.x envelope that
+  carried a link failed to decode and was reported as a malformed 2.0
+  package, before its tag was read. The validator now reads the tag first.
+  A document that names another contract is refused for that alone. Every
+  frozen `v1` package then gets exactly one fault. This departs from the
+  stage A behaviour (tag and version); ADR-0030 says so.
+* *ADR-0025* is pull request 131, with the two independent specifications
+  gated (E7 above).
+* *Pull request 130 (G1, the deed lane and the ledger): met.* An agent with
+  no part in the work passed all nine conditions *[agent]*: the lane ran in
+  CI, the ledger lists exactly the 124 tracked files, the two template files
+  are byte-identical to the template at `0044ad9`, and trial merges with
+  pull requests 122, 126, 127, 128 and 129 are clean. Follow-ups sent to the
+  worker: the lane lints `STATE.deed` as a plain deed and not by its
+  profile; the shrink-only check runs only on pull requests; one planted
+  case does not test what it names. Holes whose source is upstream are in
+  section <<beyond>>.
+* *Pull requests 127 and 128:* the corrections were verified *[agent]*.
+  127 merges after 126.
+
+[cols="1,4,4",options="header"]
+|===
+| Id | Question | Ruling
+
+| E8
+| Pull request 125: the estate Creusot gate proves every crate that depends
+  on `creusot-std` as a whole. This repository proves a narrow harness,
+  because Creusot 0.13 fails on the planner's trait objects.
+| *A leaf crate, proved whole.* The contract-bearing code moves to a small
+  crate that alone depends on `creusot-std`. Prototype and measure first.
+
+| E9
+| The gate needs two fixes at source (its crate detector, and a
+  `[workspace]` table in its helper manifest), and the pin `d415d8b` is on
+  a side branch.
+| *A draft pull request upstream, then re-pin to a commit on its `main`.*
+  A Sonnet session (G2) was started in
+  `hyperpolymath/proven-cicd-and-workflows`. Pull request 125 waits for it
+  and then drops its `Cargo.toml` workaround.
+|===
+
+[[beyond]]
 == Beyond this repository
 
 For the estate list. *[read]* items come from the handoff note and were not
@@ -521,8 +573,28 @@ verified by this session.
 * The `occupancy-types` root allow-list lacks 2 files *[read]*.
 * Lean and Verus are not provisioned in agent containers *[run]*; F6
   proposes the fix for this repository's environment.
+* Holes in the deed lane whose source is upstream, found by the review of
+  pull request 130 *[agent]*: a renamed `.a2ml` file passes when its ledger
+  entry is renamed with it (standards `scripts/check-a2ml-archived.sh`);
+  deleting the ledger and moving every file to `9-archive/<name>.a2ml.in`
+  passes (template `validate-deed.sh` and `check-no-a2ml.sh`); and
+  `check-no-a2ml.sh` exits 1 with no message on an unstaged deletion.
+* The estate Creusot gate's crate detector and helper manifest
+  (`hyperpolymath/proven-cicd-and-workflows`), ruling E9.
+* Four of the five workflows that end as `startup_failure` here pin the
+  standards reusable workflows at a commit of 2026-09-10. Other repositories
+  that pin the same commit may be affected.
 
 == Resuming after a context compaction
+
+* *State at 2026-11-17, 22:00 UTC.* Open pull requests: 122 (ADR-0029 and
+  contract 2.0 stage A), 132 (stage B, stacked on 122), 125 (waits on E9),
+  126, 127, 128, 129, 130, 131. Sessions still working: G1 (follow-ups on
+  130), G2 (the upstream Creusot gate), F6. Next for this session, in
+  order: the leaf-crate prototype (E8); the follow-ups of ADR-0025 (the
+  vector format, the prose gaps, the cases that pin them, the byte gate);
+  the typed attention budget (D4); the neutral dossier (D5), written close
+  to 2026-11-30. The items below this one are older.
 
 * Branches: `docs/enactive-commitments-reverify-2026-11-17` (120),
   `chore/identity-uuid-v8-l1` (121), `feat/c2a-belief-key-chain` (122,
