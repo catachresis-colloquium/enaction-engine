@@ -112,8 +112,9 @@ fn sealed(mut package: EpistemicPackage) -> EpistemicPackage {
 fn planted() -> Vec<(&'static str, EpistemicPackage)> {
     let mut out = Vec::new();
 
+    // A 1.x package under the 2.0 host (ADR-0030).
     let mut p = valid();
-    p.manifest.kernel_version = ContractVersion { major: 2, minor: 0 };
+    p.manifest.kernel_version = ContractVersion { major: 1, minor: 0 };
     out.push(("kernel-version-compatible", sealed(p)));
 
     let mut p = valid();

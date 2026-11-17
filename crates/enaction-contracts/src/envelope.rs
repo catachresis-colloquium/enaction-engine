@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! The runner-output envelope `enaction-runner-output/1` and the caller's
+//! The runner-output envelope `enaction-runner-output/2` and the caller's
 //! policy document `enaction-policies/1` (CAC-KERNEL §9).
 //!
 //! A runner emits the envelope. The caller, never the runner, supplies the
@@ -15,7 +15,7 @@ use crate::package::{EpistemicPackage, validate_package};
 use crate::{DepthPolicy, KERNEL_CONTRACT_VERSION, Proposition, StatusPolicy};
 
 /// The contract tag of the runner-output envelope.
-pub const RUNNER_OUTPUT_CONTRACT: &str = "enaction-runner-output/1";
+pub const RUNNER_OUTPUT_CONTRACT: &str = "enaction-runner-output/2";
 
 /// The contract tag of the caller's policy document.
 pub const POLICIES_CONTRACT: &str = "enaction-policies/1";

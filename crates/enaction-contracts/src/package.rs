@@ -807,17 +807,45 @@ mod tests {
     #[test]
     fn a_wrong_kernel_major_is_rejected() {
         let mut package = ghost_lobby();
-        package.manifest.kernel_version = ContractVersion { major: 2, minor: 0 };
-        let faults = validate(&package).unwrap_err();
-        assert!(matches!(faults[0], PackageFault::IncompatibleKernel { .. }));
-        assert_eq!(faults[0].rule(), "kernel-version-compatible");
+        // The host is 2.0 (ADR-0030): a 1.x package is the older major, which
+        // the contract refuses by rule; the next major is one the host does
+        // not know.
+        for major in [1, KERNEL_CONTRACT_VERSION.major + 1] {
+            package.manifest.kernel_version = ContractVersion { major, minor: 0 };
+            let faults = validate(&package).unwrap_err();
+            assert!(
+                matches!(faults[0], PackageFault::IncompatibleKernel { .. }),
+                "major {major}: {faults:?}"
+            );
+            assert_eq!(faults[0].rule(), "kernel-version-compatible");
+        }
+    }
+
+    #[test]
+    fn the_host_is_kernel_2_0_and_refuses_every_1_x() {
+        assert_eq!(
+            KERNEL_CONTRACT_VERSION,
+            ContractVersion { major: 2, minor: 0 }
+        );
+        for minor in [0, 1, 9] {
+            let mut package = ghost_lobby();
+            package.manifest.kernel_version = ContractVersion { major: 1, minor };
+            let faults = validate(&package).unwrap_err();
+            assert_eq!(faults[0].rule(), "kernel-version-compatible", "1.{minor}");
+        }
     }
 
     #[test]
     fn a_newer_minor_than_the_host_is_rejected() {
         let mut package = ghost_lobby();
-        package.manifest.kernel_version = ContractVersion { major: 1, minor: 9 };
-        assert!(validate(&package).is_err());
+        // Same major as the host, one minor beyond it: refused for the minor,
+        // not for the major.
+        package.manifest.kernel_version = ContractVersion {
+            major: KERNEL_CONTRACT_VERSION.major,
+            minor: KERNEL_CONTRACT_VERSION.minor + 1,
+        };
+        let faults = validate(&package).unwrap_err();
+        assert_eq!(faults[0].rule(), "kernel-version-compatible");
     }
 
     #[test]

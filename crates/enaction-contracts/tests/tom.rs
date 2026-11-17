@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Models are compared with minds (CAC-KERNEL §9, "Models are compared with
-//! minds"; ADR-0028), against the published fixtures in `conformance/tom/v1/`.
+//! minds"; ADR-0028), against the published fixtures in `conformance/tom/v2/`.
 //!
 //! Each `runner-output.json` is generated from the contract types below.
 //! Each `expected.json` is written by hand and is never generated: it is the
@@ -34,7 +34,7 @@ const WHERE: &str = "guard-0 at cell-14";
 const CUE: &str = "contact-21 sees guard-0";
 
 fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../conformance/tom/v1")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../conformance/tom/v2")
 }
 
 fn bless() -> bool {
@@ -119,12 +119,12 @@ fn package(source: &str, events: Vec<EpistemicEvent>, beliefs: &[B<'_>]) -> Epis
         manifest: PackageManifest {
             kernel_version: KERNEL_CONTRACT_VERSION,
             profile: ProfileRef {
-                id: "conformance/tom/v1".into(),
+                id: "conformance/tom/v2".into(),
                 version: ContractVersion { major: 1, minor: 0 },
                 targets_kernel: KERNEL_CONTRACT_VERSION,
             },
             schema_version: ContractVersion { major: 1, minor: 0 },
-            source: format!("conformance:tom/v1/{source}"),
+            source: format!("conformance:tom/v2/{source}"),
             digest: String::new(),
             migration_from: ContractVersion { major: 1, minor: 0 },
             seed: SeedPolicy::Fixed(7),
@@ -179,7 +179,7 @@ fn superseding(belief: B<'_>, superseded: u64) -> B<'_> {
 /// The cue of contact-22 looking at guard-0, used only by `second-order`.
 const CUE_22: &str = "contact-22 sees guard-0";
 
-/// Every case of the corpus, by directory under `conformance/tom/v1/`.
+/// Every case of the corpus, by directory under `conformance/tom/v2/`.
 ///
 /// In every accepted case guard-0 really is at cell-14, so `WHERE` is in
 /// world truth. A reader that compared a model with world truth would get
