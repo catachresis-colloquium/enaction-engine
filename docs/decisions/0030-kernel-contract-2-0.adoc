@@ -48,8 +48,11 @@ Nothing new is needed to name a cause.
 . The envelope is `enaction-runner-output/2`. A host refuses any other tag.
 . The corpora are `conformance/tom/v2` and `conformance/mind/v2`.
 . `conformance/tom/v1` and `conformance/mind/v1` are frozen: no file in
-  them changes again. One test asserts that a 2.0 host refuses every
-  package in them. The old vectors become a regression test.
+  them changes again, their README files included, because each corpus
+  lists its README in its own `SHA256SUMS`. One test asserts that every
+  file still matches those sums. Another asserts that a 2.0 host refuses
+  every package in them, with two faults: the tag, and
+  `kernel-version-compatible`. The old vectors become a regression test.
 . `enaction-policies/1` and `enaction-mind-trace/1` keep their tags. Their
   shapes do not change.
 
@@ -124,6 +127,11 @@ the cause rules has a successor that starts early.
 [[limits]]
 == Limits, stated
 
+* *The release gate sits where a release is published.* The jobs of
+  `release.yml` that build and publish run it, and so does `release-tag` in
+  the project `Justfile`. `.machine_readable/contractiles/Justfile` holds an
+  older copy of `release-tag` with no gate. A tag made with it still meets
+  the gate in `release.yml`. The copy is left for the template upgrade.
 * *The wire does not mark a draft.* A package written under stage A and
   read under stage B is handled as follows. If it has a link, it fails to
   decode, because the link's shape changed. If it has none, both stages
