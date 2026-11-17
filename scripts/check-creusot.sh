@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Fail-closed Creusot gate for the exact production modules admitted by the
-# narrow verification harness. Tool presence and version are part of the gate.
+# Fail-closed Creusot gate for enaction-version, the proved leaf crate: the only
+# crate that depends on creusot-std, proved as a whole. Tool presence and
+# version are part of the gate.
 
 set -euo pipefail
 
@@ -32,4 +33,4 @@ if grep -Fq 'not found' <<<"$version_output"; then
   exit 1
 fi
 
-cargo creusot -p enaction-creusot-verification --no-cache
+cargo creusot -p enaction-version --no-cache
