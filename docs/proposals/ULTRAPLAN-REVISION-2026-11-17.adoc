@@ -51,16 +51,16 @@ handoff note that this session did not re-run.
 
 == State on 2026-11-17
 
-* `main` is at `3bf55cd` (pull request 121, identity) *[run]*. Pull requests
+* `main` is at `cdf7ca1` (pull request 123, this revision) *[run]*. Pull requests
   98, 101 to 104, 107 to 117 and 119 are merged *[read]*.
-* *Open pull requests*, all from this session and all marked ready by the
-  owner:
-** 120, commitments re-verified. CodeRabbit left 3 findings (section
-   <<review>>).
-** 122, ADR-0029, stacked on 120.
-** 123, this document.
-* Pull requests 120 and 122 were rebased onto `3bf55cd` after 121 merged.
-  Their evidence still names `724e502`, the commit it was run on.
+* Merged on 2026-11-17, all three in `git log origin/main` *[run]*: 120
+  (`af66c2e`, commitments re-verified), 121 (`3bf55cd`, identity) and 123
+  (`cdf7ca1`, this revision).
+* *Open pull requests:* 122 only, ADR-0029. It is open, not merged, and its
+  base is `af66c2e` *[run]*. CodeRabbit left 3 findings on 120 (section
+  <<review>>).
+* Pull request 120 merged with its evidence still naming `724e502`, the commit
+  it was run on.
 * *Commitments:* C1 has passing evidence on `main` *[run]*. C2 (a) has
   passing evidence on a branch. C2 (b), C3 and C4 have no test.
 * *Plan steps 1 to 3 and 11* landed as Weevil packages A1 and A2 (pull

@@ -109,6 +109,12 @@ Detailed, serious, not yet accepted as decisions.
 | Proposed 2026-11-14. Selects a route through the completion plan with the
   Evil Weevil kernel as first host. Does not replace the plan.
 
+| `docs/proposals/ULTRAPLAN-REVISION-2026-11-17.adoc`
+| enaction-engine
+| Proposed 2026-11-17. Revises the completion plan and the Weevil route. Facts
+  read at `cdf7ca1`: pull requests 120, 121 and 123 merged on 2026-11-17, and
+  pull request 122 (ADR-0029) is still open, so ADR-0029 is not listed here.
+
 | `docs/decisions/0022-baseline-is-a-frozen-prior.adoc`
 | enaction-engine
 | Proposed 2026-11-14. A prior is frozen at registration; closes the
