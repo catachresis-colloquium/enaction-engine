@@ -6,7 +6,9 @@
 -- The Agda twin of verification/proofs/coq/KeyChain.v: the same model and
 -- the same statement, proved independently. A key's beliefs, oldest first,
 -- form one chain (rule belief-key-chained); `vf i` is the valid_from of the
--- i-th of `n`. The validator checks each edge (rule supersession-monotone).
+-- i-th of `n`. The validator checks each edge: under ADR-0029 by the rule
+-- supersession-monotone, and since ADR-0030 by two rules about the cause of a link
+-- (module Causes, at the end).
 -- The reader says the i-th holds at t when vf i ≤ t and its successor, if
 -- any, starts after t. Under the edge check, at most one holds at any t.
 --
@@ -63,3 +65,33 @@ module Chain (n : ℕ) (vf : ℕ → ℕ) where
     ... | tri> _ _ j<i =
       ⊥-elim (n≮n t (<-≤-trans (nj (≤-<-trans j<i i<n))
                               (≤-trans (chain-monotone-≤ (suc j) i j<i i<n) vi≤t)))
+
+-- The edge check is a theorem (ADR-0030 stage B).
+--
+-- From kernel contract 2.0 a supersession link names its cause, an event of
+-- the package. `c i` is the tick of the event that the (i+1)-th belief names
+-- as its cause for replacing the i-th. The validator checks, on every link,
+-- supersession-cause-not-earlier (vf i ≤ c i) and
+-- supersession-cause-not-later (c i ≤ vf (suc i)). Together they give
+-- AdjacentMonotone, so supersession-monotone is no longer a rule that the
+-- validator runs. Uniqueness then follows from the two cause rules on a
+-- chain; the chain itself is the premise (rule belief-key-chained), since with
+-- no links the cause rules hold vacuously.
+module Causes (n : ℕ) (vf : ℕ → ℕ) (c : ℕ → ℕ) where
+
+  open Chain n vf
+
+  CauseNotEarlier : Set
+  CauseNotEarlier = ∀ i → suc i < n → vf i ≤ c i
+
+  CauseNotLater : Set
+  CauseNotLater = ∀ i → suc i < n → c i ≤ vf (suc i)
+
+  cause-rules-give-monotone : CauseNotEarlier → CauseNotLater → AdjacentMonotone
+  cause-rules-give-monotone early late i p = ≤-trans (early i p) (late i p)
+
+  at-most-one-holds-by-cause :
+    CauseNotEarlier → CauseNotLater →
+    ∀ i j t → Holds i t → Holds j t → i ≡ j
+  at-most-one-holds-by-cause early late =
+    at-most-one-holds (cause-rules-give-monotone early late)

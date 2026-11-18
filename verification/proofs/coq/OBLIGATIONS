@@ -8,3 +8,7 @@ KeyChain.chain_monotone_le
 KeyChain.at_most_one_holds
 KeyChain.at_most_one_holds_guarded
 KeyChain.monotone_is_needed
+KeyChain.cause_rules_give_monotone
+KeyChain.at_most_one_holds_by_cause
+KeyChain.not_later_alone_is_not_enough
+KeyChain.not_earlier_alone_is_not_enough

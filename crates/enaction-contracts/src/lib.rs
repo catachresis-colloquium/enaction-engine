@@ -62,7 +62,7 @@ pub mod version;
 pub use belief::{
     AffectAnnotation, Belief, BeliefId, BeliefInterval, BeliefStatus, ConativeAnnotation,
     DepthPolicy, EpistemicEvent, EventId, EventKind, Proposition, Provenance, StatusPolicy,
-    Subject,
+    Subject, Supersession,
 };
 pub use enaction_trace::Mass;
 pub use envelope::{

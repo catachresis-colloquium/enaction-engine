@@ -12,8 +12,10 @@
 //!   it. These vectors are never blessed (`ENACTION_BLESS` does not touch
 //!   them).
 //! * The old vectors are a regression test: a 2.0 host refuses every package
-//!   in them, accepted and rejected, by the tag rule and by
-//!   `kernel-version-compatible`.
+//!   in them, accepted and rejected, for its tag alone. A host dispatches on
+//!   the tag before it decodes the body, so a 1.x envelope is never reported
+//!   as a malformed 2.0 one, whether or not it carries a 1.x supersession
+//!   link (ADR-0030).
 
 use std::path::{Path, PathBuf};
 
@@ -171,27 +173,17 @@ fn a_2_0_host_refuses_every_package_in_the_frozen_v1_corpora() {
         packages.iter().map(|p| &p.0).collect::<Vec<_>>()
     );
 
-    // Both refusals every 1.x envelope earns: the tag, then the version.
+    // A host dispatches on the tag before it decodes the body (ADR-0030).
+    // Every frozen envelope names `enaction-runner-output/1`, so each is
+    // refused for that alone: with one fault, whether or not it carries a
+    // 1.x supersession link (a bare belief id, which the 2.0 shape has no
+    // form for) and whether it was an accepted or a rejected 1.x case. Its
+    // body is never read as a 2.0 package, so no shape fault, version fault
+    // or rule of its own is reported.
     let tag = pair("UnknownField", "contract");
-    let version = pair(
-        "kernel-version-compatible",
-        "package.manifest.kernel_version",
-    );
-
-    for (label, rejected_for, policies, bytes) in packages {
+    for (label, _rejected_for, policies, bytes) in packages {
         let found = refusal(&policies, &bytes);
         eprintln!("{label}: {found:?}");
-        match rejected_for {
-            // An accepted 1.x case, or the mind runner output, is refused by
-            // those two rules and by nothing else.
-            None => assert_eq!(found, [tag.clone(), version.clone()], "{label}"),
-            // A rejected 1.x case is still refused for its own rule too. The
-            // 2.0 host adds the tag and the version in front of it.
-            Some(rule) => {
-                assert_eq!(&found[..2], [tag.clone(), version.clone()], "{label}");
-                assert_eq!(found.len(), 3, "{label}: {found:?}");
-                assert_eq!(found[2].0, rule, "{label}: its own rule is still reported");
-            }
-        }
+        assert_eq!(found, std::slice::from_ref(&tag), "{label}");
     }
 }

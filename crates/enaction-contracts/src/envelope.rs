@@ -96,6 +96,24 @@ pub(crate) fn check_contract(found: &str, want: &str) -> Option<Fault> {
     })
 }
 
+/// The tag of a parsed document, checked before its body is decoded.
+///
+/// A host dispatches on the tag (ADR-0030). A document that names another
+/// contract is refused for that alone: its body is not read as this
+/// contract's shape, so an older envelope is never reported as a malformed
+/// one. A document with no `contract` member, or one that is not a string,
+/// is left to the decoder, which reports the shape.
+fn foreign_contract(value: &Value, want: &str) -> Option<Fault> {
+    let Value::Object(members) = value else {
+        return None;
+    };
+    let (_, tag) = members.iter().find(|(key, _)| key == "contract")?;
+    let Value::String(found) = tag else {
+        return None;
+    };
+    check_contract(found, want)
+}
+
 /// Decode and check the caller's policy document.
 ///
 /// # Errors
@@ -123,6 +141,9 @@ pub fn validate_runner_output(
     policies: &Policies,
 ) -> Result<(RunnerOutput, Value), Vec<Fault>> {
     let value = canonical::parse(bytes).map_err(|f| vec![f.into()])?;
+    if let Some(fault) = foreign_contract(&value, RUNNER_OUTPUT_CONTRACT) {
+        return Err(vec![fault]);
+    }
     let output: RunnerOutput = canonical::decode_value(&value).map_err(|f| vec![f.into()])?;
     let mut faults = Vec::new();
     if let Some(fault) = check_contract(&output.contract, RUNNER_OUTPUT_CONTRACT) {

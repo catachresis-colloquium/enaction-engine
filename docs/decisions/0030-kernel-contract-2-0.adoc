@@ -8,7 +8,9 @@ Date: 2026-11-17
 
 Proposed. The owner ruled each point on 2026-11-17, by selector, after an
 experiment on a branch (section <<evidence>>). Stage A below is
-implemented with this record. Stages B and C are not.
+implemented with this record. Stage B is implemented by the change that
+follows it, with its Coq and Agda proofs.
+Stage C is not.
 
 Amends ADR-0029 (the rule `supersession-monotone` becomes a theorem in
 stage B) and ADR-0009 (a contract version gains a state).
@@ -45,14 +47,16 @@ Nothing new is needed to name a cause.
 
 === Names tell the truth
 
-. The envelope is `enaction-runner-output/2`. A host refuses any other tag.
+. The envelope is `enaction-runner-output/2`. A host reads the tag before it
+  decodes the body, and refuses any other tag for that alone. An envelope of
+  another contract is never reported as a malformed envelope of this one.
 . The corpora are `conformance/tom/v2` and `conformance/mind/v2`.
 . `conformance/tom/v1` and `conformance/mind/v1` are frozen: no file in
   them changes again, their README files included, because each corpus
   lists its README in its own `SHA256SUMS`. One test asserts that every
   file still matches those sums. Another asserts that a 2.0 host refuses
-  every package in them, with two faults: the tag, and
-  `kernel-version-compatible`. The old vectors become a regression test.
+  every package in them with exactly one fault, the tag. The old vectors
+  become a regression test.
 . `enaction-policies/1` and `enaction-mind-trace/1` keep their tags. Their
   shapes do not change.
 
@@ -98,8 +102,14 @@ The last two rules give
 `old.valid_from <= cause.tick <= new.valid_from`. So a successor never
 starts before the belief it supersedes. The rule `supersession-monotone` of
 ADR-0029 is then removed from the validator and proved from the two cause
-rules, in Coq and in Agda. The key-chain proofs take monotonicity as a
-hypothesis today; stage B discharges it.
+rules, in Coq and in Agda (`cause_rules_give_monotone`). Uniqueness of the
+holder then follows from the cause rules together with the one-chain rule
+`belief-key-chained` (`at_most_one_holds_by_cause`, which takes the chain as
+its premise). The cause rules give the order along a chain; they do not
+make the chain. With two beliefs of one key and no link, all six cause
+rules hold vacuously and both beliefs can hold at once, so
+`belief-key-chained` stays a rule. Two checked counterexamples show that
+neither cause rule is enough without the other.
 
 A property test keeps the empirical side: no generated package that passes
 the cause rules has a successor that starts early.

@@ -22,8 +22,8 @@ use enaction_contracts::{
     Belief, BeliefId, BeliefInterval, BeliefStatus, ContractVersion, DepthPolicy, EpistemicEvent,
     EpistemicPackage, EventId, EventKind, KERNEL_CONTRACT_VERSION, Mass, PackageFault,
     PackageManifest, ProfileRef, Proposition, Provenance, RUNNER_OUTPUT_CONTRACT, RunnerOutput,
-    SeedPolicy, StatusPolicy, Subject, package_digest, parse_policies, validate_package,
-    validate_runner_output,
+    SeedPolicy, StatusPolicy, Subject, Supersession, package_digest, parse_policies,
+    validate_package, validate_runner_output,
 };
 
 const BIN: &str = env!("CARGO_BIN_EXE_enaction-validate");
@@ -97,7 +97,8 @@ struct B<'a> {
     status: BeliefStatus,
     valid_from: u64,
     sources: &'a [u64],
-    supersedes: Option<u64>,
+    /// `(superseded belief, cause event)`.
+    supersedes: Option<(u64, u64)>,
 }
 
 fn belief(b: &B<'_>) -> Belief {
@@ -110,7 +111,10 @@ fn belief(b: &B<'_>) -> Belief {
         confidence: interval(b.status),
         source_events: b.sources.iter().copied().map(EventId).collect(),
         valid_from: b.valid_from,
-        supersedes: b.supersedes.map(BeliefId),
+        supersedes: b.supersedes.map(|(belief, because)| Supersession {
+            belief: BeliefId(belief),
+            because: EventId(because),
+        }),
     }
 }
 
@@ -169,9 +173,11 @@ fn bw<'a>(
     }
 }
 
-fn superseding(belief: B<'_>, superseded: u64) -> B<'_> {
+/// `belief` replaces `superseded` because of event `because`: the link
+/// names its cause (ADR-0030).
+fn superseding(belief: B<'_>, superseded: u64, because: u64) -> B<'_> {
     B {
-        supersedes: Some(superseded),
+        supersedes: Some((superseded, because)),
         ..belief
     }
 }
@@ -203,7 +209,8 @@ fn corpus() -> Vec<(&'static str, RunnerOutput)> {
         ),
         // contact-21 does not know (1), and guard-0 is right about that (2).
         // On tick 5 contact-21 sees guard-0 and comes to know (3, superseding
-        // 1). guard-0 sees the gaze on the same tick (4, superseding 2).
+        // 1 because of event 3). guard-0 sees the gaze on the same tick (4,
+        // superseding 2 because of event 4).
         (
             "accepted/caught",
             output(
@@ -218,8 +225,8 @@ fn corpus() -> Vec<(&'static str, RunnerOutput)> {
                     &[
                         bw(1, &[], "contact-21", Rejected, 1, &[1]),
                         bw(2, &["guard-0"], "contact-21", Rejected, 2, &[2]),
-                        superseding(bw(3, &[], "contact-21", Believed, 5, &[3]), 1),
-                        superseding(bw(4, &["guard-0"], "contact-21", Believed, 5, &[4]), 2),
+                        superseding(bw(3, &[], "contact-21", Believed, 5, &[3]), 1, 3),
+                        superseding(bw(4, &["guard-0"], "contact-21", Believed, 5, &[4]), 2, 4),
                     ],
                 ),
                 &[WHERE, CUE],
@@ -242,7 +249,7 @@ fn corpus() -> Vec<(&'static str, RunnerOutput)> {
                     &[
                         bw(1, &[], "contact-21", Believed, 2, &[1]),
                         bw(2, &["guard-0"], "contact-21", Believed, 2, &[2]),
-                        superseding(bw(3, &[], "contact-21", Unknown, 6, &[3]), 1),
+                        superseding(bw(3, &[], "contact-21", Unknown, 6, &[3]), 1, 3),
                     ],
                 ),
                 &[WHERE],
@@ -265,8 +272,8 @@ fn corpus() -> Vec<(&'static str, RunnerOutput)> {
                     &[
                         bw(1, &[], "contact-21", Believed, 2, &[1]),
                         bw(2, &["guard-0"], "contact-21", Believed, 2, &[2]),
-                        superseding(bw(3, &[], "contact-21", Unknown, 6, &[3]), 1),
-                        superseding(bw(4, &["guard-0"], "contact-21", Believed, 6, &[4]), 2),
+                        superseding(bw(3, &[], "contact-21", Unknown, 6, &[3]), 1, 3),
+                        superseding(bw(4, &["guard-0"], "contact-21", Believed, 6, &[4]), 2, 4),
                     ],
                 ),
                 &[WHERE],
@@ -392,20 +399,128 @@ fn corpus() -> Vec<(&'static str, RunnerOutput)> {
                 &[WHERE],
             ),
         ),
-        // The record runs backwards: 2 supersedes 1 but starts on tick 2,
-        // before 1 starts on tick 6 (ADR-0029).
+        // The false-exposure story, but the link names event 9 as its
+        // cause, and the package has no event 9.
         (
-            "rejected/supersession-monotone",
+            "rejected/supersession-cause-present",
             output(
                 package(
-                    "supersession-monotone",
+                    "supersession-cause-present",
                     vec![
-                        event(1, 2, "contact-21", "guard-0", Observation, WHERE, 0),
+                        event(1, 2, "contact-21", "guard-0", Observation, WHERE, 9_000),
+                        event(2, 6, "contact-21", "guard-0", Observation, WHERE, 0),
+                    ],
+                    &[
+                        bw(1, &[], "contact-21", Believed, 2, &[1]),
+                        superseding(bw(2, &[], "contact-21", Unknown, 6, &[2]), 1, 9),
+                    ],
+                ),
+                &[WHERE],
+            ),
+        ),
+        // The restated false exposure, but guard-0's restated model (4
+        // supersedes 2) names event 3 as its cause, and cites it. Event 3
+        // reached contact-21, not guard-0. guard-0 cannot revise on what it
+        // did not receive.
+        (
+            "rejected/supersession-cause-observed",
+            output(
+                package(
+                    "supersession-cause-observed",
+                    vec![
+                        event(1, 2, "contact-21", "guard-0", Observation, WHERE, 9_000),
+                        event(2, 2, "guard-0", "contact-21", Observation, CUE, 9_000),
+                        event(3, 6, "contact-21", "guard-0", Observation, WHERE, 0),
+                    ],
+                    &[
+                        bw(1, &[], "contact-21", Believed, 2, &[1]),
+                        bw(2, &["guard-0"], "contact-21", Believed, 2, &[2]),
+                        superseding(bw(3, &[], "contact-21", Unknown, 6, &[3]), 1, 3),
+                        superseding(bw(4, &["guard-0"], "contact-21", Believed, 6, &[3]), 2, 3),
+                    ],
+                ),
+                &[WHERE],
+            ),
+        ),
+        // The false-exposure story, but belief 2 rests on event 1, the
+        // evidence of the belief it replaces, and not on event 2, which it
+        // names as its cause.
+        (
+            "rejected/supersession-cause-cited",
+            output(
+                package(
+                    "supersession-cause-cited",
+                    vec![
+                        event(1, 2, "contact-21", "guard-0", Observation, WHERE, 9_000),
+                        event(2, 6, "contact-21", "guard-0", Observation, WHERE, 0),
+                    ],
+                    &[
+                        bw(1, &[], "contact-21", Believed, 2, &[1]),
+                        superseding(bw(2, &[], "contact-21", Unknown, 6, &[1]), 1, 2),
+                    ],
+                ),
+                &[WHERE],
+            ),
+        ),
+        // contact-21 restates its belief on tick 6 (2 supersedes 1), but the
+        // cause it names is event 1, the evidence that belief 1 already
+        // rests on: nothing new reached it.
+        (
+            "rejected/supersession-cause-new",
+            output(
+                package(
+                    "supersession-cause-new",
+                    vec![event(
+                        1,
+                        2,
+                        "contact-21",
+                        "guard-0",
+                        Observation,
+                        WHERE,
+                        9_000,
+                    )],
+                    &[
+                        bw(1, &[], "contact-21", Believed, 2, &[1]),
+                        superseding(bw(2, &[], "contact-21", Unknown, 6, &[1]), 1, 1),
+                    ],
+                ),
+                &[WHERE],
+            ),
+        ),
+        // Belief 1 starts on tick 6, on event 2. Belief 2 replaces it from
+        // tick 7 and names event 1, on tick 2, as its cause: an event older
+        // than what it replaces.
+        (
+            "rejected/supersession-cause-not-earlier",
+            output(
+                package(
+                    "supersession-cause-not-earlier",
+                    vec![
+                        event(1, 2, "contact-21", "guard-0", Observation, WHERE, 9_000),
                         event(2, 6, "contact-21", "guard-0", Observation, WHERE, 9_000),
                     ],
                     &[
                         bw(1, &[], "contact-21", Believed, 6, &[2]),
-                        superseding(bw(2, &[], "contact-21", Unknown, 2, &[1]), 1),
+                        superseding(bw(2, &[], "contact-21", Unknown, 7, &[1]), 1, 1),
+                    ],
+                ),
+                &[WHERE],
+            ),
+        ),
+        // contact-21 loses track from tick 4 (2 supersedes 1), but the event
+        // named as the cause is on tick 6: an effect before its cause.
+        (
+            "rejected/supersession-cause-not-later",
+            output(
+                package(
+                    "supersession-cause-not-later",
+                    vec![
+                        event(1, 2, "contact-21", "guard-0", Observation, WHERE, 9_000),
+                        event(2, 6, "contact-21", "guard-0", Observation, WHERE, 0),
+                    ],
+                    &[
+                        bw(1, &[], "contact-21", Believed, 2, &[1]),
+                        superseding(bw(2, &[], "contact-21", Unknown, 4, &[2]), 1, 2),
                     ],
                 ),
                 &[WHERE],
@@ -506,7 +621,12 @@ fn sha256sums_covers_the_sorted_complete_file_set() {
         "accepted/second-order/expected.json",
         "rejected/nesting-bounded/runner-output.json",
         "rejected/belief-key-chained/runner-output.json",
-        "rejected/supersession-monotone/runner-output.json",
+        "rejected/supersession-cause-present/runner-output.json",
+        "rejected/supersession-cause-observed/runner-output.json",
+        "rejected/supersession-cause-cited/runner-output.json",
+        "rejected/supersession-cause-new/runner-output.json",
+        "rejected/supersession-cause-not-earlier/runner-output.json",
+        "rejected/supersession-cause-not-later/runner-output.json",
     ] {
         assert!(names.iter().any(|n| n == required), "covers {required}");
     }
@@ -734,7 +854,12 @@ fn every_rejected_case_is_refused_with_exactly_its_rule() {
         [
             "belief-key-chained",
             "nesting-bounded",
-            "supersession-monotone"
+            "supersession-cause-cited",
+            "supersession-cause-new",
+            "supersession-cause-not-earlier",
+            "supersession-cause-not-later",
+            "supersession-cause-observed",
+            "supersession-cause-present",
         ]
     );
 }
@@ -1038,7 +1163,7 @@ fn a_timeline_follows_the_counterpart_through_supersession() {
             events.clone(),
             &[
                 bw(1, &[], "contact-21", Believed, 1, &[1]),
-                superseding(bw(2, &[], "contact-21", Rejected, 4, &[2]), 1),
+                superseding(bw(2, &[], "contact-21", Rejected, 4, &[2]), 1, 2),
                 bw(id, &["guard-0"], "contact-21", status, valid_from, &[1]),
             ],
         )
@@ -1100,7 +1225,7 @@ fn a_change_of_counterpart_with_the_same_verdict_is_one_segment() {
         ],
         &[
             bw(1, &[], "contact-21", Believed, 1, &[1]),
-            superseding(bw(2, &[], "contact-21", Certain, 4, &[2]), 1),
+            superseding(bw(2, &[], "contact-21", Certain, 4, &[2]), 1, 2),
             bw(3, &["guard-0"], "contact-21", Believed, 1, &[1]),
         ],
     );
@@ -1116,13 +1241,16 @@ fn a_superseded_model_ends_where_its_successor_begins() {
         "until",
         vec![
             event(1, 1, "contact-21", "guard-0", Observation, WHERE, 9_000),
-            event(2, 4, "contact-21", "guard-0", Observation, WHERE, 0),
+            // guard-0 restates its model on tick 3, so its link needs a cause
+            // that guard-0 received by then.
+            event(2, 3, "guard-0", "contact-21", Observation, CUE, 9_000),
+            event(3, 4, "contact-21", "guard-0", Observation, WHERE, 0),
         ],
         &[
             bw(1, &[], "contact-21", Believed, 1, &[1]),
-            superseding(bw(2, &[], "contact-21", Rejected, 4, &[2]), 1),
+            superseding(bw(2, &[], "contact-21", Rejected, 4, &[3]), 1, 3),
             bw(20, &["guard-0"], "contact-21", Believed, 1, &[1]),
-            superseding(bw(21, &["guard-0"], "contact-21", Believed, 3, &[1]), 20),
+            superseding(bw(21, &["guard-0"], "contact-21", Believed, 3, &[2]), 20, 2),
         ],
     );
     assert_eq!(
@@ -1136,44 +1264,51 @@ fn a_superseded_model_ends_where_its_successor_begins() {
 
 /// Before ADR-0029 a successor could start before the model it supersedes
 /// (30 from tick 6, 31 from tick 5). That lets two beliefs of one chain hold
-/// at once (`verification/proofs/coq/KeyChain.v`, `monotone_is_needed`), so
-/// the package is now refused.
+/// at once (`verification/proofs/coq/KeyChain.v`, `monotone_is_needed`). ADR-0030
+/// removed the rule that said so: the package is still refused, by the two
+/// cause rules that bound the cause between the two starts. Whatever tick the
+/// cause is on, one of them fires.
 #[test]
-fn a_successor_that_starts_before_its_model_is_refused() {
-    let p = package(
-        "backwards",
-        vec![event(
-            1,
-            1,
-            "contact-21",
-            "guard-0",
-            Observation,
-            WHERE,
-            9_000,
-        )],
-        &[
-            bw(1, &[], "contact-21", Believed, 1, &[1]),
-            bw(30, &["guard-0"], "contact-21", Believed, 6, &[1]),
-            superseding(bw(31, &["guard-0"], "contact-21", Rejected, 5, &[1]), 30),
-        ],
-    );
-    let faults = validate_package(
-        &p,
-        KERNEL_CONTRACT_VERSION,
-        &DepthPolicy { max_order: 1 },
-        &status_policy(),
-    )
-    .expect_err("a backwards supersession is refused");
-    let rules: Vec<_> = faults.iter().map(PackageFault::rule).collect();
-    assert_eq!(rules, ["supersession-monotone"], "{faults:?}");
-    assert_eq!(faults[0].path(), "beliefs[belief_id=31].supersedes");
+fn a_successor_that_starts_before_its_model_is_refused_by_a_cause_rule() {
+    let package_with_cause_on = |tick: u64| {
+        package(
+            "backwards",
+            vec![
+                event(1, 1, "contact-21", "guard-0", Observation, WHERE, 9_000),
+                event(2, tick, "guard-0", "contact-21", Observation, CUE, 500),
+            ],
+            &[
+                bw(1, &[], "contact-21", Believed, 1, &[1]),
+                bw(30, &["guard-0"], "contact-21", Believed, 6, &[1]),
+                superseding(bw(31, &["guard-0"], "contact-21", Rejected, 5, &[2]), 30, 2),
+            ],
+        )
+    };
+    for (tick, rule) in [
+        (5, "supersession-cause-not-earlier"),
+        (6, "supersession-cause-not-later"),
+    ] {
+        let p = package_with_cause_on(tick);
+        let faults = validate_package(
+            &p,
+            KERNEL_CONTRACT_VERSION,
+            &DepthPolicy { max_order: 1 },
+            &status_policy(),
+        )
+        .expect_err("a backwards supersession is refused");
+        let rules: Vec<_> = faults.iter().map(PackageFault::rule).collect();
+        assert_eq!(rules, [rule], "cause on tick {tick}: {faults:?}");
+        assert_eq!(faults[0].path(), "beliefs[belief_id=31].supersedes.because");
+    }
 }
 
 #[test]
 fn an_ambiguity_inside_the_lifetime_refuses_the_model() {
     let events = vec![
         event(1, 1, "contact-21", "guard-0", Observation, WHERE, 9_000),
-        event(2, 4, "contact-21", "guard-0", Observation, WHERE, 0),
+        // The cause of model 6, which guard-0 received by tick 3.
+        event(2, 3, "guard-0", "contact-21", Observation, CUE, 9_000),
+        event(3, 4, "contact-21", "guard-0", Observation, WHERE, 0),
     ];
     let p = package(
         "ambiguous",
@@ -1182,14 +1317,14 @@ fn an_ambiguity_inside_the_lifetime_refuses_the_model() {
             bw(1, &[], "contact-21", Believed, 1, &[1]),
             // Starts on tick 4 and supersedes nothing: from tick 4 two own
             // beliefs hold.
-            bw(2, &[], "contact-21", Rejected, 4, &[2]),
+            bw(2, &[], "contact-21", Rejected, 4, &[3]),
             // Refused: its lifetime reaches tick 4.
             bw(3, &["guard-0"], "contact-21", Believed, 1, &[1]),
             // A model with no claim needs no counterpart and is not refused.
             bw(4, &["guard-0"], "contact-21", Unknown, 1, &[1]),
             // Not refused: its lifetime ends on tick 3, before the ambiguity.
             bw(5, &["guard-0"], "contact-21", Believed, 1, &[1]),
-            superseding(bw(6, &["guard-0"], "contact-21", Believed, 3, &[1]), 5),
+            superseding(bw(6, &["guard-0"], "contact-21", Believed, 3, &[2]), 5, 2),
         ],
     );
     // ADR-0029: the package rules refuse it at load. Belief 2 is a second
@@ -1239,46 +1374,155 @@ fn an_ambiguity_inside_the_lifetime_refuses_the_model() {
 /// starts by `t` and nothing that supersedes it has started by `t`.
 fn in_force(package: &EpistemicPackage, belief: &Belief, t: u64) -> bool {
     belief.valid_from <= t
-        && !package
-            .beliefs
-            .iter()
-            .any(|b| b.supersedes == Some(belief.belief_id) && b.valid_from <= t)
+        && !package.beliefs.iter().any(|b| {
+            b.supersedes
+                .is_some_and(|link| link.belief == belief.belief_id)
+                && b.valid_from <= t
+        })
 }
 
+/// One planted break of a chain, or none.
 #[derive(Debug, Clone, Copy)]
 enum Break {
     Unchanged,
+    /// The second belief drops its link: a silent overwrite.
     Unlink,
+    /// The third belief replaces the first, which the second replaces.
     Fork,
-    Backwards,
+    /// The last link names an event the package does not have.
+    CauseAbsent,
+    /// The last link's cause reached guard-0, not contact-21.
+    CauseSeenByOther,
+    /// The last belief does not cite its cause.
+    CauseNotCited,
+    /// The belief the last link replaces already rests on its cause.
+    CauseStale,
+    /// The last link's cause is on tick 0, before the belief it replaces.
+    CauseBeforeReplaced,
+    /// The last link's cause is after the successor starts.
+    CauseAfterSuccessor,
+}
+
+const BREAKS: [Break; 9] = [
+    Break::Unchanged,
+    Break::Unlink,
+    Break::Fork,
+    Break::CauseAbsent,
+    Break::CauseSeenByOther,
+    Break::CauseNotCited,
+    Break::CauseStale,
+    Break::CauseBeforeReplaced,
+    Break::CauseAfterSuccessor,
+];
+
+/// The one rule each break trips, `None` for an unbroken chain.
+fn rule_of(brk: Break) -> Option<&'static str> {
+    match brk {
+        Break::Unchanged => None,
+        Break::Unlink | Break::Fork => Some("belief-key-chained"),
+        Break::CauseAbsent => Some("supersession-cause-present"),
+        Break::CauseSeenByOther => Some("supersession-cause-observed"),
+        Break::CauseNotCited => Some("supersession-cause-cited"),
+        Break::CauseStale => Some("supersession-cause-new"),
+        Break::CauseBeforeReplaced => Some("supersession-cause-not-earlier"),
+        Break::CauseAfterSuccessor => Some("supersession-cause-not-later"),
+    }
 }
 
 /// contact-21's own beliefs about `WHERE` as one chain (ids 1..=k, each
 /// superseding the one before, `valid_from` non-decreasing), plus guard-0's
 /// model of it (id 100), with one planted break or none.
-fn chain_case(steps: &[u64], believed: &[bool], model_from: u64, brk: Break) -> EpistemicPackage {
+///
+/// Belief `i` rests on event `i`, contact-21's, and names it as the cause of
+/// its link, so a link is lawful when the event is on a tick from the
+/// replaced belief's start to its own (`cause_at_start` picks which end).
+/// Events 900 (tick 0) and 901 (after every start) are the causes that the
+/// two timing breaks name.
+fn chain_case(
+    steps: &[u64],
+    believed: &[bool],
+    cause_at_start: &[bool],
+    model_from: u64,
+    brk: Break,
+) -> EpistemicPackage {
     let mut from = Vec::with_capacity(steps.len());
     let mut t = 0;
     for step in steps {
         t += step;
         from.push(t);
     }
-    if let Break::Backwards = brk {
-        // The last belief starts one tick before the one it supersedes.
-        let k = from.len();
-        from[k - 1] = from[k - 2] - 1;
-    }
+    let k = from.len();
+    // `ids[i]` is `i + 1`: belief `i + 1` cites `&ids[i..=i]`.
+    let ids: Vec<u64> = (1..=k as u64).collect();
     let status = |i: usize| if believed[i] { Believed } else { Rejected };
-    let mut beliefs: Vec<B<'_>> = (0..steps.len())
+    let mut beliefs: Vec<B<'_>> = (0..k)
         .map(|i| {
-            let b = bw(i as u64 + 1, &[], "contact-21", status(i), from[i], &[1]);
-            if i == 0 { b } else { superseding(b, i as u64) }
+            let id = i as u64 + 1;
+            let b = bw(id, &[], "contact-21", status(i), from[i], &ids[i..=i]);
+            if i == 0 {
+                b
+            } else {
+                superseding(b, id - 1, id)
+            }
         })
         .collect();
+    // Event `id` is on the successor's start, or on the replaced belief's.
+    let mut events = vec![event(
+        1,
+        from[0],
+        "contact-21",
+        "guard-0",
+        Observation,
+        WHERE,
+        9_000,
+    )];
+    for i in 1..k {
+        let tick = if cause_at_start[i] {
+            from[i - 1]
+        } else {
+            from[i]
+        };
+        events.push(event(
+            i as u64 + 1,
+            tick,
+            "contact-21",
+            "guard-0",
+            Observation,
+            WHERE,
+            9_000,
+        ));
+    }
+    let last = k - 1;
+    let last_id = k as u64;
     match brk {
+        Break::Unchanged => {}
         Break::Unlink => beliefs[1].supersedes = None,
-        Break::Fork => beliefs[2].supersedes = Some(1),
-        Break::Unchanged | Break::Backwards => {}
+        Break::Fork => beliefs[2].supersedes = Some((1, 3)),
+        Break::CauseAbsent => beliefs[last].supersedes = Some((last_id - 1, 999)),
+        Break::CauseSeenByOther => events[last].observer = "guard-0".into(),
+        Break::CauseNotCited => beliefs[last].sources = &ids[..1],
+        Break::CauseStale => beliefs[last - 1].sources = &ids[last - 1..=last],
+        Break::CauseBeforeReplaced => {
+            events.insert(
+                0,
+                event(900, 0, "contact-21", "guard-0", Observation, WHERE, 9_000),
+            );
+            beliefs[last].supersedes = Some((last_id - 1, 900));
+            beliefs[last].sources = &[900];
+        }
+        Break::CauseAfterSuccessor => {
+            events.push(event(
+                901,
+                from[last] + 5,
+                "contact-21",
+                "guard-0",
+                Observation,
+                WHERE,
+                9_000,
+            ));
+            beliefs[last].supersedes = Some((last_id - 1, 901));
+            beliefs[last].sources = &[901];
+        }
     }
     beliefs.push(bw(
         100,
@@ -1288,19 +1532,7 @@ fn chain_case(steps: &[u64], believed: &[bool], model_from: u64, brk: Break) -> 
         model_from,
         &[1],
     ));
-    package(
-        "adr-0029-property",
-        vec![event(
-            1,
-            1,
-            "contact-21",
-            "guard-0",
-            Observation,
-            WHERE,
-            9_000,
-        )],
-        &beliefs,
-    )
+    package("adr-0029-property", events, &beliefs)
 }
 
 fn load(p: &EpistemicPackage) -> Result<(), Vec<PackageFault>> {
@@ -1312,36 +1544,57 @@ fn load(p: &EpistemicPackage) -> Result<(), Vec<PackageFault>> {
     )
 }
 
+/// The rules of the six cause rules that a load reports.
+fn cause_rules(p: &EpistemicPackage) -> Vec<&'static str> {
+    load(p).err().map_or_else(Vec::new, |faults| {
+        faults
+            .iter()
+            .map(PackageFault::rule)
+            .filter(|rule| rule.starts_with("supersession-cause-"))
+            .collect()
+    })
+}
+
+/// No successor starts before the belief it replaces.
+fn successors_never_start_early(p: &EpistemicPackage) -> bool {
+    p.beliefs.iter().all(|b| {
+        b.supersedes.is_none_or(|link| {
+            p.beliefs
+                .iter()
+                .find(|old| old.belief_id == link.belief)
+                .is_none_or(|old| old.valid_from <= b.valid_from)
+        })
+    })
+}
+
 proptest::proptest! {
     #![proptest_config(proptest::prelude::ProptestConfig::with_cases(512))]
 
     /// The Rust half of `verification/proofs/{coq,agda}/KeyChain`: every
     /// package the validator accepts has at most one belief of a key in
     /// force at any tick, so the real reader never meets an ambiguous
-    /// counterpart. Each planted break is refused with exactly its rule.
+    /// counterpart, and no successor starts before the belief it replaces.
+    /// Each planted break is refused with exactly its rule: the two chain
+    /// rules and the six cause rules.
     #[test]
     fn one_key_one_holder_at_a_time(
-        // First step from 1 so a backwards break never underflows; later
-        // steps may be 0 (same-tick successors are allowed).
+        // First step from 1 so tick 0 is before every start; later steps
+        // may be 0 (same-tick successors are allowed).
         first in 1u64..4,
-        rest in proptest::collection::vec(1u64..4, 2..6),
-        zero_steps in proptest::collection::vec(proptest::bool::ANY, 6),
+        rest in proptest::collection::vec(0u64..4, 2..6),
         believed in proptest::collection::vec(proptest::bool::ANY, 7),
+        cause_at_start in proptest::collection::vec(proptest::bool::ANY, 7),
         model_from in 0u64..20,
-        which in 0usize..4,
+        which in 0usize..BREAKS.len(),
     ) {
         let mut steps = vec![first];
-        for (i, s) in rest.iter().enumerate() {
-            // A zero step makes a same-tick successor, except before the
-            // last belief, which a backwards break must be able to move.
-            let last = i + 2 == rest.len() + 1;
-            steps.push(if zero_steps[i] && !last { 0 } else { *s });
-        }
-        let brk = [Break::Unchanged, Break::Unlink, Break::Fork, Break::Backwards][which];
-        let p = chain_case(&steps, &believed, model_from, brk);
-        match brk {
-            Break::Unchanged => {
+        steps.extend(rest);
+        let brk = BREAKS[which];
+        let p = chain_case(&steps, &believed, &cause_at_start, model_from, brk);
+        match rule_of(brk) {
+            None => {
                 proptest::prop_assert_eq!(load(&p), Ok(()));
+                proptest::prop_assert!(successors_never_start_early(&p));
                 let end = p.beliefs.iter().map(|b| b.valid_from).max().unwrap() + 2;
                 for t in 0..=end {
                     let holding = p
@@ -1353,14 +1606,93 @@ proptest::proptest! {
                 }
                 proptest::prop_assert!(model_timelines(&p).is_ok());
             }
-            Break::Unlink | Break::Fork => {
+            Some(rule) => {
                 let rules: Vec<_> = load(&p).unwrap_err().iter().map(PackageFault::rule).collect();
-                proptest::prop_assert_eq!(rules, ["belief-key-chained"]);
-            }
-            Break::Backwards => {
-                let rules: Vec<_> = load(&p).unwrap_err().iter().map(PackageFault::rule).collect();
-                proptest::prop_assert_eq!(rules, ["supersession-monotone"]);
+                proptest::prop_assert_eq!(rules, [rule]);
             }
         }
     }
+
+    /// ADR-0030: monotonicity is not a rule, it follows. For chains whose
+    /// starts and cause ticks are arbitrary, a package that none of the six
+    /// cause rules refuses never has a successor that starts before the
+    /// belief it replaces.
+    #[test]
+    fn a_package_the_cause_rules_pass_has_no_early_successor(
+        from in proptest::collection::vec(0u64..8, 2..5),
+        ticks in proptest::collection::vec(0u64..8, 4),
+    ) {
+        let p = arbitrary_chain(&from, &ticks);
+        if cause_rules(&p).is_empty() {
+            proptest::prop_assert!(successors_never_start_early(&p), "{:?}", from);
+        }
+    }
+}
+
+/// Own beliefs 1..=k of contact-21 with arbitrary `valid_from`, belief `i`
+/// replacing `i - 1` because of event `i`, which rests on and is cited by
+/// belief `i`. Event ticks are the sorted `ticks` (cycled), so the events
+/// are in order and the cause ticks are arbitrary.
+fn arbitrary_chain(from: &[u64], ticks: &[u64]) -> EpistemicPackage {
+    let mut sorted: Vec<u64> = (0..from.len()).map(|i| ticks[i % ticks.len()]).collect();
+    sorted.sort_unstable();
+    let events: Vec<_> = sorted
+        .iter()
+        .enumerate()
+        .map(|(i, &tick)| {
+            event(
+                i as u64 + 1,
+                tick,
+                "contact-21",
+                "guard-0",
+                Observation,
+                WHERE,
+                9_000,
+            )
+        })
+        .collect();
+    let ids: Vec<u64> = (1..=from.len() as u64).collect();
+    let beliefs: Vec<B<'_>> = from
+        .iter()
+        .enumerate()
+        .map(|(i, &start)| {
+            let id = i as u64 + 1;
+            let b = bw(id, &[], "contact-21", Believed, start, &ids[i..=i]);
+            if i == 0 {
+                b
+            } else {
+                superseding(b, id - 1, id)
+            }
+        })
+        .collect();
+    package("adr-0030-property", events, &beliefs)
+}
+
+/// The monotone property is not vacuous: over every small chain of two
+/// beliefs, some pass the cause rules and some do not.
+#[test]
+fn the_cause_rules_pass_some_two_chains_and_refuse_others() {
+    let (mut passed, mut refused) = (0, 0);
+    for first in 0..6 {
+        for second in 0..6 {
+            for tick in 0..6 {
+                let p = arbitrary_chain(&[first, second], &[tick, tick]);
+                if cause_rules(&p).is_empty() {
+                    passed += 1;
+                    assert!(first <= tick && tick <= second);
+                    assert!(successors_never_start_early(&p));
+                } else {
+                    refused += 1;
+                    assert!(
+                        !(first <= tick && tick <= second),
+                        "{first} {tick} {second}"
+                    );
+                }
+            }
+        }
+    }
+    assert!(
+        passed > 0 && refused > 0,
+        "passed {passed}, refused {refused}"
+    );
 }

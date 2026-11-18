@@ -11,7 +11,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::belief::{Belief, BeliefId, BeliefStatus, EpistemicEvent, EventId};
+use crate::belief::{Belief, BeliefId, BeliefStatus, EpistemicEvent, EventId, Supersession};
 use crate::canonical::{self, CanonicalFault, Value};
 use crate::version::{ContractVersion, ProfileRef};
 use crate::{DepthPolicy, StatusPolicy};
@@ -104,13 +104,56 @@ pub enum PackageFault {
         belief: BeliefId,
         superseded: Option<BeliefId>,
     },
-    /// `belief` supersedes a belief that starts after it: a contradiction
-    /// record that runs backwards in time (ADR-0029). With
-    /// `belief-key-chained` this makes at most one belief of a key hold at
-    /// any tick (`verification/proofs/{coq,agda}/KeyChain`).
-    SupersedesALaterBelief {
+    /// The supersession link names, as its cause, an event the package does
+    /// not contain (ADR-0030). The other cause rules are not evaluated for
+    /// this link: there is no event to test.
+    SupersessionCauseUnknown {
         belief: BeliefId,
+        cause: EventId,
+    },
+    /// The cause did not reach the mind that revised. The revising mind is
+    /// the outermost holder of the successor, or its bearer for a belief of
+    /// order 0; the cause's `observer` is someone else.
+    SupersessionCauseNotObserved {
+        belief: BeliefId,
+        cause: EventId,
+        observer: String,
+        revising_mind: String,
+    },
+    /// The successor does not cite its cause: the cause is not among its
+    /// `source_events`.
+    SupersessionCauseNotCited {
+        belief: BeliefId,
+        cause: EventId,
+    },
+    /// The cause is not new: the belief replaced already rests on it.
+    SupersessionCauseNotNew {
+        belief: BeliefId,
+        cause: EventId,
         superseded: BeliefId,
+    },
+    /// The cause is older than the belief it replaces: its tick is before
+    /// the `valid_from` of that belief.
+    SupersessionCauseBeforeSuperseded {
+        belief: BeliefId,
+        cause: EventId,
+        cause_tick: u64,
+        superseded: BeliefId,
+        superseded_from: u64,
+    },
+    /// The cause is later than the belief it is said to have brought about:
+    /// its tick is after the successor's `valid_from`. With
+    /// `supersession-cause-not-earlier` this gives
+    /// `replaced.valid_from <= cause.tick <= successor.valid_from`, so a
+    /// successor never starts before the belief it replaces (ADR-0030; this
+    /// was the rule `supersession-monotone` of ADR-0029). With
+    /// `belief-key-chained` it makes at most one belief of a key hold at any
+    /// tick (`verification/proofs/{coq,agda}/KeyChain`).
+    SupersessionCauseAfterSuccessor {
+        belief: BeliefId,
+        cause: EventId,
+        cause_tick: u64,
+        valid_from: u64,
     },
     EmptyNameInAscriptionPath(BeliefId),
     DigestMismatch {
@@ -154,9 +197,16 @@ impl PackageFault {
                 format!("beliefs[belief_id={}].source_events", belief.0)
             }
             PackageFault::SupersedesUnknownBelief { belief, .. }
-            | PackageFault::BeliefKeyNotChained { belief, .. }
-            | PackageFault::SupersedesALaterBelief { belief, .. } => {
+            | PackageFault::BeliefKeyNotChained { belief, .. } => {
                 format!("beliefs[belief_id={}].supersedes", belief.0)
+            }
+            PackageFault::SupersessionCauseUnknown { belief, .. }
+            | PackageFault::SupersessionCauseNotObserved { belief, .. }
+            | PackageFault::SupersessionCauseNotCited { belief, .. }
+            | PackageFault::SupersessionCauseNotNew { belief, .. }
+            | PackageFault::SupersessionCauseBeforeSuperseded { belief, .. }
+            | PackageFault::SupersessionCauseAfterSuccessor { belief, .. } => {
+                format!("beliefs[belief_id={}].supersedes.because", belief.0)
             }
             PackageFault::StatusDisagreesWithInterval { belief, .. } => {
                 format!("beliefs[belief_id={}].status", belief.0)
@@ -179,7 +229,12 @@ impl PackageFault {
         "supersedes-present",
         "supersession-acyclic",
         "belief-key-chained",
-        "supersession-monotone",
+        "supersession-cause-present",
+        "supersession-cause-observed",
+        "supersession-cause-cited",
+        "supersession-cause-new",
+        "supersession-cause-not-earlier",
+        "supersession-cause-not-later",
         "ascription-names-nonempty",
         "digest-matches",
         "status-agrees-with-interval",
@@ -200,7 +255,14 @@ impl PackageFault {
             PackageFault::SupersedesUnknownBelief { .. } => "supersedes-present",
             PackageFault::SupersessionCycle(_) => "supersession-acyclic",
             PackageFault::BeliefKeyNotChained { .. } => "belief-key-chained",
-            PackageFault::SupersedesALaterBelief { .. } => "supersession-monotone",
+            PackageFault::SupersessionCauseUnknown { .. } => "supersession-cause-present",
+            PackageFault::SupersessionCauseNotObserved { .. } => "supersession-cause-observed",
+            PackageFault::SupersessionCauseNotCited { .. } => "supersession-cause-cited",
+            PackageFault::SupersessionCauseNotNew { .. } => "supersession-cause-new",
+            PackageFault::SupersessionCauseBeforeSuperseded { .. } => {
+                "supersession-cause-not-earlier"
+            }
+            PackageFault::SupersessionCauseAfterSuccessor { .. } => "supersession-cause-not-later",
             PackageFault::EmptyNameInAscriptionPath(_) => "ascription-names-nonempty",
             PackageFault::DigestMismatch { .. } => "digest-matches",
             PackageFault::StatusDisagreesWithInterval { .. } => "status-agrees-with-interval",
@@ -297,8 +359,8 @@ pub fn validate_package(
         if !belief_ids.insert(belief.belief_id) {
             faults.push(PackageFault::DuplicateBeliefId(belief.belief_id));
         }
-        if let Some(target) = belief.supersedes {
-            supersedes.insert(belief.belief_id, target);
+        if let Some(link) = belief.supersedes {
+            supersedes.insert(belief.belief_id, link.belief);
         }
         if belief.order() > depth.max_order {
             faults.push(PackageFault::NestingBeyondDeclaredMax {
@@ -330,27 +392,40 @@ pub fn validate_package(
             }
         }
     }
-    let valid_from: BTreeMap<BeliefId, u64> = package
-        .beliefs
-        .iter()
-        .map(|b| (b.belief_id, b.valid_from))
-        .collect();
+    // The first belief and the first event of each id; a repeated id is
+    // `belief-id-unique`'s or `event-id-unique`'s to report.
+    let mut beliefs_by_id: BTreeMap<BeliefId, &Belief> = BTreeMap::new();
     for belief in &package.beliefs {
-        if let Some(target) = belief.supersedes {
-            match valid_from.get(&target) {
-                None => faults.push(PackageFault::SupersedesUnknownBelief {
+        beliefs_by_id.entry(belief.belief_id).or_insert(belief);
+    }
+    // The events each belief cites, as a set, built once: a predecessor named
+    // by many successors is then not rescanned for each of them, so the cause
+    // rules stay near-linear in the size of the package.
+    let cited_by_id: BTreeMap<BeliefId, BTreeSet<EventId>> = beliefs_by_id
+        .iter()
+        .map(|(id, belief)| (*id, belief.source_events.iter().copied().collect()))
+        .collect();
+    let mut events_by_id: BTreeMap<EventId, &EpistemicEvent> = BTreeMap::new();
+    for event in &package.events {
+        events_by_id.entry(event.event_id).or_insert(event);
+    }
+    for belief in &package.beliefs {
+        if let Some(link) = belief.supersedes {
+            let replaced = beliefs_by_id.get(&link.belief).copied();
+            let replaced_cites = cited_by_id.get(&link.belief);
+            if replaced.is_none() {
+                faults.push(PackageFault::SupersedesUnknownBelief {
                     belief: belief.belief_id,
-                    superseded: target,
-                }),
-                // ADR-0029: a successor never starts before what it replaces.
-                Some(&starts) if belief.valid_from < starts => {
-                    faults.push(PackageFault::SupersedesALaterBelief {
-                        belief: belief.belief_id,
-                        superseded: target,
-                    });
-                }
-                Some(_) => {}
+                    superseded: link.belief,
+                });
             }
+            cause_faults(
+                belief,
+                link,
+                replaced.zip(replaced_cites),
+                &events_by_id,
+                &mut faults,
+            );
         }
     }
     // Supersession cycles: `supersedes` is a functional graph (out-degree at
@@ -413,6 +488,83 @@ pub fn validate_package(
     }
 }
 
+/// The six rules on the cause of one supersession link (ADR-0030).
+///
+/// `replaced` is the belief the link names with the set of events it cites,
+/// if the package has it, and `events` the package's events by id. Reported in
+/// this order: `supersession-cause-present`, `-observed`, `-cited`, `-new`,
+/// `-not-earlier`, `-not-later`.
+///
+/// A rule that needs a thing the package lacks is not evaluated, and the
+/// lack is some other rule's fault. With no event for `because` the first
+/// rule is the only one reported. With no belief to replace
+/// (`supersedes-present`), the two rules that read the replaced belief
+/// (`-new` and `-not-earlier`) are skipped and the other four still run.
+fn cause_faults(
+    belief: &Belief,
+    link: Supersession,
+    replaced: Option<(&Belief, &BTreeSet<EventId>)>,
+    events: &BTreeMap<EventId, &EpistemicEvent>,
+    faults: &mut Vec<PackageFault>,
+) {
+    let Some(cause) = events.get(&link.because).copied() else {
+        faults.push(PackageFault::SupersessionCauseUnknown {
+            belief: belief.belief_id,
+            cause: link.because,
+        });
+        return;
+    };
+    let revising_mind = revising_mind(belief);
+    if cause.observer != revising_mind {
+        faults.push(PackageFault::SupersessionCauseNotObserved {
+            belief: belief.belief_id,
+            cause: link.because,
+            observer: cause.observer.clone(),
+            revising_mind: revising_mind.to_string(),
+        });
+    }
+    if !belief.source_events.contains(&link.because) {
+        faults.push(PackageFault::SupersessionCauseNotCited {
+            belief: belief.belief_id,
+            cause: link.because,
+        });
+    }
+    if let Some((replaced, replaced_cites)) = replaced {
+        if replaced_cites.contains(&link.because) {
+            faults.push(PackageFault::SupersessionCauseNotNew {
+                belief: belief.belief_id,
+                cause: link.because,
+                superseded: link.belief,
+            });
+        }
+        if cause.tick < replaced.valid_from {
+            faults.push(PackageFault::SupersessionCauseBeforeSuperseded {
+                belief: belief.belief_id,
+                cause: link.because,
+                cause_tick: cause.tick,
+                superseded: link.belief,
+                superseded_from: replaced.valid_from,
+            });
+        }
+    }
+    if cause.tick > belief.valid_from {
+        faults.push(PackageFault::SupersessionCauseAfterSuccessor {
+            belief: belief.belief_id,
+            cause: link.because,
+            cause_tick: cause.tick,
+            valid_from: belief.valid_from,
+        });
+    }
+}
+
+/// The mind in which a belief lives, and so the mind that revises it: the
+/// outermost holder of the ascription path, or the bearer for a belief of
+/// order 0. `holders = ["guard-0"]`, `bearer = "contact-21"` is guard-0's
+/// model, revised on what guard-0 receives.
+fn revising_mind(belief: &Belief) -> &str {
+    belief.holders.first().unwrap_or(&belief.bearer)
+}
+
 /// CAC-KERNEL §3 invariant 4, made checkable (ADR-0029): the beliefs that
 /// share one key (`holders`, `bearer`, `proposition`) form one chain under
 /// `supersedes`.
@@ -448,11 +600,11 @@ fn key_chain_faults(beliefs: &[Belief], faults: &mut Vec<PackageFault>) {
         // Forks: one superseded belief claimed twice inside the key.
         let mut superseders: BTreeMap<BeliefId, Vec<BeliefId>> = BTreeMap::new();
         for belief in members {
-            if let Some(target) = belief.supersedes
-                && ids.contains(&target)
+            if let Some(link) = belief.supersedes
+                && ids.contains(&link.belief)
             {
                 superseders
-                    .entry(target)
+                    .entry(link.belief)
                     .or_default()
                     .push(belief.belief_id);
             }
@@ -470,7 +622,7 @@ fn key_chain_faults(beliefs: &[Belief], faults: &mut Vec<PackageFault>) {
         let mut starts: Vec<&Belief> = members
             .iter()
             .copied()
-            .filter(|b| !b.supersedes.is_some_and(|t| ids.contains(&t)))
+            .filter(|b| !b.supersedes.is_some_and(|link| ids.contains(&link.belief)))
             .collect();
         starts.sort_unstable_by_key(|b| (b.valid_from, b.belief_id));
         for start in starts.iter().skip(1) {
@@ -486,7 +638,7 @@ fn key_chain_faults(beliefs: &[Belief], faults: &mut Vec<PackageFault>) {
 mod tests {
     use super::*;
     use crate::belief::{
-        BeliefInterval, BeliefStatus, EventKind, Proposition, Provenance, Subject,
+        BeliefInterval, BeliefStatus, EventKind, Proposition, Provenance, Subject, Supersession,
     };
     use crate::version::KERNEL_CONTRACT_VERSION;
     use enaction_trace::Mass;
@@ -539,6 +691,14 @@ mod tests {
             source_events: sources.iter().map(|s| EventId(*s)).collect(),
             valid_from: 1,
             supersedes: None,
+        }
+    }
+
+    /// A supersession link: replaces `belief` because of event `because`.
+    fn link(belief: u64, because: u64) -> Supersession {
+        Supersession {
+            belief: BeliefId(belief),
+            because: EventId(because),
         }
     }
 
@@ -595,7 +755,12 @@ mod tests {
                 | PackageFault::SupersedesUnknownBelief { .. }
                 | PackageFault::SupersessionCycle(_)
                 | PackageFault::BeliefKeyNotChained { .. }
-                | PackageFault::SupersedesALaterBelief { .. }
+                | PackageFault::SupersessionCauseUnknown { .. }
+                | PackageFault::SupersessionCauseNotObserved { .. }
+                | PackageFault::SupersessionCauseNotCited { .. }
+                | PackageFault::SupersessionCauseNotNew { .. }
+                | PackageFault::SupersessionCauseBeforeSuperseded { .. }
+                | PackageFault::SupersessionCauseAfterSuccessor { .. }
                 | PackageFault::EmptyNameInAscriptionPath(_)
                 | PackageFault::DigestMismatch { .. }
                 | PackageFault::StatusDisagreesWithInterval { .. }
@@ -635,9 +800,37 @@ mod tests {
                 belief: b,
                 superseded: None,
             },
-            PackageFault::SupersedesALaterBelief {
+            PackageFault::SupersessionCauseUnknown {
                 belief: b,
+                cause: e,
+            },
+            PackageFault::SupersessionCauseNotObserved {
+                belief: b,
+                cause: e,
+                observer: String::new(),
+                revising_mind: String::new(),
+            },
+            PackageFault::SupersessionCauseNotCited {
+                belief: b,
+                cause: e,
+            },
+            PackageFault::SupersessionCauseNotNew {
+                belief: b,
+                cause: e,
                 superseded: b,
+            },
+            PackageFault::SupersessionCauseBeforeSuperseded {
+                belief: b,
+                cause: e,
+                cause_tick: 0,
+                superseded: b,
+                superseded_from: 0,
+            },
+            PackageFault::SupersessionCauseAfterSuccessor {
+                belief: b,
+                cause: e,
+                cause_tick: 0,
+                valid_from: 0,
             },
             PackageFault::EmptyNameInAscriptionPath(b),
             PackageFault::DigestMismatch {
@@ -662,21 +855,31 @@ mod tests {
 
     // ------------------------------------------------ belief-key-chained
 
-    /// The guard's own belief about the lobby, held from `valid_from`.
+    /// The guard's own belief about the lobby, held from `valid_from`. It
+    /// rests on event `id` and, when it supersedes, names that same event as
+    /// its cause: new, cited, and received by the guard. [`chain`] puts
+    /// event `i` on tick `i`, so a link is in order when
+    /// `replaced.valid_from <= id <= valid_from`.
     fn own(id: u64, valid_from: u64, supersedes: Option<u64>) -> Belief {
         Belief {
             valid_from,
-            supersedes: supersedes.map(BeliefId),
-            ..belief(id, &[], &[1])
+            supersedes: supersedes.map(|target| link(target, id)),
+            ..belief(id, &[], &[id])
+        }
+    }
+
+    /// The ghost lobby with events 1..=9 (event `i` on tick `i`, the guard's)
+    /// and these beliefs.
+    fn chain(beliefs: Vec<Belief>) -> EpistemicPackage {
+        EpistemicPackage {
+            events: (1..=9).map(|i| event(i, i, 1)).collect(),
+            beliefs,
+            ..ghost_lobby()
         }
     }
 
     fn key_faults(beliefs: Vec<Belief>) -> Vec<PackageFault> {
-        let package = EpistemicPackage {
-            beliefs,
-            ..ghost_lobby()
-        };
-        match validate(&package) {
+        match validate(&chain(beliefs)) {
             Ok(()) => Vec::new(),
             Err(faults) => faults
                 .into_iter()
@@ -688,10 +891,11 @@ mod tests {
     #[test]
     fn a_linked_chain_of_one_key_is_accepted() {
         assert_eq!(
-            validate(&EpistemicPackage {
-                beliefs: vec![own(1, 1, None), own(2, 3, Some(1)), own(3, 5, Some(2))],
-                ..ghost_lobby()
-            }),
+            validate(&chain(vec![
+                own(1, 1, None),
+                own(2, 3, Some(1)),
+                own(3, 5, Some(2))
+            ])),
             Ok(())
         );
     }
@@ -762,34 +966,6 @@ mod tests {
     }
 
     #[test]
-    fn a_successor_that_starts_before_its_predecessor_is_refused() {
-        let faults = validate(&EpistemicPackage {
-            beliefs: vec![own(1, 6, None), own(2, 5, Some(1))],
-            ..ghost_lobby()
-        })
-        .unwrap_err();
-        assert_eq!(
-            faults,
-            [PackageFault::SupersedesALaterBelief {
-                belief: BeliefId(2),
-                superseded: BeliefId(1)
-            }]
-        );
-        assert_eq!(faults[0].rule(), "supersession-monotone");
-    }
-
-    #[test]
-    fn a_successor_may_start_on_the_same_tick() {
-        assert_eq!(
-            validate(&EpistemicPackage {
-                beliefs: vec![own(1, 4, None), own(2, 4, Some(1))],
-                ..ghost_lobby()
-            }),
-            Ok(())
-        );
-    }
-
-    #[test]
     fn a_supersession_across_keys_does_not_link_a_key() {
         // 2 supersedes a belief of another key, so inside its own key it is
         // a second start: the cross-key edge does not excuse the overwrite.
@@ -802,6 +978,276 @@ mod tests {
                 superseded: None
             }]
         );
+    }
+
+    // ---------------------------------------- the link names its cause
+
+    /// The guard's events: 1 on tick 1, 2 and 4 on tick 3 (4 is the
+    /// intruder's), 3 on tick 5.
+    fn cause_events() -> Vec<EpistemicEvent> {
+        let mut intruder = event(4, 3, 2);
+        intruder.observer = "intruder".into();
+        vec![event(1, 1, 1), event(2, 3, 1), intruder, event(3, 5, 1)]
+    }
+
+    /// Beliefs 1 and 2 of the guard's own key, each as (`valid_from`,
+    /// sources): 2 replaces 1 because of event `because`.
+    fn pair(old: (u64, &[u64]), new: (u64, &[u64]), because: u64) -> Vec<Belief> {
+        vec![
+            Belief {
+                valid_from: old.0,
+                ..belief(1, &[], old.1)
+            },
+            Belief {
+                valid_from: new.0,
+                supersedes: Some(link(1, because)),
+                ..belief(2, &[], new.1)
+            },
+        ]
+    }
+
+    /// Only the faults of the six cause rules.
+    fn cause_faults(beliefs: Vec<Belief>) -> Vec<PackageFault> {
+        let package = EpistemicPackage {
+            events: cause_events(),
+            beliefs,
+            ..ghost_lobby()
+        };
+        match validate(&package) {
+            Ok(()) => Vec::new(),
+            Err(faults) => faults
+                .into_iter()
+                .filter(|f| f.rule().starts_with("supersession-cause-"))
+                .collect(),
+        }
+    }
+
+    fn rules(faults: &[PackageFault]) -> Vec<&'static str> {
+        faults.iter().map(PackageFault::rule).collect()
+    }
+
+    #[test]
+    fn a_link_in_order_with_new_cited_received_evidence_is_accepted() {
+        // Event 2 is on tick 3, between 2 and 4, and nothing else.
+        assert_eq!(cause_faults(pair((2, &[1]), (4, &[2]), 2)), []);
+    }
+
+    #[test]
+    fn a_cause_not_in_the_package_is_refused_and_ends_the_cause_rules() {
+        let faults = cause_faults(pair((2, &[1]), (4, &[2]), 99));
+        assert_eq!(
+            faults,
+            [PackageFault::SupersessionCauseUnknown {
+                belief: BeliefId(2),
+                cause: EventId(99)
+            }]
+        );
+        assert_eq!(faults[0].rule(), "supersession-cause-present");
+        assert_eq!(faults[0].path(), "beliefs[belief_id=2].supersedes.because");
+    }
+
+    #[test]
+    fn a_cause_the_revising_mind_did_not_receive_is_refused() {
+        // Event 4 reaches the intruder; the guard's own belief is not
+        // revised because of it.
+        let faults = cause_faults(pair((2, &[1]), (4, &[4]), 4));
+        assert_eq!(
+            faults,
+            [PackageFault::SupersessionCauseNotObserved {
+                belief: BeliefId(2),
+                cause: EventId(4),
+                observer: "intruder".into(),
+                revising_mind: "guard".into()
+            }]
+        );
+        assert_eq!(faults[0].rule(), "supersession-cause-observed");
+        assert_eq!(faults[0].path(), "beliefs[belief_id=2].supersedes.because");
+    }
+
+    #[test]
+    fn a_model_is_revised_in_its_outermost_holders_mind() {
+        // The intruder's model of the guard (holders ["intruder"], bearer
+        // "guard") lives in the intruder's mind: it is revised on what the
+        // intruder receives (event 4), not on what the guard does (event 2).
+        let model = |id: u64, from: u64, src: u64, because: Option<u64>| Belief {
+            valid_from: from,
+            supersedes: because.map(|e| link(id - 1, e)),
+            ..belief(id, &["intruder"], &[src])
+        };
+        assert_eq!(
+            cause_faults(vec![model(1, 2, 1, None), model(2, 4, 4, Some(4))]),
+            []
+        );
+        let faults = cause_faults(vec![model(1, 2, 1, None), model(2, 4, 2, Some(2))]);
+        assert_eq!(
+            rules(&faults),
+            ["supersession-cause-observed"],
+            "{faults:?}"
+        );
+    }
+
+    #[test]
+    fn a_cause_the_successor_does_not_cite_is_refused() {
+        let faults = cause_faults(pair((2, &[1]), (4, &[3]), 2));
+        assert_eq!(
+            faults,
+            [PackageFault::SupersessionCauseNotCited {
+                belief: BeliefId(2),
+                cause: EventId(2)
+            }]
+        );
+        assert_eq!(faults[0].rule(), "supersession-cause-cited");
+    }
+
+    #[test]
+    fn a_cause_the_replaced_belief_already_rests_on_is_not_new() {
+        let faults = cause_faults(pair((2, &[1, 2]), (4, &[2]), 2));
+        assert_eq!(
+            faults,
+            [PackageFault::SupersessionCauseNotNew {
+                belief: BeliefId(2),
+                cause: EventId(2),
+                superseded: BeliefId(1)
+            }]
+        );
+        assert_eq!(faults[0].rule(), "supersession-cause-new");
+    }
+
+    #[test]
+    fn a_cause_before_the_replaced_belief_started_is_refused() {
+        // Event 2 is on tick 3; belief 1 starts on tick 4.
+        let faults = cause_faults(pair((4, &[1]), (6, &[2]), 2));
+        assert_eq!(
+            faults,
+            [PackageFault::SupersessionCauseBeforeSuperseded {
+                belief: BeliefId(2),
+                cause: EventId(2),
+                cause_tick: 3,
+                superseded: BeliefId(1),
+                superseded_from: 4
+            }]
+        );
+        assert_eq!(faults[0].rule(), "supersession-cause-not-earlier");
+    }
+
+    #[test]
+    fn a_cause_after_the_successor_started_is_refused() {
+        // Event 2 is on tick 3; belief 2 starts on tick 2.
+        let faults = cause_faults(pair((1, &[1]), (2, &[2]), 2));
+        assert_eq!(
+            faults,
+            [PackageFault::SupersessionCauseAfterSuccessor {
+                belief: BeliefId(2),
+                cause: EventId(2),
+                cause_tick: 3,
+                valid_from: 2
+            }]
+        );
+        assert_eq!(faults[0].rule(), "supersession-cause-not-later");
+    }
+
+    #[test]
+    fn the_cause_may_sit_on_either_boundary_tick() {
+        // Event 2 is on tick 3: the replaced belief starts there, and so
+        // does the successor.
+        assert_eq!(cause_faults(pair((3, &[1]), (3, &[2]), 2)), []);
+    }
+
+    #[test]
+    fn a_successor_that_starts_before_what_it_replaces_fails_a_cause_rule_whatever_the_cause() {
+        // ADR-0030: monotonicity is not a rule. It follows from the last two
+        // cause rules, so for every cause tick one of them fires.
+        for tick in 0..=10 {
+            let package = EpistemicPackage {
+                events: vec![event(1, tick, 1)],
+                beliefs: vec![
+                    Belief {
+                        valid_from: 6,
+                        ..belief(1, &[], &[1])
+                    },
+                    Belief {
+                        valid_from: 5,
+                        supersedes: Some(link(1, 1)),
+                        ..belief(2, &[], &[1])
+                    },
+                ],
+                ..ghost_lobby()
+            };
+            let faults = validate(&package).unwrap_err();
+            let timing = faults.iter().any(|f| {
+                matches!(
+                    f.rule(),
+                    "supersession-cause-not-earlier" | "supersession-cause-not-later"
+                )
+            });
+            assert!(timing, "cause on tick {tick}: {faults:?}");
+        }
+    }
+
+    #[test]
+    fn every_cause_rule_that_fires_is_reported_in_rule_order() {
+        // Cause 4 (the intruder's, tick 3) for a guard belief starting on
+        // tick 2 that replaces a belief starting on tick 4 and resting on 4.
+        let faults = cause_faults(pair((4, &[4]), (2, &[1]), 4));
+        assert_eq!(
+            rules(&faults),
+            [
+                "supersession-cause-observed",
+                "supersession-cause-cited",
+                "supersession-cause-new",
+                "supersession-cause-not-earlier",
+                "supersession-cause-not-later",
+            ]
+        );
+    }
+
+    #[test]
+    fn a_link_to_an_unknown_belief_skips_only_the_rules_that_read_it() {
+        // The replaced belief is missing: `supersedes-present` reports it.
+        // `-new` and `-not-earlier` read that belief and are skipped; the
+        // other four still run.
+        let package = |because| EpistemicPackage {
+            events: cause_events(),
+            beliefs: vec![Belief {
+                valid_from: 2,
+                supersedes: Some(link(42, because)),
+                ..belief(1, &[], &[1])
+            }],
+            ..ghost_lobby()
+        };
+        let faults = validate(&package(2)).unwrap_err();
+        let reported = rules(&faults);
+        assert!(reported.contains(&"supersedes-present"), "{reported:?}");
+        assert!(
+            reported.contains(&"supersession-cause-cited"),
+            "cause 2 is not among the sources [1]: {reported:?}"
+        );
+        assert!(reported.contains(&"supersession-cause-not-later"));
+        assert!(!reported.contains(&"supersession-cause-new"));
+        assert!(!reported.contains(&"supersession-cause-not-earlier"));
+        // With no cause either, only the first cause rule speaks.
+        let faults = validate(&package(99)).unwrap_err();
+        let cause: Vec<_> = rules(&faults)
+            .into_iter()
+            .filter(|r| r.starts_with("supersession-cause-"))
+            .collect();
+        assert_eq!(cause, ["supersession-cause-present"]);
+    }
+
+    #[test]
+    fn a_belief_that_supersedes_itself_does_not_panic_the_cause_rules() {
+        let package = EpistemicPackage {
+            events: cause_events(),
+            beliefs: vec![Belief {
+                valid_from: 4,
+                supersedes: Some(link(1, 2)),
+                ..belief(1, &[], &[2])
+            }],
+            ..ghost_lobby()
+        };
+        let faults = validate(&package).unwrap_err();
+        assert!(rules(&faults).contains(&"supersession-acyclic"));
+        assert!(rules(&faults).contains(&"supersession-cause-new"));
     }
 
     #[test]
@@ -927,7 +1373,7 @@ mod tests {
     #[test]
     fn supersession_must_name_a_real_belief_and_must_not_loop() {
         let mut package = ghost_lobby();
-        package.beliefs[0].supersedes = Some(BeliefId(42));
+        package.beliefs[0].supersedes = Some(link(42, 1));
         let faults = validate(&package).unwrap_err();
         assert!(faults.contains(&PackageFault::SupersedesUnknownBelief {
             belief: BeliefId(1),
@@ -935,8 +1381,8 @@ mod tests {
         }));
 
         let mut cyclic = ghost_lobby();
-        cyclic.beliefs[0].supersedes = Some(BeliefId(2));
-        cyclic.beliefs[1].supersedes = Some(BeliefId(1));
+        cyclic.beliefs[0].supersedes = Some(link(2, 1));
+        cyclic.beliefs[1].supersedes = Some(link(1, 1));
         let faults = validate(&cyclic).unwrap_err();
         assert!(
             faults
@@ -993,9 +1439,9 @@ mod tests {
             belief(2, &[], &[1]),
             belief(3, &[], &[1]),
         ];
-        package.beliefs[0].supersedes = Some(BeliefId(2));
-        package.beliefs[1].supersedes = Some(BeliefId(3));
-        package.beliefs[2].supersedes = Some(BeliefId(2));
+        package.beliefs[0].supersedes = Some(link(2, 1));
+        package.beliefs[1].supersedes = Some(link(3, 1));
+        package.beliefs[2].supersedes = Some(link(2, 1));
 
         let faults = validate(&package).unwrap_err();
         let cycle_faults: Vec<_> = faults
@@ -1039,7 +1485,7 @@ mod tests {
             for id in 1..=n {
                 let mut b = belief(id, &[], &[1]);
                 if id < n {
-                    b.supersedes = Some(BeliefId(id + 1));
+                    b.supersedes = Some(link(id + 1, 1));
                 }
                 beliefs.push(b);
             }
