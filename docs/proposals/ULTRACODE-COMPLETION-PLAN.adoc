@@ -141,7 +141,7 @@ These are asked through the selector. The default arm is labelled on each.
   including the named non-owner author and that author's own forge account.
   Part (1), the dated want, still stands and may be recorded in any non-donor
   consumer. That is owner ruling D8 of 2026-11-17, recorded in pull request
-  126, which is not on `main` yet. ADR-0025 is not written yet. Facts about
+  126, merged as `1b414eb`. ADR-0025 is not written yet. Facts about
   this repository read at `cdf7ca1`; at that commit D8 is still an open
   question in the plan revision.
 | Wave 5

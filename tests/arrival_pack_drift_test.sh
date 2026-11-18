@@ -16,6 +16,10 @@
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
+# An inherited GIT_DIR or GIT_WORK_TREE would point the fixture's git calls at
+# the caller's checkout. Clear them after ROOT is found and before any fixture
+# git call.
+unset GIT_DIR GIT_WORK_TREE
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
