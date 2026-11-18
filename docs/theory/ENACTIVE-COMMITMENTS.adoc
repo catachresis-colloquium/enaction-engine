@@ -6,7 +6,8 @@
 :sectnums:
 
 Status: **Draft for the identity review of 2026-11-30** (written 2026-11-14;
-evidence re-verified on 2026-11-17 against `main` at `724e502`).
+evidence re-verified on 2026-11-17 against `main` at `724e502`; commitment C2
+re-verified on 2026-11-18 against `main` at `f5f536d`).
 ADR-0018 requires this document. The owner ruled on 2026-11-09 (Q8) that it
 states each enactivist commitment that the engine makes and what would
 falsify it.
@@ -90,7 +91,9 @@ with no contradiction record passes the validator; (b) in a fixture with a
 contradiction, the agent's trace after the contradiction is identical to a
 control run without it.
 
-*Evidence today.* Neither falsifier has a test. The package validator checks
+*Evidence at `724e502`.* This paragraph and the re-check after it are dated.
+The state on `main` at `f5f536d` is in "Test for (a), on main" below. At
+`724e502`, neither falsifier had a test. The package validator checks
 that a supersession link is well formed (`SupersedesUnknownBelief`,
 `SupersessionCycle`), and the trace validator checks that a retraction has a
 cause and a prior assertion. No rule refuses two beliefs of one holder about
@@ -114,25 +117,60 @@ every package in `conformance/` on 2026-11-17. All 5 groups of beliefs that
 share a key passed, and the probe refused a planted unlinked pair and a
 planted fork.
 
-*Test for (a), on the ADR-0029 branch.* The owner chose on 2026-11-17 to
-enforce the rule for every order, with a second rule that a belief never
-supersedes one that starts after it (ADR-0029, which amends ADR-0028). The
-validator now refuses (a) as `belief-key-chained`. On that branch:
+*Test for (a), on main.* ADR-0029 and ADR-0030 are merged. On `main` at
+`f5f536d`, falsifier (a) is refused by `belief-key-chained`, and a link that
+names no cause is refused by six cause rules. The chain rule is closed over
+one package. It refuses two beliefs of a key with no link (a silent
+overwrite) and two beliefs that supersede the same one (a fork). Since
+ADR-0030 a supersession link is `supersedes: {belief, because}`, where
+`because` is the id of an event in the same package. The six cause rules are
+`supersession-cause-present`, `-observed`, `-cited`, `-new`, `-not-earlier`
+and `-not-later`. Between them they say that the cause is an event of the
+package, that the revising mind observed it, that the successor cites it,
+that the belief replaced did not, and that its tick falls between the start
+of the belief replaced and the start of the successor.
 
-* the corpus fixture `conformance/tom/v1/rejected/belief-key-chained` is the
-  `false-exposure` story with its link dropped, and `enaction-validate`
-  refuses it with exit 1;
-* the property test `one_key_one_holder_at_a_time` passes over 512
-  generated chains, and refuses each planted unlink, fork or backward link
-  with exactly its rule;
-* with the rule disabled, 8 tests fail; with the monotone rule disabled, 4
-  tests fail;
-* under both rules, at most one belief of a key holds at any tick. This is
-  proved in Coq and in Agda (`verification/proofs/{coq,agda}/KeyChain`).
-  That the validator's checks yield one chain is tested, not proved.
+* The corpus fixture `conformance/tom/v2/rejected/belief-key-chained` is the
+  `false-exposure` story with its link dropped. `enaction-validate` refuses
+  it with exit 1. The v2 corpus also has one rejected fixture for each cause
+  rule, `conformance/tom/v2/rejected/supersession-cause-present`, `-observed`,
+  `-cited`, `-new`, `-not-earlier` and `-not-later`. The test
+  `every_rejected_case_is_refused_with_exactly_its_rule` checks each.
+* `conformance/tom/v1` and `conformance/mind/v1` are frozen: no file in them
+  changes. `conformance/tom/v1/rejected/belief-key-chained` is the 1.x form
+  of the same case, and a 2.0 host refuses the v1 corpus. The live corpora
+  are `v2`.
+* The property test `one_key_one_holder_at_a_time` passes over 512 generated
+  chains. It refuses each planted unlink, fork or cause fault with exactly
+  its rule. A second property test,
+  `a_package_the_cause_rules_pass_has_no_early_successor`, checks the
+  consequence below.
+* Mutant run on 2026-11-18: with `belief-key-chained` disabled, 9 of 247
+  tests fail. With it enabled, all 247 pass. The 9 are
+  `one_key_one_holder_at_a_time`,
+  `every_rejected_case_is_refused_with_exactly_its_rule`,
+  `every_rule_fires_on_its_planted_package`,
+  `an_ambiguity_inside_the_lifetime_refuses_the_model`, and five unit tests
+  in `package.rs`. The count is for this rule only. It is not a count over
+  the six cause rules.
+* Monotonicity is a theorem. The rule `supersession-monotone` of ADR-0029 is
+  gone from the validator. Two cause rules, `-not-earlier` and `-not-later`,
+  give `old.valid_from <= cause.tick <= new.valid_from`, so no successor
+  starts before the belief it replaces. This is `cause_rules_give_monotone`
+  in `verification/proofs/coq/KeyChain.v` and
+  `verification/proofs/agda/KeyChain.agda`. The Coq file compiled under
+  `coqc` 8.18 on 2026-11-18. The Agda file was not re-checked for this
+  document: the Agda standard library available in that session did not
+  match the one CI pins.
+* Uniqueness needs the chain as well. `at_most_one_holds_by_cause` (same two
+  files) takes the chain as its premise. With two beliefs of one key and no
+  link, the cause rules have nothing to check, and both beliefs can hold at
+  once. So `belief-key-chained` stays a rule. That the validator's checks
+  yield one chain is tested, not proved.
 
-Falsifier (a) is therefore *tested and not observed* on that branch. Its
-evidence counts once the pull request merges. (b) is unchanged.
+Falsifier (a) is therefore *tested and not observed* on `main`. No real run
+has put an overwrite in front of the validator; the tests plant it. (b) is
+unchanged: it has no test.
 
 *Scope of that test.* The rule is closed over one package. A package that
 omits an earlier belief of a key holds a single belief for that key, and
@@ -140,9 +178,11 @@ nothing in the package shows that a predecessor existed. So (a) is tested
 for beliefs that one package states. No gate checks continuity across
 packages today. The trace validator requires a retraction to have a cause
 and a prior assertion; that covers retractions, and it does not detect an
-omitted predecessor. Whether a superseding belief must also cite a
-contradiction event is an open owner decision (D1 in
-`docs/proposals/ULTRAPLAN-REVISION-2026-11-17.adoc`).
+omitted predecessor. D1 asked whether a successor must cite a
+contradiction event. The owner ruled that the link names its cause
+(ADR-0030). The rules check that the cause is new, cited and observed by the
+revising mind. They do not check that the cause contradicts the belief
+replaced, and they do not limit its kind.
 
 === C3. Cognition is a loop through the world, not a pipeline
 
@@ -230,17 +270,18 @@ This section is an assessment by the author of the draft. It is not a ruling.
 
 [cols="1,3,2",options="header"]
 |===
-| Commitment | State on 2026-11-17 (`main` at `724e502`) | Needed before the name is earned
+| Commitment | State on 2026-11-17 (`main` at `724e502`; C2 on 2026-11-18 at `f5f536d`) | Needed before the name is earned
 
 | C1 | Met on `main` at `03cb27b`, and re-run with the same result at
   `724e502`, with the registration-order limit of ADR-0022.
 | Nothing more for the weak claim. Arm B of ADR-0022 removes the limit.
 
-| C2 | (a) is refused by `belief-key-chained` on the ADR-0029 branch (a
-  fixture, a property test, mutant runs and a proof of the consequence).
-  Not on `main` until that pull request merges. (b) has no test.
-| The merge of ADR-0029, and a fixture in which a contradiction changes
-  later conduct (b).
+| C2 | On `main` at `f5f536d`, (a) is refused by `belief-key-chained`, and a
+  link with no cause is refused by six cause rules (v2 fixtures, property
+  tests and a mutant run). Monotonicity is a theorem of two cause rules, in
+  Coq and Agda. Uniqueness also needs the chain rule. D1 is ruled: the link
+  names its cause (ADR-0030). (b) has no test.
+| A fixture in which a contradiction changes later conduct (b).
 
 | C3 | Designed.
 | The intent-ablation fixture.
@@ -249,8 +290,8 @@ This section is an assessment by the author of the draft. It is not a ruling.
 | Owner acceptance, then the zero-affect fixture.
 |===
 
-On 2026-11-17, one commitment of four (C1) has passing evidence on
-`main`. Half of C2 has passing evidence on a branch that is not yet merged.
+On 2026-11-18, two commitments of four have passing evidence on `main`:
+C1 in full, and C2 for falsifier (a). Falsifier (b) of C2 has no test.
 For the rest the name is still an aspiration, as ADR-0018 says. Two of the remaining falsifiers (C2 and C3) can have tests within the
 current route. If C1 to C3 pass by the review, the engine can
 defend a *weak enactive* reading: closure of the epistemic state, breakdown
