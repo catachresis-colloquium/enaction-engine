@@ -116,7 +116,7 @@ dependencies = [
 name = "enaction-accelerator"
 version = "0.1.0"
 dependencies = [
- "creusot-std",
+ "enaction-version",
  "serde_json",
 ]
 
@@ -132,20 +132,13 @@ dependencies = [
 name = "enaction-contracts"
 version = "0.1.0"
 dependencies = [
- "creusot-std",
  "enaction-trace",
+ "enaction-version",
+ "proptest",
  "serde",
  "serde_json",
  "serde_path_to_error",
  "sha2",
-]
-
-[[package]]
-name = "enaction-creusot-verification"
-version = "0.1.0"
-dependencies = [
- "creusot-std",
- "serde",
 ]
 
 [[package]]
@@ -159,6 +152,14 @@ dependencies = [
  "proptest",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "enaction-version"
+version = "0.1.0"
+dependencies = [
+ "creusot-std",
+ "serde",
 ]
 
 [[package]]
