@@ -9,7 +9,7 @@ authors.workspace = true
 repository.workspace = true
 
 [dependencies]
-creusot-std.workspace = true
+enaction-version = { workspace = true, features = ["serde"] }
 serde.workspace = true
 enaction-trace.workspace = true
 # Stage 2 of WEEVIL-HOST-ROUTE A2 (ADR-0024): the package digest is SHA-256
@@ -22,9 +22,6 @@ sha2 = "0.10"
 serde_json = "1"
 # Reports the stable field path of a typed decoding fault (UnknownField).
 serde_path_to_error = "0.1"
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(creusot)'] }
 
 [dev-dependencies]
 proptest = { version = "1", default-features = false, features = ["std"] }
