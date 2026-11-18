@@ -7,6 +7,35 @@ name: Agda and Coq proof gates
 # every script, never a skip. Agda is invoked with the canonical flags of
 # standards PROOF-POLICY §2.1; the versions in force are printed so each run
 # is a receipt of what was checked.
+#
+# TOOLCHAIN PROVENANCE. No apt mirror is on the gate's path. On 2026-11-18 the
+# apt installs of `coq` and `agda-bin` fell to ~100 KB/s from the Ubuntu mirror
+# and the jobs were cancelled at their timeout three times (PR #135 runs); a
+# re-run passed, so the proofs were fine and the infrastructure was not. The
+# owner ruled: install from source, with a cache.
+#
+#   Coq   8.18.0  opam 2.1.6 -> OCaml 4.14.1 -> coq 8.18.0, built from source
+#                 against opam-repository at one pinned commit.
+#   Agda  2.6.3   GHC 9.4.7 + cabal 3.10.3.0 (upstream binary distributions,
+#                 each verified against a sha256 written here) -> Agda 2.6.3
+#                 built from Hackage at one pinned index-state.
+#
+# These are the versions in force before the change: Coq 8.18.0 and Agda 2.6.3
+# are what Ubuntu noble's apt gave, and the job log of run 44330055441 prints
+# `Agda version 2.6.3` (built there with GHC 9.4.7, hence the GHC pin).
+# agda-stdlib stays at the commit pinned in the job below.
+#
+# The sha256 values were taken by downloading each file twice (opam, ghc,
+# cabal) and, for ghc and cabal, comparing with the haskell/ghcup-metadata
+# digests. Every pin is part of the cache key together with the runner OS and
+# architecture, so changing a version cannot restore a stale toolchain, and
+# each job asserts the exact versions after install, cold or warm.
+#
+# Both jobs cache the built toolchain with actions/cache. A cold run builds
+# everything; a warm run restores it and only prints and checks the versions.
+# The cache is saved only if the job succeeds, so the timeout must cover a
+# cold build or the cache never warms. Measured cold and warm times are
+# recorded beside each job's timeout below.
 on:
   workflow_dispatch:
   pull_request:
@@ -24,21 +53,91 @@ jobs:
   agda:
     name: Agda proofs (canonical flags)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # Provisional while the cold build is being measured; replaced by the
+    # measured cold time plus a margin.
+    timeout-minutes: 120
     permissions:
       contents: read
+    env:
+      GHC_VERSION: 9.4.7
+      GHC_SHA256: 6b5b939d20b47475358993210738578071005669500810f28746bbd856ed878b
+      CABAL_VERSION: 3.10.3.0
+      CABAL_SHA256: 4b7af602c532c944e908a342b303fbaf76e68b9a50d6258f6aa08a5c8d8239e1
+      AGDA_VERSION: 2.6.3
+      HACKAGE_INDEX_STATE: "2023-09-01T00:00:00Z"
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install Agda
+      - name: Restore the Agda toolchain cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.toolchain/ghc
+            ~/.toolchain/bin
+            ~/.toolchain/cabal/store
+          key: agda-${{ runner.os }}-${{ runner.arch }}-ghc${{ env.GHC_VERSION }}-cabal${{ env.CABAL_VERSION }}-agda${{ env.AGDA_VERSION }}-idx${{ env.HACKAGE_INDEX_STATE }}-r1
+
+      - name: Build GHC, cabal and Agda from source (skipped when restored)
         run: |
           set -euo pipefail
-          sudo apt-get update -q
-          sudo apt-get install -y -q agda-bin
+          TC="$HOME/.toolchain"
+          mkdir -p "$TC/bin"
+          export CABAL_DIR="$TC/cabal"
+          export PATH="$TC/ghc/bin:$TC/bin:$PATH"
+          fetch() { # url sha256 out
+            curl -fsSL --retry 4 --retry-delay 5 -o "$3" "$1"
+            echo "$2  $3" | sha256sum -c -
+          }
+          if [ "$("$TC/ghc/bin/ghc" --numeric-version 2>/dev/null || true)" != "$GHC_VERSION" ]; then
+            echo "::group::install GHC $GHC_VERSION (upstream binary distribution)"
+            rm -rf "$TC/ghc" "$RUNNER_TEMP/ghc-src"
+            mkdir -p "$RUNNER_TEMP/ghc-src"
+            fetch "https://downloads.haskell.org/~ghc/${GHC_VERSION}/ghc-${GHC_VERSION}-x86_64-deb10-linux.tar.xz" \
+              "$GHC_SHA256" "$RUNNER_TEMP/ghc.tar.xz"
+            tar -C "$RUNNER_TEMP/ghc-src" -xJf "$RUNNER_TEMP/ghc.tar.xz"
+            (cd "$RUNNER_TEMP/ghc-src/ghc-${GHC_VERSION}-x86_64-unknown-linux" \
+              && ./configure --prefix="$TC/ghc" > /dev/null && make install > /dev/null)
+            echo "::endgroup::"
+          fi
+          if [ "$("$TC/bin/cabal" --numeric-version 2>/dev/null || true)" != "$CABAL_VERSION" ]; then
+            echo "::group::install cabal $CABAL_VERSION (upstream binary distribution)"
+            fetch "https://downloads.haskell.org/ghcup/unofficial-bindists/cabal/${CABAL_VERSION}/cabal-install-${CABAL_VERSION}-x86_64-linux-unknown.tar.xz" \
+              "$CABAL_SHA256" "$RUNNER_TEMP/cabal.tar.xz"
+            mkdir -p "$RUNNER_TEMP/cabal-src"
+            tar -C "$RUNNER_TEMP/cabal-src" -xJf "$RUNNER_TEMP/cabal.tar.xz"
+            install -m 0755 "$RUNNER_TEMP/cabal-src/cabal" "$TC/bin/cabal"
+            echo "::endgroup::"
+          fi
+          if [ "$("$TC/bin/agda" --version 2>/dev/null | head -1 || true)" != "Agda version $AGDA_VERSION" ]; then
+            echo "::group::build Agda $AGDA_VERSION from Hackage at index-state $HACKAGE_INDEX_STATE"
+            cabal update --index-state="$HACKAGE_INDEX_STATE"
+            cabal install "Agda-$AGDA_VERSION" \
+              --index-state="$HACKAGE_INDEX_STATE" \
+              --installdir="$TC/bin" --install-method=copy --overwrite-policy=always
+            echo "::endgroup::"
+          fi
+
+      - name: Put the toolchain on PATH and print the version receipt
+        run: |
+          set -euo pipefail
+          TC="$HOME/.toolchain"
+          echo "$TC/ghc/bin" >> "$GITHUB_PATH"
+          echo "$TC/bin" >> "$GITHUB_PATH"
+          echo "CABAL_DIR=$TC/cabal" >> "$GITHUB_ENV"
+          export PATH="$TC/ghc/bin:$TC/bin:$PATH"
+          ghc --version
+          cabal --version
           agda --version
+          # A missing or wrong toolchain is a failure, never a skip.
+          test "$(command -v ghc)" = "$TC/ghc/bin/ghc"
+          test "$(command -v cabal)" = "$TC/bin/cabal"
+          test "$(command -v agda)" = "$TC/bin/agda"
+          test "$(ghc --numeric-version)" = "$GHC_VERSION"
+          test "$(cabal --numeric-version)" = "$CABAL_VERSION"
+          test "$(agda --version | head -1)" = "Agda version $AGDA_VERSION"
 
       - name: Fetch and verify the pinned Agda standard library (v2.3)
         env:
@@ -66,21 +165,90 @@ jobs:
   coq:
     name: Coq proofs and Print Assumptions
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # Provisional while the cold build is being measured; replaced by the
+    # measured cold time plus a margin.
+    timeout-minutes: 90
     permissions:
       contents: read
+    env:
+      OPAM_VERSION: 2.1.6
+      OPAM_SHA256: 2f7b70fc874dde6e9d69b92c8293e52e06bed136b340f46e490f5adcf77ae393
+      # ocaml/opam-repository at this commit is the only package source.
+      OPAM_REPO_COMMIT: 1c93acbc4176695001cc3356717dcfe90f89ce44
+      OCAML_VERSION: 4.14.1
+      COQ_VERSION: 8.18.0
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install Coq
+      - name: Restore the Coq toolchain cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.toolchain/opam
+            ~/.toolchain/bin
+          key: coq-${{ runner.os }}-${{ runner.arch }}-opam${{ env.OPAM_VERSION }}-ocaml${{ env.OCAML_VERSION }}-coq${{ env.COQ_VERSION }}-repo${{ env.OPAM_REPO_COMMIT }}-r1
+
+      - name: Build OCaml and Coq with opam (skipped when restored)
         run: |
           set -euo pipefail
-          sudo apt-get update -q
-          sudo apt-get install -y -q coq
+          TC="$HOME/.toolchain"
+          mkdir -p "$TC/bin"
+          export OPAMROOT="$TC/opam" OPAMYES=1 OPAMJOBS=4 OPAMCOLOR=never
+          # System packages are never installed through apt here. opam only
+          # checks that they are present; a missing one fails the build.
+          export OPAMASSUMEDEPEXTS=1
+          export PATH="$TC/bin:$PATH"
+          if [ "$("$TC/bin/opam" --version 2>/dev/null || true)" != "$OPAM_VERSION" ]; then
+            echo "::group::install opam $OPAM_VERSION (upstream binary)"
+            curl -fsSL --retry 4 --retry-delay 5 -o "$TC/bin/opam" \
+              "https://github.com/ocaml/opam/releases/download/${OPAM_VERSION}/opam-${OPAM_VERSION}-x86_64-linux"
+            echo "$OPAM_SHA256  $TC/bin/opam" | sha256sum -c -
+            chmod 0755 "$TC/bin/opam"
+            echo "::endgroup::"
+          fi
+          if ! opam exec --switch=proof -- coqc --version 2>/dev/null | grep -q "version $COQ_VERSION"; then
+            echo "::group::build OCaml $OCAML_VERSION and Coq $COQ_VERSION from source"
+            rm -rf "$TC/opam"
+            repo="$RUNNER_TEMP/opam-repository"
+            rm -rf "$repo"
+            git init -q "$repo"
+            git -C "$repo" remote add origin https://github.com/ocaml/opam-repository.git
+            git -C "$repo" fetch -q --depth 1 origin "$OPAM_REPO_COMMIT"
+            git -C "$repo" checkout -q --detach FETCH_HEAD
+            test "$(git -C "$repo" rev-parse HEAD)" = "$OPAM_REPO_COMMIT"
+            opam init --bare --no-setup --disable-sandboxing --disable-shell-hook default "$repo"
+            opam switch create proof "ocaml-base-compiler.$OCAML_VERSION"
+            opam install --switch=proof "coq.$COQ_VERSION"
+            opam list --switch=proof
+            echo "::endgroup::"
+          fi
+
+      - name: Put the toolchain on PATH and print the version receipt
+        run: |
+          set -euo pipefail
+          TC="$HOME/.toolchain"
+          export OPAMROOT="$TC/opam"
+          export PATH="$TC/bin:$PATH"
+          echo "$TC/bin" >> "$GITHUB_PATH"
+          echo "$TC/opam/proof/bin" >> "$GITHUB_PATH"
+          echo "OPAMROOT=$TC/opam" >> "$GITHUB_ENV"
+          # Export the switch environment (everything except PATH).
+          opam env --switch=proof --set-switch \
+            | sed -n "s/^\([A-Za-z_]*\)='\(.*\)'; export .*/\1=\2/p" \
+            | grep -v '^PATH=' >> "$GITHUB_ENV"
+          export PATH="$TC/opam/proof/bin:$PATH"
+          opam --version
+          ocaml -version
           coqc --version
+          # A missing or wrong toolchain is a failure, never a skip.
+          test "$(command -v opam)" = "$TC/bin/opam"
+          test "$(command -v coqc)" = "$TC/opam/proof/bin/coqc"
+          test "$(opam --version)" = "$OPAM_VERSION"
+          test "$(ocamlc -version)" = "$OCAML_VERSION"
+          coqc --version | head -1 | grep -F "version $COQ_VERSION"
 
       - name: Prove the assumptions gate can fail (imported Axiom, empty list)
         run: bash tests/check_coq_assumptions_test.sh
