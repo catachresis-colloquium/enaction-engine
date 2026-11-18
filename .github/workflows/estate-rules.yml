@@ -38,6 +38,8 @@ jobs:
         run: bash scripts/check-no-md-in-docs.sh .
       - name: Repo identity (UUIDv8, CHORA-SPEC L1/B1; refuses a planted drift)
         run: sh scripts/check-identity.sh --self-test
+      - name: Contract release gate (ADR-0030; refuses a planted draft, accepts a planted release)
+        run: sh scripts/check-contract-released.sh --self-test
       - name: Estate UUID literals (standards check-uuid-v8.sh, pinned + sha256)
         run: sh scripts/check-uuid-v8-canon.sh
       - name: Arrival pack - install nickel 1.10.0 (upstream binary, sha256-pinned)

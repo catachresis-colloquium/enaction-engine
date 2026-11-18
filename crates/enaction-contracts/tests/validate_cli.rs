@@ -14,8 +14,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use enaction_contracts::{
     Belief, BeliefId, BeliefInterval, BeliefStatus, ContractVersion, EpistemicEvent,
-    EpistemicPackage, EventId, EventKind, KERNEL_CONTRACT_VERSION, Mass, PackageManifest,
-    ProfileRef, Proposition, Provenance, SeedPolicy, Subject, package_digest,
+    EpistemicPackage, EventId, EventKind, KERNEL_CONTRACT_STATE, KERNEL_CONTRACT_VERSION, Mass,
+    PackageManifest, ProfileRef, Proposition, Provenance, SeedPolicy, Subject, package_digest,
 };
 
 const BIN: &str = env!("CARGO_BIN_EXE_enaction-validate");
@@ -103,7 +103,7 @@ fn package() -> EpistemicPackage {
 
 fn envelope(package: &EpistemicPackage) -> serde_json::Value {
     serde_json::json!({
-        "contract": "enaction-runner-output/1",
+        "contract": "enaction-runner-output/2",
         "package": package,
         "world_truth": ["contact-3 in corridor"],
     })
@@ -274,8 +274,35 @@ fn runner_cannot_supply_its_own_policies() {
 
 #[test]
 fn the_contract_tag_must_match() {
+    // The 1.x tag with a 2.0 body is refused at `contract`, by the tag rule
+    // and by nothing else (ADR-0030). So is any other tag.
+    for tag in [
+        "enaction-runner-output/1",
+        "enaction-runner-output/3",
+        "enaction-runner-output",
+    ] {
+        let mut env = envelope(&package());
+        env["contract"] = tag.into();
+        let out = validate(env.to_string().as_bytes());
+        assert_eq!(out.status.code(), Some(1), "{tag}: {}", show(&out));
+        assert_eq!(
+            faults(&out),
+            [fault("UnknownField", "contract")],
+            "{tag}: {}",
+            show(&out)
+        );
+    }
+}
+
+#[test]
+fn the_tag_is_read_before_the_body_is_decoded() {
+    // A host dispatches on the tag (ADR-0030). An envelope that names
+    // another contract is refused for that alone, even when its body has a
+    // shape this contract cannot decode: the body is not read as a 2.0
+    // package, so no shape fault is reported for it.
     let mut env = envelope(&package());
-    env["contract"] = "enaction-runner-output/2".into();
+    env["contract"] = "enaction-runner-output/1".into();
+    env["package"] = serde_json::json!({ "not": "a 2.0 package" });
     let out = validate(env.to_string().as_bytes());
     assert_eq!(out.status.code(), Some(1), "{}", show(&out));
     assert_eq!(
@@ -284,6 +311,45 @@ fn the_contract_tag_must_match() {
         "{}",
         show(&out)
     );
+
+    // With the right tag the same body is refused for its shape, so the
+    // check above is not passing for want of a decoder.
+    env["contract"] = "enaction-runner-output/2".into();
+    let out = validate(env.to_string().as_bytes());
+    assert_eq!(out.status.code(), Some(1), "{}", show(&out));
+    let found = faults(&out);
+    assert!(
+        !found.is_empty()
+            && found
+                .iter()
+                .all(|f| f != &fault("UnknownField", "contract")),
+        "{}",
+        show(&out)
+    );
+
+    // An envelope with no tag at all is left to the decoder.
+    let mut env = envelope(&package());
+    env.as_object_mut().unwrap().remove("contract");
+    let out = validate(env.to_string().as_bytes());
+    assert_eq!(out.status.code(), Some(1), "{}", show(&out));
+    assert!(!faults(&out).is_empty(), "{}", show(&out));
+}
+
+#[test]
+fn version_prints_the_contract_version_with_its_state() {
+    let out = run(&["--version"], b"");
+    assert_eq!(out.status.code(), Some(0), "{}", show(&out));
+    let line = format!(
+        "enaction-validate kernel contract {KERNEL_CONTRACT_VERSION} ({})\n",
+        KERNEL_CONTRACT_STATE.as_str()
+    );
+    assert_eq!(String::from_utf8_lossy(&out.stdout), line);
+    // ADR-0030: 2.0 is a draft, and the host says so next to the version.
+    assert_eq!(line, "enaction-validate kernel contract 2.0 (draft)\n");
+    // `--version` is read alone: anything with it is an invocation failure.
+    let out = run(&["--version", "--frobnicate"], b"");
+    assert_eq!(out.status.code(), Some(2), "{}", show(&out));
+    assert!(out.stdout.is_empty(), "nothing on stdout on exit 2");
 }
 
 #[test]
@@ -334,7 +400,7 @@ fn the_callers_status_policy_decides_not_the_package() {
 }
 
 fn mind_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../conformance/mind/v1")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../conformance/mind/v2")
 }
 
 fn run_mind(case: &Path) -> Output {

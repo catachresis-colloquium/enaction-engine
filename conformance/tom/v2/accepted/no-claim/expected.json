@@ -1,0 +1,14 @@
+{
+  "models": [
+    {
+      "belief_id": 2,
+      "timeline": [
+        {
+          "from_tick": 3,
+          "verdict": "no-claim"
+        }
+      ],
+      "stale_divergent": false
+    }
+  ]
+}

@@ -203,9 +203,9 @@ for this repository say what it holds.
   ADR-0011 a name describes implemented responsibility, and the old one was a
   namespace reservation for work not done.
 
-| `conformance/mind/v1`
+| `conformance/mind/v2`
 | enaction-engine
-| The corpus for `enaction-mind-trace/1` (with `enaction-runner-output/1` and
+| The corpus for `enaction-mind-trace/1` (with `enaction-runner-output/2` and
   `enaction-policies/1`), checked by the `enaction-validate` binary in
   `enaction-contracts`. Contract and fixtures only; no affect or conation
   implementation here.
