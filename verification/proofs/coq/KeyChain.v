@@ -143,7 +143,9 @@ Section Causes.
     eapply Nat.le_trans; [ apply Hearly | apply Hlate ]; exact Hi.
   Qed.
 
-  (** Uniqueness, from the two cause rules alone. *)
+  (** Uniqueness, from the two cause rules on a chain. The chain itself is
+      the premise of this section: [belief-key-chained] makes it, and with no
+      links the cause rules hold vacuously and prove nothing. *)
   Theorem at_most_one_holds_by_cause :
     cause_not_earlier -> cause_not_later ->
     forall i j t, holds n vf i t -> holds n vf j t -> i = j.

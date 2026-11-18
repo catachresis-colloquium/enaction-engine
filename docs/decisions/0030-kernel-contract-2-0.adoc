@@ -103,8 +103,12 @@ The last two rules give
 starts before the belief it supersedes. The rule `supersession-monotone` of
 ADR-0029 is then removed from the validator and proved from the two cause
 rules, in Coq and in Agda (`cause_rules_give_monotone`). Uniqueness of the
-holder then follows from the cause rules alone
-(`at_most_one_holds_by_cause`). Two checked counterexamples show that
+holder then follows from the cause rules together with the one-chain rule
+`belief-key-chained` (`at_most_one_holds_by_cause`, which takes the chain as
+its premise). The cause rules give the order along a chain; they do not
+make the chain. With two beliefs of one key and no link, all six cause
+rules hold vacuously and both beliefs can hold at once, so
+`belief-key-chained` stays a rule. Two checked counterexamples show that
 neither cause rule is enough without the other.
 
 A property test keeps the empirical side: no generated package that passes

@@ -398,6 +398,13 @@ pub fn validate_package(
     for belief in &package.beliefs {
         beliefs_by_id.entry(belief.belief_id).or_insert(belief);
     }
+    // The events each belief cites, as a set, built once: a predecessor named
+    // by many successors is then not rescanned for each of them, so the cause
+    // rules stay near-linear in the size of the package.
+    let cited_by_id: BTreeMap<BeliefId, BTreeSet<EventId>> = beliefs_by_id
+        .iter()
+        .map(|(id, belief)| (*id, belief.source_events.iter().copied().collect()))
+        .collect();
     let mut events_by_id: BTreeMap<EventId, &EpistemicEvent> = BTreeMap::new();
     for event in &package.events {
         events_by_id.entry(event.event_id).or_insert(event);
@@ -405,13 +412,20 @@ pub fn validate_package(
     for belief in &package.beliefs {
         if let Some(link) = belief.supersedes {
             let replaced = beliefs_by_id.get(&link.belief).copied();
+            let replaced_cites = cited_by_id.get(&link.belief);
             if replaced.is_none() {
                 faults.push(PackageFault::SupersedesUnknownBelief {
                     belief: belief.belief_id,
                     superseded: link.belief,
                 });
             }
-            cause_faults(belief, link, replaced, &events_by_id, &mut faults);
+            cause_faults(
+                belief,
+                link,
+                replaced.zip(replaced_cites),
+                &events_by_id,
+                &mut faults,
+            );
         }
     }
     // Supersession cycles: `supersedes` is a functional graph (out-degree at
@@ -476,9 +490,9 @@ pub fn validate_package(
 
 /// The six rules on the cause of one supersession link (ADR-0030).
 ///
-/// `replaced` is the belief the link names, if the package has it, and
-/// `events` the package's events by id. Reported in this order:
-/// `supersession-cause-present`, `-observed`, `-cited`, `-new`,
+/// `replaced` is the belief the link names with the set of events it cites,
+/// if the package has it, and `events` the package's events by id. Reported in
+/// this order: `supersession-cause-present`, `-observed`, `-cited`, `-new`,
 /// `-not-earlier`, `-not-later`.
 ///
 /// A rule that needs a thing the package lacks is not evaluated, and the
@@ -489,7 +503,7 @@ pub fn validate_package(
 fn cause_faults(
     belief: &Belief,
     link: Supersession,
-    replaced: Option<&Belief>,
+    replaced: Option<(&Belief, &BTreeSet<EventId>)>,
     events: &BTreeMap<EventId, &EpistemicEvent>,
     faults: &mut Vec<PackageFault>,
 ) {
@@ -515,8 +529,8 @@ fn cause_faults(
             cause: link.because,
         });
     }
-    if let Some(replaced) = replaced {
-        if replaced.source_events.contains(&link.because) {
+    if let Some((replaced, replaced_cites)) = replaced {
+        if replaced_cites.contains(&link.because) {
             faults.push(PackageFault::SupersessionCauseNotNew {
                 belief: belief.belief_id,
                 cause: link.because,

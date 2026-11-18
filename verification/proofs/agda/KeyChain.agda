@@ -74,7 +74,9 @@ module Chain (n : ℕ) (vf : ℕ → ℕ) where
 -- supersession-cause-not-earlier (vf i ≤ c i) and
 -- supersession-cause-not-later (c i ≤ vf (suc i)). Together they give
 -- AdjacentMonotone, so supersession-monotone is no longer a rule that the
--- validator runs, and uniqueness follows from the two cause rules alone.
+-- validator runs. Uniqueness then follows from the two cause rules on a
+-- chain; the chain itself is the premise (rule belief-key-chained), since with
+-- no links the cause rules hold vacuously.
 module Causes (n : ℕ) (vf : ℕ → ℕ) (c : ℕ → ℕ) where
 
   open Chain n vf
