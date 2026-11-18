@@ -290,9 +290,9 @@ This section is an assessment by the author of the draft. It is not a ruling.
 | Owner acceptance, then the zero-affect fixture.
 |===
 
-On 2026-11-18, two commitments of four have passing evidence on `main`:
-C1 in full, and C2 for falsifier (a). Falsifier (b) of C2 has no test.
-For the rest the name is still an aspiration, as ADR-0018 says. Two of the remaining falsifiers (C2 and C3) can have tests within the
+On 2026-11-18, one commitment of four (C1) has passing evidence on `main`.
+C2 has passing evidence for falsifier (a) only, and falsifier (b) has no
+test. For the rest the name is still an aspiration, as ADR-0018 says. Two of the remaining falsifiers (C2 and C3) can have tests within the
 current route. If C1 to C3 pass by the review, the engine can
 defend a *weak enactive* reading: closure of the epistemic state, breakdown
 as a first-class event, and a loop through the world. It cannot defend the
