@@ -1,0 +1,111 @@
+{
+  "contract": "enaction-mind-trace/1",
+  "producer": {
+    "kernel": "evil-weevil",
+    "abi": "1.1"
+  },
+  "profile": {
+    "id": "idaptik",
+    "version": "1.0.0"
+  },
+  "vocabulary": {
+    "affect_tokens": [
+      "calm",
+      "wary",
+      "afraid",
+      "angry"
+    ],
+    "candidates": [
+      "advance",
+      "investigate",
+      "engage",
+      "evade",
+      "reload"
+    ],
+    "tells": [
+      "hesitate",
+      "startle",
+      "fixate"
+    ]
+  },
+  "ticks": [
+    {
+      "tick": 9,
+      "agent": "guard-0",
+      "affect": {
+        "token": "calm",
+        "attention": 1000,
+        "caused_by": []
+      },
+      "conation": {
+        "ranking": [
+          "advance",
+          "investigate"
+        ],
+        "incumbent": "advance",
+        "selected": "advance"
+      },
+      "tells": []
+    },
+    {
+      "tick": 10,
+      "agent": "guard-0",
+      "affect": {
+        "token": "wary",
+        "attention": 6000,
+        "caused_by": [
+          11
+        ]
+      },
+      "conation": {
+        "ranking": [
+          "advance",
+          "investigate"
+        ],
+        "incumbent": "advance",
+        "selected": "advance"
+      },
+      "tells": [
+        "startle"
+      ]
+    },
+    {
+      "tick": 11,
+      "agent": "guard-0",
+      "affect": {
+        "token": "wary",
+        "attention": 5600,
+        "caused_by": []
+      },
+      "conation": {
+        "ranking": [
+          "investigate",
+          "advance"
+        ],
+        "incumbent": "advance",
+        "selected": "investigate"
+      },
+      "tells": [
+        "hesitate"
+      ]
+    },
+    {
+      "tick": 12,
+      "agent": "guard-0",
+      "affect": {
+        "token": "wary",
+        "attention": 5200,
+        "caused_by": []
+      },
+      "conation": {
+        "ranking": [
+          "investigate",
+          "advance"
+        ],
+        "incumbent": "investigate",
+        "selected": "investigate"
+      },
+      "tells": []
+    }
+  ]
+}

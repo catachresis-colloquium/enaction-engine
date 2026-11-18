@@ -22,12 +22,45 @@ pub struct ContractVersion {
     pub minor: u16,
 }
 
-/// The kernel contract version this crate expresses.
+/// The kernel contract version this crate expresses: 2.0 (ADR-0030).
 ///
 /// Bump `minor` for additive change, `major` for anything a v1 loader could
 /// misread. The prose contract is `docs/architecture/CAC-KERNEL.adoc`; this
-/// constant is its executable identity.
-pub const KERNEL_CONTRACT_VERSION: ContractVersion = ContractVersion { major: 1, minor: 0 };
+/// constant is its executable identity. Its state is [`KERNEL_CONTRACT_STATE`].
+pub const KERNEL_CONTRACT_VERSION: ContractVersion = ContractVersion { major: 2, minor: 0 };
+
+/// The state of a contract version (ADR-0030, "The contract is 2.0, and it
+/// has a state").
+///
+/// While a version is a [`Draft`](ContractState::Draft), its shape and rules
+/// may still change with no further bump, and nothing may be published as
+/// conforming to it. The release gate (`scripts/check-contract-released.sh`)
+/// refuses a release until the state is [`Released`](ContractState::Released).
+/// The state is a fact about the host: the wire does not carry it.
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(not(creusot), derive(PartialEq, Eq))]
+pub enum ContractState {
+    /// The shape and the rules may still change. Not for publication.
+    Draft,
+    /// The shape and the rules are fixed for this version.
+    Released,
+}
+
+#[cfg(not(creusot))]
+impl ContractState {
+    /// The state as the host prints it: `draft` or `released`.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            ContractState::Draft => "draft",
+            ContractState::Released => "released",
+        }
+    }
+}
+
+/// The state of [`KERNEL_CONTRACT_VERSION`]. 2.0 is a draft until the owner
+/// rules it released (ADR-0030, stage C).
+pub const KERNEL_CONTRACT_STATE: ContractState = ContractState::Draft;
 
 impl ContractVersion {
     /// Whether a host at `self` accepts a package declared at `declared`.

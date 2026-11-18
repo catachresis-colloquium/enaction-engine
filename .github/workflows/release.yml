@@ -26,6 +26,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7.0.1
+      - name: Release gate (kernel contract must be released, ADR-0030)
+        run: sh scripts/check-contract-released.sh
       - name: Detect project type and build
         id: build
         run: |
@@ -140,6 +142,8 @@ jobs:
       attestations: write   # write the build-provenance attestation (the "claim")
     steps:
       - uses: actions/checkout@v7.0.1
+      - name: Release gate (kernel contract must be released, ADR-0030)
+        run: sh scripts/check-contract-released.sh
       # TODO: Download build artifacts if uploading to the release (pin
       #   actions/download-artifact to a full commit SHA when enabling):
       # - uses: actions/download-artifact@<full-commit-sha>  # vX.Y.Z

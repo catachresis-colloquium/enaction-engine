@@ -19,7 +19,7 @@ A game takes part by publishing three things:
 * a profile descriptor for UMS (vocabularies, edit verbs, constraints);
 * a versioned package contract (`contracts/<game>/v1`);
 * a headless runner that emits kernel-contract data in one versioned
-  envelope, `enaction-runner-output/1`: an `EpistemicPackage` and
+  envelope, `enaction-runner-output/2`: an `EpistemicPackage` and
   world-truth atoms (at most one per exclusive frame), with no Cargo link to
   Enaction or UMS. The runner never supplies the depth and status policies:
   they come from the profile, bound to `ProfileRef` by digest and to the
@@ -74,7 +74,7 @@ true?" for content that has not shipped yet.
     ▼
  game runner (e.g. IDApTIK examples/package-runner --emit-epistemic)
     │  owns: world truth, perception, game rules, package loading
-    │  data seam: enaction-runner-output/1 envelope
+    │  data seam: enaction-runner-output/2 envelope
     │             (EpistemicPackage + world-truth atoms), canonical bytes
     ▼
  enaction-validate          (Waves 1-4: contracts + canonical bytes only)

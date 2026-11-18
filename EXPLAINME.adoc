@@ -130,7 +130,7 @@ Implementation artifact:: `docs/architecture/UMS-INTEGRATION.adoc`, ADR-0009,
 and `enaction-contracts` with its `enaction-validate` binary (ADR-0024,
 Proposed).
 Verification gate:: Architecture review, plus the `enaction-contracts` tests
-and the `conformance/mind/v1` corpus.
+and the `conformance/mind/v2` corpus.
 Demonstrated:: The intended dependency boundary and prohibition on cycles; a
 validator that computes the mandatory digest over RFC 8785 JCS bytes; a
 producer and a reader of the two documents in other repositories (see above).

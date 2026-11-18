@@ -1,0 +1,220 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Architecture Decision Record: 0030-kernel-contract-2-0
+
+Date: 2026-11-17
+
+== Status
+
+Proposed. The owner ruled each point on 2026-11-17, by selector, after an
+experiment on a branch (section <<evidence>>). Stage A below is
+implemented with this record. Stages B and C are not.
+
+Amends ADR-0029 (the rule `supersession-monotone` becomes a theorem in
+stage B) and ADR-0009 (a contract version gains a state).
+
+== Context
+
+ADR-0029 added two package rules. A package that kernel 1.0 accepted can
+now be refused, so the change is breaking, and the owner ruled a major bump
+(decision D2).
+
+The owner also ruled that a supersession link names its cause (decision
+D1). `docs/theory/ENACTIVE-COMMITMENTS.adoc` commitment C2 says a
+contradiction is a first-class event that is never hidden. A link that
+names only the belief it replaces does not say what the mind met.
+
+A package already identifies its events: `EpistemicEvent.event_id`, with a
+`tick` and an `observer`. A belief already cites events in `source_events`.
+Nothing new is needed to name a cause.
+
+== Decision
+
+=== The contract is 2.0, and it has a state
+
+. `KERNEL_CONTRACT_VERSION` is 2.0. A 2.0 host refuses every 1.x package
+  (`kernel-version-compatible`; `CAC-KERNEL.adoc` section 6, ADR-0019).
+. A contract version has a _state_: `draft` or `released`. The crate states
+  it in a constant beside the version. 2.0 is `draft`.
+. While a version is a draft, its shape and rules may still change with no
+  further bump. Nothing may be published as conforming to it. The release
+  gate refuses a release, and `enaction-validate` prints the state with the
+  version.
+. The state is a fact about the host. The wire does not carry it. Section
+  <<limits>> says what that costs.
+
+=== Names tell the truth
+
+. The envelope is `enaction-runner-output/2`. A host refuses any other tag.
+. The corpora are `conformance/tom/v2` and `conformance/mind/v2`.
+. `conformance/tom/v1` and `conformance/mind/v1` are frozen: no file in
+  them changes again, their README files included, because each corpus
+  lists its README in its own `SHA256SUMS`. One test asserts that every
+  file still matches those sums. Another asserts that a 2.0 host refuses
+  every package in them, with two faults: the tag, and
+  `kernel-version-compatible`. The old vectors become a regression test.
+. `enaction-policies/1` and `enaction-mind-trace/1` keep their tags. Their
+  shapes do not change.
+
+=== The link names its cause (stage B)
+
+. `supersedes` is absent, or a record of two members: `belief`, the id of
+  the belief replaced, and `because`, the id of an event in the same
+  package. A link with no cause has no wire form.
+. The _revising mind_ of a belief is its outermost holder, or its bearer
+  when it has no holder.
+. Six rules constrain the cause. Each has a name, a fault path and a
+  rejected fixture.
+
+[cols="2,4",options="header"]
+|===
+| Rule | A package is refused when
+
+| `supersession-cause-present`
+| `because` names no event of the package.
+
+| `supersession-cause-observed`
+| the cause's `observer` is not the revising mind of the successor.
+
+| `supersession-cause-cited`
+| the cause is not among the successor's `source_events`.
+
+| `supersession-cause-new`
+| the cause is among the `source_events` of the belief replaced.
+
+| `supersession-cause-not-earlier`
+| the cause's `tick` is before the `valid_from` of the belief replaced.
+
+| `supersession-cause-not-later`
+| the cause's `tick` is after the successor's `valid_from`.
+|===
+
+The third and fourth rules together say that the cause is _new evidence_:
+the successor rests on it, and the belief it replaces did not.
+
+=== Monotonicity becomes a theorem (stage B)
+
+The last two rules give
+`old.valid_from <= cause.tick <= new.valid_from`. So a successor never
+starts before the belief it supersedes. The rule `supersession-monotone` of
+ADR-0029 is then removed from the validator and proved from the two cause
+rules, in Coq and in Agda. The key-chain proofs take monotonicity as a
+hypothesis today; stage B discharges it.
+
+A property test keeps the empirical side: no generated package that passes
+the cause rules has a successor that starts early.
+
+=== Stages
+
+[cols="1,5",options="header"]
+|===
+| Stage | Content
+
+| A
+| Version 2.0, state `draft`, the tag `/2`, the `v2` corpora, the frozen
+  `v1` corpora with their refusal test, and the release gate. No change to
+  the shape of a belief. In pull request 122.
+
+| B
+| The typed link, the six rules, the proofs, and the `v2` corpora
+  regenerated. A pull request stacked on stage A.
+
+| C
+| The state becomes `released`. The owner rules it, after IDApTIK and UMS
+  emit the new tag.
+|===
+
+[[limits]]
+== Limits, stated
+
+* *The release gate sits where a release is published.* The jobs of
+  `release.yml` that build and publish run it, and so does `release-tag` in
+  the project `Justfile`. `.machine_readable/contractiles/Justfile` holds an
+  older copy of `release-tag` with no gate. A tag made with it still meets
+  the gate in `release.yml`. The copy is left for the template upgrade.
+* *The wire does not mark a draft.* A package written under stage A and
+  read under stage B is handled as follows. If it has a link, it fails to
+  decode, because the link's shape changed. If it has none, both stages
+  give it the same meaning, because stage B adds rules about links only.
+  So the move inside the draft fails closed. A test in stage B pins both
+  halves.
+* *The cause is one event.* `source_events` and the trace's `caused_by`
+  are lists. A successor that rests on several new events names one.
+* *The kernel does not read a proposition.* No rule can check that the
+  cause contradicts the old belief. The rules check that it is new, cited,
+  received by the right mind, and in order.
+* *The cause's kind is not constrained.* An inference can be a cause. The
+  owner declined the stricter option; it would refuse the accepted case
+  `false-exposure-restated`.
+* *Ticks only.* `valid_from` has no sequence number, so a cause on the
+  successor's own tick passes whatever its `sequence`.
+* *One package.* The rules are closed over one package, as ADR-0029 says.
+  No gate checks continuity across packages.
+* *The trace crate points the other way.* `BeliefStore::assert_belief`
+  adds the contradicted belief's source event to `caused_by`. The package
+  names the new evidence. No code converts a trace to a package, so the two
+  do not meet yet. The conversion must settle it.
+
+[[evidence]]
+== Evidence
+
+An experiment on a branch off pull request 122 (commit `3f5cceb`, not
+pushed) built the typed link with the first, second and sixth rules, and
+bumped the version.
+
+* 25 files changed, 615 lines added and 120 removed.
+* `cargo test --locked --all-targets`: 226 passed, 0 failed. Clippy and
+  rustfmt clean. Re-run by the author of this record.
+* No accepted fixture needed an invented event. No `expected.json`
+  changed.
+* The Coq and Agda files of ADR-0029 did not change, and both gates pass.
+* `belief-key-chained` is still needed: the type refuses a link with no
+  cause, and only that rule refuses two beliefs of a key with no link.
+
+A probe then applied the third, fourth and fifth rules to every link in the
+accepted corpus. All 5 links satisfy all three. The corpus is small. The
+probe shows that the rules do not refuse the current fixtures, and nothing
+more.
+
+The experiment left the tag and the directory names unchanged. An old
+linked package then failed at decode with a positional path, and not with
+the version rule. That is the reason for the naming decision.
+
+== Alternatives the owner declined
+
+* *Merge pull request 122 first, then one 2.0 pull request.* `main` would
+  carry stricter rules under a 1.0 label for a time.
+* *Hold pull request 122 and land both together*, or *fold the link into
+  it*. Both delay a reviewed change.
+* *The cause as first built* (present, observed, not later). A link could
+  name the event that grounded the belief it replaces.
+* *Constrain the cause's kind.* See <<limits>>.
+* *No new member: derive the cause from `source_events`.* The wire shape
+  would not change, but the link would not name its cause, against D1.
+* *Keep the tag, or regenerate `v1` in place.* A reader that dispatches on
+  the tag could not tell the shapes apart, or `v1` would hold 2.0
+  packages.
+
+== Consequences
+
+=== Positive
+
+* The version says what the rules are at every commit.
+* A silent overwrite needs a link, and a link needs new evidence that the
+  revising mind received.
+* One runtime check becomes a proof.
+* The 1.x vectors are kept and tested as refused.
+
+=== Negative
+
+* Every producer must emit the new tag and the new version: IDApTIK and
+  UMS, in other repositories. Not checked from here.
+* A draft state is one more thing to gate. If the release gate is not
+  wired, the state is only a comment.
+* More fixtures: two corpora per family.
+
+=== Neutral
+
+* `manifest.schema_version`, `manifest.migration_from` and
+  `profile.version` are read by nothing today. This record does not change
+  them.

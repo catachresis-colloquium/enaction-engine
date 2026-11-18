@@ -112,8 +112,9 @@ fn sealed(mut package: EpistemicPackage) -> EpistemicPackage {
 fn planted() -> Vec<(&'static str, EpistemicPackage)> {
     let mut out = Vec::new();
 
+    // A 1.x package under the 2.0 host (ADR-0030).
     let mut p = valid();
-    p.manifest.kernel_version = ContractVersion { major: 2, minor: 0 };
+    p.manifest.kernel_version = ContractVersion { major: 1, minor: 0 };
     out.push(("kernel-version-compatible", sealed(p)));
 
     let mut p = valid();
@@ -148,6 +149,24 @@ fn planted() -> Vec<(&'static str, EpistemicPackage)> {
     p.beliefs[0].supersedes = Some(BeliefId(2));
     p.beliefs[1].supersedes = Some(BeliefId(1));
     out.push(("supersession-acyclic", sealed(p)));
+
+    // A silent overwrite (CAC-KERNEL §3 invariant 4, ADR-0029): a second
+    // belief of the guard about the same proposition that supersedes nothing.
+    let mut p = valid();
+    let mut later = belief(3, &[], &[2]);
+    later.valid_from = 2;
+    p.beliefs.push(later);
+    out.push(("belief-key-chained", sealed(p)));
+
+    // A contradiction record that runs backwards: 3 supersedes 1 but starts
+    // before it (ADR-0029).
+    let mut p = valid();
+    p.beliefs[0].valid_from = 5;
+    let mut earlier = belief(3, &[], &[2]);
+    earlier.valid_from = 2;
+    earlier.supersedes = Some(BeliefId(1));
+    p.beliefs.push(earlier);
+    out.push(("supersession-monotone", sealed(p)));
 
     let mut p = valid();
     p.beliefs.push(belief(3, &[""], &[1]));
