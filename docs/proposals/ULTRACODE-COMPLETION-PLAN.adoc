@@ -135,6 +135,15 @@ These are asked through the selector. The default arm is labelled on each.
   Independence then comes from a specification the owner did not write, not
   from a whole second game, so it can be scheduled. ADR-0025 amends ADR-0017
   to say so, and step 25's gate requires the reducer to pass that set.
+  *Re-ruled 2026-11-17: independence by formalism.* The plan revision on
+  `main` records it (ULTRAPLAN-REVISION-2026-11-17, Q4): a reference semantics,
+  mechanised in Rocq and in Agda and cross-checked, replaces part (2) in full,
+  including the named non-owner author and that author's own forge account.
+  Part (1), the dated want, still stands and may be recorded in any non-donor
+  consumer. That is owner ruling D8 of 2026-11-17, recorded in pull request
+  126, merged as `1b414eb`. ADR-0025 is not written yet. Facts about
+  this repository read at `cdf7ca1`; at that commit D8 is still an open
+  question in the plan revision.
 | Wave 5
 
 | Q5 | UMS `apps/studio` is TypeScript, against policy
@@ -182,7 +191,8 @@ These are asked through the selector. The default arm is labelled on each.
   redirects that birth path to the current one. Both values quoted above are
   UUIDv5 history, shortened to 8 hex digits as CHORA-SPEC section 9.1 does.
   `scripts/check-identity.sh` checks the id. Registration stays the owner's
-  act.
+  act. Facts read at `cdf7ca1`: pull request 121 merged as `3bf55cd` on
+  2026-11-17, and `.machine_readable/descriptiles/CLADE.a2ml` carries this id.
 | none
 
 | Q8 | 2026-11-30 identity review

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! `enaction-mind-trace/1` (WEEVIL-HOST-ROUTE, "The mind trace contract")
-//! against the published fixtures in `conformance/mind/v1/`.
+//! against the published fixtures in `conformance/mind/v2/`.
 //!
 //! Set `ENACTION_BLESS=1` to rewrite the two generated files
 //! (`runner-output.json` and `SHA256SUMS`) after a deliberate change. Without
@@ -21,7 +21,7 @@ use enaction_contracts::{
 };
 
 fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../conformance/mind/v1")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../conformance/mind/v2")
 }
 
 fn bless() -> bool {
@@ -66,7 +66,7 @@ fn runner_output() -> RunnerOutput {
                 targets_kernel: KERNEL_CONTRACT_VERSION,
             },
             schema_version: ContractVersion { major: 1, minor: 0 },
-            source: "conformance:mind/v1".into(),
+            source: "conformance:mind/v2".into(),
             digest: String::new(),
             migration_from: ContractVersion { major: 1, minor: 0 },
             seed: SeedPolicy::Fixed(7),

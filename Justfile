@@ -488,6 +488,8 @@ changelog-preview:
 release-tag version:
     #!/usr/bin/env bash
     set -euo pipefail
+    # Release gate (ADR-0030): refuse while the kernel contract is a draft.
+    sh scripts/check-contract-released.sh
     TAG="v{{version}}"
     if git rev-parse "$TAG" >/dev/null 2>&1; then
         echo "Tag $TAG already exists"

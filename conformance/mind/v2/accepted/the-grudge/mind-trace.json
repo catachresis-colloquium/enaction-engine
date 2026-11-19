@@ -1,0 +1,178 @@
+{
+  "contract": "enaction-mind-trace/1",
+  "producer": {
+    "kernel": "evil-weevil",
+    "abi": "1.1"
+  },
+  "profile": {
+    "id": "idaptik",
+    "version": "1.0.0"
+  },
+  "vocabulary": {
+    "affect_tokens": [
+      "calm",
+      "wary",
+      "afraid",
+      "angry"
+    ],
+    "candidates": [
+      "advance",
+      "investigate",
+      "engage",
+      "evade",
+      "reload"
+    ],
+    "tells": [
+      "hesitate",
+      "startle",
+      "fixate"
+    ]
+  },
+  "ticks": [
+    {
+      "tick": 40,
+      "agent": "guard-0",
+      "affect": {
+        "token": "calm",
+        "attention": 2000,
+        "caused_by": []
+      },
+      "conation": {
+        "ranking": [
+          "advance",
+          "investigate",
+          "engage"
+        ],
+        "incumbent": "advance",
+        "selected": "advance"
+      },
+      "tells": []
+    },
+    {
+      "tick": 40,
+      "agent": "guard-1",
+      "affect": {
+        "token": "calm",
+        "attention": 1500,
+        "caused_by": []
+      },
+      "conation": {
+        "ranking": [
+          "advance",
+          "investigate"
+        ],
+        "incumbent": "advance",
+        "selected": "advance"
+      },
+      "tells": []
+    },
+    {
+      "tick": 41,
+      "agent": "guard-0",
+      "affect": {
+        "token": "angry",
+        "attention": 7500,
+        "caused_by": [
+          17,
+          23
+        ]
+      },
+      "conation": {
+        "ranking": [
+          "engage",
+          "advance",
+          "evade"
+        ],
+        "incumbent": "advance",
+        "selected": "engage",
+        "target": "contact-3"
+      },
+      "tells": [
+        "fixate"
+      ]
+    },
+    {
+      "tick": 41,
+      "agent": "guard-1",
+      "affect": {
+        "token": "calm",
+        "attention": 1500,
+        "caused_by": []
+      },
+      "conation": {
+        "ranking": [
+          "advance",
+          "investigate"
+        ],
+        "incumbent": "advance",
+        "selected": "advance"
+      },
+      "tells": []
+    },
+    {
+      "tick": 42,
+      "agent": "guard-0",
+      "affect": {
+        "token": "angry",
+        "attention": 7200,
+        "caused_by": []
+      },
+      "conation": {
+        "ranking": [
+          "evade",
+          "engage",
+          "advance"
+        ],
+        "incumbent": "engage",
+        "selected": "engage",
+        "target": "contact-3"
+      },
+      "tells": [
+        "fixate"
+      ]
+    },
+    {
+      "tick": 43,
+      "agent": "guard-0",
+      "affect": {
+        "token": "angry",
+        "attention": 6900,
+        "caused_by": []
+      },
+      "conation": {
+        "ranking": [
+          "evade",
+          "engage",
+          "reload"
+        ],
+        "incumbent": "engage",
+        "selected": "engage",
+        "target": "contact-3"
+      },
+      "tells": [
+        "fixate"
+      ]
+    },
+    {
+      "tick": 44,
+      "agent": "guard-0",
+      "affect": {
+        "token": "afraid",
+        "attention": 6600,
+        "caused_by": [
+          23
+        ]
+      },
+      "conation": {
+        "ranking": [
+          "evade",
+          "reload",
+          "engage"
+        ],
+        "incumbent": "engage",
+        "selected": "evade"
+      },
+      "tells": []
+    }
+  ]
+}
