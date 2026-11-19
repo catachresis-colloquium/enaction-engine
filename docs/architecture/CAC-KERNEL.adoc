@@ -231,7 +231,8 @@ did not have; a package that 1.0 accepted can now be refused, and that is why
 the major changed.
 
 A contract version has a state: `draft` or `released`. The crate states it
-beside the version (`KERNEL_CONTRACT_STATE`). 2.0 is a `draft`.
+beside the version (`KERNEL_CONTRACT_STATE`). 2.0 is `released`: the owner
+ruled it on 2026-11-19 (ADR-0030, stage C).
 
 * While a version is a draft, its shape and rules may still change with no
   further bump.
@@ -239,7 +240,7 @@ beside the version (`KERNEL_CONTRACT_STATE`). 2.0 is a `draft`.
   (`scripts/check-contract-released.sh`) refuses a release while the state is
   `draft`.
 * `enaction-validate --version` prints the version with its state, for
-  example `enaction-validate kernel contract 2.0 (draft)`.
+  example `enaction-validate kernel contract 2.0 (released)`.
 * The state is a fact about the host. The wire does not carry it: a package
   does not say that it was written under a draft.
 
@@ -524,7 +525,7 @@ enaction-validate --version
 ----
 
 `--version` prints the kernel contract version with its state and exits 0,
-for example `enaction-validate kernel contract 2.0 (draft)` (§6). It takes
+for example `enaction-validate kernel contract 2.0 (released)` (§6). It takes
 no other argument.
 
 * `exit 0`: valid. Stdout is the canonical bytes of the envelope and a
