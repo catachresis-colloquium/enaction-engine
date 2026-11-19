@@ -21,6 +21,14 @@ session of the Weevil route, after both consumers had moved:
 * The studio `main` `be92b90` (universal-modding-studio pull request 121)
   reads `/2`, shows each link's cause, refuses `/1` for its tag, and derives
   the seven accepted `tom/v2` cases exactly.
+* The studio is a consumer, not a producer. At `main` `0f1f9ad` no studio
+  source writes an `enaction-runner-output` document. Its preview passes
+  on the bytes that a game runner writes. The condition "UMS emits the new
+  tag" in the stage table therefore has nothing to check, and the owner
+  ruled stage C on the evidence above. One test stub of the preview
+  (`crates/ums-profile-sdk/tests/process_preview.rs`) and the description in
+  `adapters/enaction/preview-response.schema.json` still name `/1`. They
+  are not producers, and they are open in the studio.
 * The real-chain job of the studio, with its pins moved to Enaction
   `11bd247` and IDApTIK `9a89fcb`, passed on universal-modding-studio pull
   request 122 (run `44440939355`) and again on the studio `main` `0f1f9ad`
