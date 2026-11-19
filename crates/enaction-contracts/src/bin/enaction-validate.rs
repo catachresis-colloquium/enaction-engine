@@ -7,7 +7,7 @@
 //! ```
 //!
 //! * `--version`: prints `enaction-validate kernel contract <version>
-//!   (<state>)` and exits 0; for example `kernel contract 2.0 (draft)`. The
+//!   (<state>)` and exits 0; for example `kernel contract 2.0 (released)`. The
 //!   state is a fact about the host (ADR-0030): a draft is not for
 //!   publication, and the wire does not carry it. No other argument is read.
 //!

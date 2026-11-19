@@ -10,7 +10,32 @@ Proposed. The owner ruled each point on 2026-11-17, by selector, after an
 experiment on a branch (section <<evidence>>). Stage A below is
 implemented with this record. Stage B is implemented by the change that
 follows it, with its Coq and Agda proofs.
-Stage C is not.
+
+*Stage C, 2026-11-19.* The owner ruled 2.0 released, in the coordinating
+session of the Weevil route, after both consumers had moved:
+
+* IDApTIK `main` `9a89fcb` (pull request 234) emits
+  `enaction-runner-output/2` with the typed link. All 12 corridor runs are
+  accepted by `enaction-validate` at `11bd247`, and six planted mutants are
+  refused, each by its own `supersession-cause-*` rule.
+* The studio `main` `be92b90` (universal-modding-studio pull request 121)
+  reads `/2`, shows each link's cause, refuses `/1` for its tag, and derives
+  the seven accepted `tom/v2` cases exactly.
+* The studio is a consumer, not a producer. At `main` `0f1f9ad` no studio
+  source writes an `enaction-runner-output` document. Its preview passes
+  on the bytes that a game runner writes. The condition "UMS emits the new
+  tag" in the stage table therefore has nothing to check, and the owner
+  ruled stage C on the evidence above. One test stub of the preview
+  (`crates/ums-profile-sdk/tests/process_preview.rs`) and the description in
+  `adapters/enaction/preview-response.schema.json` still name `/1`. They
+  are not producers, and they are open in the studio.
+* The real-chain job of the studio, with its pins moved to Enaction
+  `11bd247` and IDApTIK `9a89fcb`, passed on universal-modding-studio pull
+  request 122 (run `44440939355`) and again on the studio `main` `0f1f9ad`
+  after that pull request merged (run `44445330738`).
+
+From this point, a change to the shape or the rules of 2.0 needs a new
+version.
 
 Amends ADR-0029 (the rule `supersession-monotone` becomes a theorem in
 stage B) and ADR-0009 (a contract version gains a state).
@@ -37,7 +62,8 @@ Nothing new is needed to name a cause.
 . `KERNEL_CONTRACT_VERSION` is 2.0. A 2.0 host refuses every 1.x package
   (`kernel-version-compatible`; `CAC-KERNEL.adoc` section 6, ADR-0019).
 . A contract version has a _state_: `draft` or `released`. The crate states
-  it in a constant beside the version. 2.0 is `draft`.
+  it in a constant beside the version. 2.0 was `draft` from stage A until
+  stage C (2026-11-19); it is now `released`.
 . While a version is a draft, its shape and rules may still change with no
   further bump. Nothing may be published as conforming to it. The release
   gate refuses a release, and `enaction-validate` prints the state with the

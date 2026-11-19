@@ -344,8 +344,9 @@ fn version_prints_the_contract_version_with_its_state() {
         KERNEL_CONTRACT_STATE.as_str()
     );
     assert_eq!(String::from_utf8_lossy(&out.stdout), line);
-    // ADR-0030: 2.0 is a draft, and the host says so next to the version.
-    assert_eq!(line, "enaction-validate kernel contract 2.0 (draft)\n");
+    // ADR-0030 stage C: the owner released 2.0 on 2026-11-19, and the host
+    // says so next to the version.
+    assert_eq!(line, "enaction-validate kernel contract 2.0 (released)\n");
     // `--version` is read alone: anything with it is an invocation failure.
     let out = run(&["--version", "--frobnicate"], b"");
     assert_eq!(out.status.code(), Some(2), "{}", show(&out));
