@@ -226,6 +226,12 @@ claude-md:
 validate-claude-md:
     @bash .machine_readable/arrival-pack/verify.sh
 
+# Fail if the repo id drifts from its birth-path UUIDv8, or if any UUID literal
+# breaks the estate rule (standards check-uuid-v8.sh at a pinned commit)
+verify-identity:
+    @sh scripts/check-identity.sh --self-test
+    @sh scripts/check-uuid-v8-canon.sh
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # COAPTATION — typed descriptile↔contractile face-off (homeostasis reading)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -482,6 +488,8 @@ changelog-preview:
 release-tag version:
     #!/usr/bin/env bash
     set -euo pipefail
+    # Release gate (ADR-0030): refuse while the kernel contract is a draft.
+    sh scripts/check-contract-released.sh
     TAG="v{{version}}"
     if git rev-parse "$TAG" >/dev/null 2>&1; then
         echo "Tag $TAG already exists"

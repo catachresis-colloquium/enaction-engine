@@ -70,19 +70,19 @@ Why3 1.8.2+git and its pinned `nightly-2026-06-22` toolchain.
   `src/interface/Abi/Accelerator.idr`.
 
 | RUST-P1
-| The production accelerator version predicate returns true exactly when host
-  and request majors match and the requested minor is no newer than the host.
-| `crates/enaction-accelerator/src/version.rs` — `ContractVersion::accepts`;
-  `scripts/check-creusot.sh` proved all four generated files through the narrow
-  harness in `verification/creusot`.
+| The contract-version predicate returns true exactly when host and declared
+  majors match and the declared minor is no newer than the host. The
+  accelerator contract uses it through a re-export.
+| `crates/enaction-version/src/lib.rs` — `ContractVersion::accepts`;
+  `scripts/check-creusot.sh` proves the whole crate `enaction-version`
+  (4 generated files, re-run 2026-11-17).
 
 | RUST-P2
-| The production CAC/ESM contract-version predicate returns true exactly when
-  host and declared majors match and the declared minor is no newer than the
-  host.
-| `crates/enaction-contracts/src/version.rs` — `ContractVersion::accepts`;
-  the exact production module is included by `verification/creusot`, and the
-  combined harness proves all seven generated files.
+| The CAC/ESM contract uses the same predicate through a re-export. It is
+  one type and one contract, proved once (RUST-P1). Before 2026-11-17 each
+  crate carried its own copy.
+| `crates/enaction-contracts/src/version.rs` — `pub use
+  enaction_version::ContractVersion`.
 |===
 
 ABI-P6 is exhaustive: all seven equal-constructor cases and all 42 directed
@@ -103,13 +103,15 @@ witness. A negative control enlarged the final request field so it ended at
 byte 64 in a 56-byte struct; Idris2 rejected the final bounds witness. Restoring
 the eight-byte field returned the production package to green.
 
-RUST-P1 and RUST-P2 are connected to production source rather than copied
-models: the verification harness includes the exact modules compiled by
-`enaction-accelerator` and `enaction-contracts`. For each predicate, a negative
+RUST-P1 is production source, not a copied model: `enaction-version` is the
+crate that `enaction-accelerator` and `enaction-contracts` compile against,
+and it is the only crate that depends on `creusot-std`, so Creusot proves it
+as a whole and no harness chooses what the prover sees. A negative
 control changed `<=` to `<` while retaining the exact postcondition; Creusot
-then failed `Coma.vc_accepts` with only 3/4 obligations proved for that module.
-Restoring both implementations returned the combined gate to 7/7. These claims
-prove only the two named predicates, not their callers or any other Rust
+then failed `Coma.vc_accepts` with only 3/4 obligations proved and the gate
+exited 1. Restoring the implementation returned the gate to 4/4 files
+(re-run 2026-11-17, Creusot 0.13.0). The claim
+proves only the named predicate, not its callers or any other Rust
 module.
 
 == Tested implementation correspondence
@@ -190,11 +192,12 @@ manifest remains limited:
 | Repair, product-specialise, and promote them from quarantine.
 
 | RUST-G1
-| Creusot proves only the two production version-compatibility predicates;
+| Creusot proves only the version-compatibility predicate;
   package validation callers, planner, integer kernels, floating-point kernels
   and native adapter remain unproved.
-| Admit each exact production module to the narrow harness only when Creusot
-  can translate its dependencies, then state and positively control its own
+| Move a contract-bearing item into the proved leaf crate `enaction-version`,
+  or into another leaf crate that Creusot can prove as a whole, only when
+  Creusot can translate all of it; then state and positively control its own
   contract. Creusot 0.13 currently ICEs on the planner's trait-object surface.
 
 | RUST-G2

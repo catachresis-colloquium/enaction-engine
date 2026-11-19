@@ -16,7 +16,6 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/e2e.yml':
         - 'actions/checkout@v7.0.1'
-        - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/estate-rules.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/governance.yml': []
@@ -39,6 +38,7 @@ workflows:
         - 'actions/deploy-pages@v5.0.1'
         - 'actions/upload-pages-artifact@v5.0.0'
     '.github/workflows/proof-gates.yml':
+        - 'actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
         - 'actions/checkout@v7.0.1'
     '.github/workflows/proven-tests-gate.yml':
         - 'actions/checkout@v7.0.1'
@@ -56,12 +56,12 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/rust-ci.yml':
         - 'actions/checkout@v7.0.1'
-        - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/scorecard.yml': []
     '.github/workflows/secret-scanner.yml': []
     '.github/workflows/security-policy.yml':
         - 'actions/checkout@v7.0.1'
-    '.github/workflows/sonarcloud-queue-gate.yml': []
+    '.github/workflows/sonarcloud-queue-gate.yml':
+        - 'hyperpolymath/proven-cicd-and-workflows@43223d1e7a0eb0eb4d9b4bb3fabbb3c201d6fbb7'
     '.github/workflows/static-analysis-gate.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
@@ -84,6 +84,11 @@ dependencies:
         commit: 'sha1-508db95dd578ae2727ebd6217d5ba78e4fbda05d'
         owner_id: 44036562
         repo_id: 760701061
+    'actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9':
+        ref: 'v6.1.0'
+        commit: 'sha1-55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
+        owner_id: 44036562
+        repo_id: 215566462
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'
         commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
@@ -146,6 +151,11 @@ dependencies:
         commit: 'sha1-3fdad0c2b027f328e784ecf08caf62bf80a784c1'
         owner_id: 6759885
         repo_id: 1274526902
+    'hyperpolymath/proven-cicd-and-workflows@43223d1e7a0eb0eb4d9b4bb3fabbb3c201d6fbb7':
+        ref: 'main'
+        commit: 'sha1-43223d1e7a0eb0eb4d9b4bb3fabbb3c201d6fbb7'
+        owner_id: 6759885
+        repo_id: 1326697643
     'mlugg/setup-zig@v2.2.1':
         ref: 'v2.2.1'
         commit: 'sha1-d1434d08867e3ee9daa34448df10607b98908d29'

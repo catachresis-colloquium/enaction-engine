@@ -163,7 +163,11 @@ jobs:
       - name: Build pinned Hypatia source
         run: |
           set -euo pipefail
-          readonly HYPATIA_COMMIT="b75e313487b03349046ac4d8780a533dd6bad57b"
+          # hyperpolymath/hypatia #1062 (2026-11-13). It must include the
+          # actions_lock compile fix (a5d603af/edc66080, #956) for Elixir
+          # 1.19.4, and the PinSites OTP 28 segfault fix (#1062) for OTP 28.3.
+          # 9a5db53 had neither and failed to compile.
+          readonly HYPATIA_COMMIT="37b8d012328409bb0526c6241d7da7d86c59e156"
           git init -q "$HOME/hypatia"
           git -C "$HOME/hypatia" remote add origin https://github.com/hyperpolymath/hypatia.git
           git -C "$HOME/hypatia" fetch -q --depth=1 origin "$HYPATIA_COMMIT"
