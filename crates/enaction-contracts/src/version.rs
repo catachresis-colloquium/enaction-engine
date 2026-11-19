@@ -43,9 +43,11 @@ impl ContractState {
     }
 }
 
-/// The state of [`KERNEL_CONTRACT_VERSION`]. 2.0 is a draft until the owner
-/// rules it released (ADR-0030, stage C).
-pub const KERNEL_CONTRACT_STATE: ContractState = ContractState::Draft;
+/// The state of [`KERNEL_CONTRACT_VERSION`]. The owner ruled 2.0 released on
+/// 2026-11-19 (ADR-0030, stage C), after IDApTIK and the studio emitted and
+/// read `enaction-runner-output/2`. A change to its shape or rules now needs a
+/// new version.
+pub const KERNEL_CONTRACT_STATE: ContractState = ContractState::Released;
 
 /// A profile reference: game- or scenario-specific vocabulary and policy,
 /// declared without changing kernel semantics (CAC-KERNEL §5).
