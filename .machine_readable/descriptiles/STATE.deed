@@ -1,0 +1,32 @@
+;; SPDX-License-Identifier: AGPL-3.0-or-later
+; Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+;
+; STATE.deed: how this repo is, as a lifecycle fact (standards A7 7.2, J3,
+; J15; profile `deed_lint.js --state`).
+;
+; The (status ...) clause below is the [status] table of the deprecated
+; CLADE.a2ml, carried field for field under standards
+; 1-formats/deed/mappings/clade-to-repo-deed.adoc section 3. It is the
+; registry lifecycle phase (gv-clade-index ADR 0006), not the project phase.
+;
+; There is no (maturity ...) clause yet: the maturity is still recorded in
+; STATE.a2ml, whose own mapping has not been applied here. With no clause the
+; maturity is unstated, never a default.
+(descriptile-deed
+  :schema-version "1.0.0"
+  :canonical-name "enaction-engine"
+  :of-chora #uuid"aa4cefc5-1955-8821-ab3f-cdae5c79fd69"
+  :affirmed "2026-11-17" :affirmed-by agent
+  (status
+    :phase incubating
+    :since "2026-07-22"
+    :present #t
+    :aliases ()
+    :merged-into ""
+    :superseded-by ""
+    :successors ()
+    :ended ""
+    (history
+      (entry :phase incubating
+             :since "2026-07-22"
+             :note "created from rsr-template-repo as a game-engine project; registration remains an owner action"))))
