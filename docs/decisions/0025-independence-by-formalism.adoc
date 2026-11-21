@@ -1,0 +1,246 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Architecture Decision Record: 0025-independence-by-formalism
+
+Date: 2026-11-17
+
+== Status
+
+Proposed. The number was reserved by step 8 of
+`docs/proposals/ULTRACODE-COMPLETION-PLAN.adoc`. The owner ruled the route
+on 2026-11-17, by selector, and asked for an experiment before the larger
+work. Section <<experiment>> reports it.
+
+Amends ADR-0017 (trigger T1) and replaces part (2) of the plan's Q4 ruling
+of 2026-11-05.
+
+== Context
+
+ADR-0017 lets the kernel reducer be designed only after three triggers. T1
+asks for a second consumer, because "same-author second callers do not
+supply independence". Both proving-ground games have the same author.
+
+On 2026-11-05 the owner ruled that independence could come from a
+specification that the owner did not write: a set of scenarios with expected
+beliefs, written by a named person other than the owner and merged through
+that person's own forge account. No such person was named.
+
+On 2026-11-17 the owner replaced that route with _independence by
+formalism_. Part (1) of T1 stands: a dated want for a kernel-owned reducer,
+recorded in the repository of any consumer that is not the donor (decision
+D8).
+
+== Decision
+
+=== The specification is mechanised twice, from the prose
+
+. The contract is stated once, in prose, in `CAC-KERNEL.adoc`.
+. Two _writers_ each mechanise it, one in Rocq and one in Agda. Each
+  definition is a computable function, so each mechanisation yields the
+  expected output of every scenario by evaluation.
+. A writer receives the prose and the input packages. A writer does not
+  receive the Rust implementation, any expected output, or the other
+  mechanisation. A writer that meets an ambiguity records it, chooses a
+  reading, and does not look for the answer.
+. The two writers share no context. In practice each is a session that
+  starts from the prose alone. A writer reports whether it kept the rules,
+  and a breach is reported, not hidden.
+
+=== The cross-check is byte equality of vectors
+
+. Each mechanisation emits its expected output for each scenario in one
+  canonical form: JCS (RFC 8785, ADR-0024), with the member names that the
+  prose fixes.
+. A gate requires the two outputs to be byte-equal, and equal to the
+  vectors in `conformance/`.
+. A disagreement is a finding about the prose. It is settled by changing
+  the prose, and then both mechanisations. It is never settled by choosing
+  the mechanisation that matches the implementation.
+
+=== The prose must be sufficient
+
+. Every gap that a writer reports is closed in the prose, or recorded as an
+  open point with the owner's name on it.
+. The corpus gains a case for each gap, so that a different reading gives a
+  different vector.
+. A corpus README does not state the expected result of a case. It may
+  state what the case is for.
+
+=== Chronology
+
+Both mechanisations and their vectors for the reducer are merged before the
+first pull request that designs the reducer is created. The gate reads both
+times from the forge API, and never from `git log`, whose authors and dates
+are self-asserted.
+
+=== What this does not give
+
+* Two formal models can agree and both misread the intent. The prose stays
+  the owner's to accept.
+* The writers are sessions of one kind of author. Their independence is
+  from each other's text and from the implementation. It is not the
+  independence of a second person.
+* A mechanisation proves properties of its own definitions. It proves
+  nothing about the Rust code. The vectors are the only bridge.
+
+[[experiment]]
+== The experiment of 2026-11-17
+
+The slice was CAC-KERNEL section 9, "Models are compared with minds": when
+a belief holds at a tick, the timeline of a model, its `until`, and
+`stale_divergent`.
+
+Each writer was given `CAC-KERNEL.adoc`, ADR-0028, ADR-0029, the README of
+`conformance/tom/v1`, the corpus `policies.json`, and the seven accepted
+`runner-output.json` files, in a folder that held nothing else. Each was
+told not to open the repository.
+
+[cols="2,3,3",options="header"]
+|===
+| | Rocq writer | Agda writer
+
+| File
+| `verification/proofs/coq/TomSpec.v`
+| `verification/proofs/agda/TomSpec.agda`
+
+| Compiles
+| `coqc` 8.18, standard library only
+| `agda --safe --without-K --cubical-compatible`, pinned standard library
+
+| Axioms or postulates
+| None. `Print Assumptions` on 10 theorems: closed under the global
+  context.
+| None (`--safe`).
+
+| Timelines against `expected.json`, 7 cases, 11 models
+| All equal, after key order is normalised.
+| All equal, after key order is normalised.
+
+| Bytes against the other writer
+2+| Different. The values are equal; the member order and the top-level
+  shape differ.
+
+| Gaps reported in the prose
+| 12
+| 11
+
+| Isolation
+| Kept. It listed the folder that held its inputs.
+| One breach: Agda wrote 6 interface cache files into the standard
+  library's build directory.
+|===
+
+The comparison with `expected.json`, both compilations and the two gates
+(`scripts/check-proofs.sh`, `scripts/check-coq-assumptions.sh`) were re-run
+by the author of this record. The writers' counts of gaps and their
+isolation statements are their own reports.
+
+Both files are now listed in the proof manifests, so the gates compile
+them. The scripts that transcribe a package into a term and print the
+vectors are not in the repository yet. Until they are, the gate checks that
+the specifications compile, and not that they still give the vectors.
+
+=== What the experiment found
+
+. *The method works on this slice.* Two writers, working apart, reached the
+  same values as the hand-written vectors.
+. *The format is not specified.* The prose names the members of a segment
+  and the verdict spellings. It does not fix the top-level shape (the files
+  hold an object with a `models` member; both writers chose a bare array),
+  the name of the id member, the member order, whether an absent `until` is
+  omitted, or the shape of a refused model. Byte equality is impossible
+  until the prose fixes these.
+. *The README leaked answers.* The README of `conformance/tom/v1` states
+  each case's verdicts in prose. Both writers used it to settle whether
+  `until` is inside the lifetime. So the writers were independent of the
+  implementation and of `expected.json`, and not of the README.
+. *The setup had a fault.* The case `second-order` has its own
+  `policies.json`, and the folder did not include it. Both writers assumed
+  that the derivation takes no policy, which ADR-0028 says.
+. *The writers resolved some gaps differently* with no effect on these
+  seven cases. The corpus does not pin those gaps.
+
+=== Gaps in the prose
+
+Each needs a sentence in `CAC-KERNEL.adoc` section 9 and a corpus case.
+"Pinned" means that some accepted case gives a different vector under the
+other reading.
+
+[cols="4,2",options="header"]
+|===
+| Gap | Pinned today
+
+| Is the tick `until` inside the lifetime?
+| By `caught` and `false-exposure-restated`, but only the README told the
+  writers which reading the corpus wants.
+
+| "Holds" means a status in one sentence and a time in another. Which one
+  does "the belief of the compared kind that holds at that tick" mean?
+| By four cases as one writer stated the choice; by none as the other did.
+
+| A successor on the model's own `valid_from` gives "one segment". Its
+  verdict is not stated.
+| No
+
+| "The end of the package" is not defined.
+| No
+
+| An `unknown` model whose counterpart is ambiguous: no claim, or refused?
+| No
+
+| "None supersedes the others by then": direct or transitive?
+| No
+
+| Section 9 says any superseder ends a belief; ADR-0029 says only links
+  inside a key count. The scope of each sentence is not stated.
+| No
+
+| Agrees, diverges, agrees again: is the model stale-divergent?
+| No
+
+| A model of order 2 or more: does a `rejected` inner model count as "does
+  not hold", like `unknown` and absent?
+| No
+
+| Belief ids are unique. The validator has the rule `belief-id-unique`;
+  the prose states uniqueness only for events.
+| No
+
+| Is an order-0 belief in the output? What is the shape of a refused
+  model, and is one model refused or the whole package?
+| No
+|===
+
+== Consequences
+
+=== Positive
+
+* T1 can be scheduled. It no longer waits for a second person.
+* The first result is a list of defects in the prose. That is the purpose
+  of an independent reading.
+* Two mechanisations exist for section 9, and both are gated.
+
+=== Negative
+
+* Every scenario family needs two mechanisations and a printer for each.
+  The two files for this slice are about 800 and 600 lines.
+* The Rocq file counts ticks in unary. It is a specification, and it
+  cannot evaluate a tick near 2^53. The Agda file visits every tick.
+* A third component, the printers, must be trusted to print faithfully.
+  Each writer checked its transcription by a round trip to JSON.
+
+=== Neutral
+
+* The vectors for the reducer keep the path
+  `conformance/esm/v1/independent/`, which the plan already names.
+
+== Follow-up
+
+. Fix the vector format in `CAC-KERNEL.adoc` section 9 and close the gaps
+  above, after ADR-0030 stage A moves the corpus to `v2`.
+. Add the corpus cases that pin each gap.
+. Remove the stated results from the corpus README.
+. Bring the two transcription scripts and printers into the repository, and
+  add the gate that compares the bytes.
+. Then write the two mechanisations of the reduction contract (CAC-KERNEL
+  section 2), by the same protocol, before the reducer is designed.

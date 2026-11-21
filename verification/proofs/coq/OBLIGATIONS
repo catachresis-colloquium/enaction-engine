@@ -3,6 +3,16 @@
 # scripts/check-coq-assumptions.sh requires each to be closed under the global
 # context (Print Assumptions). TypeSafety.v is the RSR template proof (plan
 # question Q3); this entry is replaced when Cac.v lands (plan step 20).
+TomSpec.holds_at_lifetime
+TomSpec.not_holding_at_until
+TomSpec.verdict_stable
+TomSpec.timeline_wellformed
+TomSpec.timeline_sound
+TomSpec.one_segment_never_changed
+TomSpec.unknown_one_segment
+TomSpec.successor_on_same_tick
+TomSpec.stale_divergent_iff
+TomSpec.stale_needs_two_segments
 TypeSafety.type_soundness
 KeyChain.chain_monotone_le
 KeyChain.at_most_one_holds
