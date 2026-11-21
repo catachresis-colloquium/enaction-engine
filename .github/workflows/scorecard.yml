@@ -17,14 +17,24 @@ permissions:
 
 jobs:
   scorecard:
-    uses: metadatastician/standards/.github/workflows/scorecard-reusable.yml@da2c748aad55c1a1dcba00b60fe4a35017bc6540
+    # Pinned to the standards commit secret-scanner.yml already runs on.
+    # The actions a reusable workflow uses are covered by the lock of the
+    # repository that DEFINES it, read at the pinned commit. At the previous
+    # pin (da2c748, 2026-09-10) that lock recorded each action this workflow
+    # uses with `ref:` equal to its own SHA, a record the runner rejects
+    # (standards docs/GOVERNANCE-STARTUP-REPAIR.adoc lists da2c748 as POISON).
+    # At b8f6051 each record names a reviewed tag that still points at the
+    # locked commit. Re-pin only to a commit whose lock has been checked the
+    # same way; "newest" is not a safe default.
+    uses: metadatastician/standards/.github/workflows/scorecard-reusable.yml@b8f60511e76c9015d86990317162dce653c92fe1
     # Reusable called-workflow permissions are CAPPED by the caller's grants;
     # without security-events: write here the scorecard SARIF upload fails with
     # startup_failure (hypatia WF018). id-token: write enables OIDC publish.
-    # actions: read matches the reusable's TOP-LEVEL permissions block at the
-    # pinned SHA — a caller granting less than the reusable declares is a
-    # 0-second startup_failure before any job runs (standards'
-    # rust-ci-reusable.yml documents the same trap in reverse).
+    # actions: read is requested by the reusable's `scorecard` JOB at the
+    # pinned SHA (Scorecard's Packaging check lists workflow runs). A caller
+    # granting less than a called job requests is a 0-second startup_failure
+    # before any job runs (standards' rust-ci-reusable.yml documents the same
+    # trap in reverse).
     permissions:
       actions: read
       contents: read
