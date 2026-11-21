@@ -166,8 +166,9 @@ no holder. Section 6 gives the six rules that constrain the cause.
   confidence is a `BeliefInterval`: a belief mass and a plausibility mass,
   with `belief <= plausibility`. The decoder refuses an inverted interval.
   The gap between the two is ignorance, which one mass cannot carry. Belief
-  status derives from the interval via a versioned profile policy, never from
-  a hardcoded threshold. See ADR-0016.
+  status derives from the interval: `belief == FULL` always yields `Certain`,
+  independent of profile thresholds. A versioned profile policy supplies the
+  thresholds for other statuses. See ADR-0016.
 
 == 4. The two-rate structure
 
