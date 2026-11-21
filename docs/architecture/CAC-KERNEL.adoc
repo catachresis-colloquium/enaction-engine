@@ -106,7 +106,7 @@ Belief {
   bearer: AgentId,         // whose belief it is (or is modelled to be)
   proposition: Proposition,
   status: Certain | Believed | Suspected | Rejected | Unknown,
-  confidence: Mass,
+  confidence: BeliefInterval,
   source_events: [EventId],
   valid_from: Tick,
   supersedes: optional Supersession
@@ -115,6 +115,11 @@ Belief {
 Supersession {           // a link that names its cause (ADR-0030)
   belief: BeliefId,      // the belief this one replaces
   because: EventId       // an event of the same package
+}
+
+BeliefInterval {         // ADR-0016; belief <= plausibility
+  belief: Mass,
+  plausibility: Mass
 }
 ----
 
@@ -157,9 +162,14 @@ no holder. Section 6 gives the six rules that constrain the cause.
   `known` is refused.
 . Every integer on the wire is in `0 ..= 2^53 − 1` (§6, canonical bytes).
 . Confidence is typed and bounded, and an implementation must not confuse
-  confidence with truth. The type is `Mass`; belief status derives from the
-  belief-plausibility *interval* via a versioned profile policy, never from a
-  hardcoded threshold. See ADR-0016.
+  confidence with truth. An event's confidence is a `Mass`. A belief's
+  confidence is a `BeliefInterval`: a belief mass and a plausibility mass,
+  with `belief <= plausibility`. The decoder refuses an inverted interval.
+  The gap between the two is ignorance, which one mass cannot carry. Belief
+  status derives from the interval. One rule is fixed: full belief mass gives
+  `Certain` (invariant 7), whatever the profile says. A versioned profile
+  policy sets every other threshold, and no other threshold is hardcoded. See
+  ADR-0016.
 
 == 4. The two-rate structure
 
