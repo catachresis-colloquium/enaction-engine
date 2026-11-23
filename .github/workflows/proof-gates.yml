@@ -258,3 +258,22 @@ jobs:
 
       - name: Require every listed obligation closed under the global context
         run: bash scripts/check-coq-assumptions.sh
+
+  # Creusot, provisioned and run by the estate's reusable gate, pinned to one
+  # full commit SHA (the gate reads this very `uses:` line to pin its own
+  # scripts, so a branch or tag here would make it refuse to run). Versions
+  # match Cargo.toml's `creusot-std = "=0.13.0"` and scripts/check-creusot.sh,
+  # not the gate's 0.14.0 defaults. A skipped or unavailable prove with
+  # obligations present is VOID in its verdict job, never green. This job is
+  # not optional: do not add continue-on-error or an `if:` to it. Job-level
+  # reusable-workflow calls are not entered in actions.lock (see
+  # scripts/check-lock-sync.sh).
+  creusot:
+    name: Creusot (reusable gate)
+    permissions:
+      contents: read
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/creusot-gate.yml@d415d8b92d7a2edeab64f0d816ff9ad12cad4392
+    with:
+      creusot_version: "0.13.0"
+      rust_nightly: nightly-2026-06-22
+      enforce_hollow: true
