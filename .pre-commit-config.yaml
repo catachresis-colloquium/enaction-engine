@@ -3,6 +3,22 @@
 # Install: pip install pre-commit && pre-commit install
 # Run manually: pre-commit run --all-files
 
+# --- pre-commit.ci (the hosted runner) ---
+# pre-commit.ci reads this file from the repo root (it lives here directly,
+# not behind a ci/ symlink as in rsr-template-repo). The pre-commit framework
+# itself ignores this block, so local runs are unchanged.
+#   autofix_prs: false  pre-commit.ci never pushes a fix commit to a pull
+#                       request (an autofix commit would be unsigned, and
+#                       main's ruleset refuses unsigned commits).
+#   skip                the three `language: system` hooks below need tools
+#                       (nickel, jq, bun, a standards checkout) that the
+#                       hosted runner does not provide. They still run
+#                       wherever the framework runs locally.
+# Source: hyperpolymath/rsr-template-repo c4a8d63 (#480).
+ci:
+  autofix_prs: false
+  skip: [validate-deed, validate-k9, validate-claude-md]
+
 repos:
   # --- Standard hooks ---
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -18,19 +34,36 @@ repos:
       - id: check-added-large-files
         args: ['--maxkb=1024']
 
-  # --- A2ML manifest validation ---
-  - repo: https://github.com/hyperpolymath/a2ml-pre-commit
-    rev: 40adffc73f2d4be1e8dfda8a7de93e4fc11730dc  # a2ml-pre-commit @ main 2026-06-23
+  # --- Manifest validation (DEED grammar; legacy A2ML via the ledger) ---
+  # The former provider repo (hyperpolymath/a2ml-pre-commit) was deleted
+  # upstream in the A2ML retirement, so pre-commit could not clone it.
+  # Local hook instead. .github/hooks/validate-deed.sh honours the shrink-only
+  # ledger .machine_readable/a2ml-legacy-allow.txt: this repo still carries
+  # .a2ml files (retirement in progress, #129/#130), and the script checks
+  # them against the ledger rather than refusing them. Without a standards
+  # checkout (STANDARDS_DIR) it prints a notice and skips; CI's
+  # deed-conformance lane is the gate. Not run by pre-commit.ci (ci.skip).
+  - repo: local
     hooks:
-      - id: validate-a2ml
-        name: Validate A2ML manifests
+      - id: validate-deed
+        name: Validate DEED manifests (and legacy A2ML ledger)
+        entry: .github/hooks/validate-deed.sh
+        language: system
+        files: '\.(a2ml|A2ML|deed)$'
+        pass_filenames: false
 
   # --- K9 contract validation ---
-  - repo: https://github.com/hyperpolymath/k9-pre-commit
-    rev: 9b82e1f7a6b6c0f99df72c145d7dee8851803c30  # k9-pre-commit @ main 2026-06-23
+  # The former provider repo (hyperpolymath/k9-pre-commit) could not be
+  # cloned by pre-commit.ci. Local hook instead, calling the K9 validator
+  # this repo already ships and CI already runs (.githooks/validate-k9.sh).
+  - repo: local
     hooks:
       - id: validate-k9
         name: Validate K9 contracts
+        entry: bash .githooks/validate-k9.sh
+        language: system
+        pass_filenames: false
+        files: '\.k9(\.(ncl|lock))?$'
 
   # --- Shell linting ---
   - repo: https://github.com/shellcheck-py/shellcheck-py
