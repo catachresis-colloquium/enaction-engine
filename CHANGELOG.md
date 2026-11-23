@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `.github/workflows/ci-gate.yml`: thin caller of the cicd-suite reusable `ci-gate.yml`, publishing the
+  `CI/gate` commit status that the Immutable-Tags ruleset requires. Pinned to suite commit
+  `a0760cea695a815a96b3944f3d03ee015da856d0` as a placeholder until this repository's profile is on suite main
+  (until then the gate fails closed). Listed in `actions.lock` with an empty entry only, as `lock-sync-gate`
+  requires; no action refs are locked.
+
 - `Mass` (ADR-0016): the kernel confidence type — a u16 justification budget
   in 1/10,000ths, serde-guarded so out-of-range values cannot deserialize.
 - `crates/enaction-contracts` (ADR-0019): the ESM/CAC contract as types —
