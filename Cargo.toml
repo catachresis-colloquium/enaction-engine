@@ -15,6 +15,11 @@ members = [
     "crates/enaction-accelerator",
     "crates/enaction-accelerator-native",
 ]
+# The reusable Creusot gate (proof-gates.yml) checks the estate's gate scripts
+# out at .cicd-suite/ inside this tree and builds a Cargo package there. Cargo
+# otherwise treats that package as an unlisted member of this workspace and
+# refuses to build it. Untracked CI scratch only; never a source directory.
+exclude = [".cicd-suite"]
 # enaction-accelerator-native links a Zig-built static library (see
 # crates/enaction-accelerator-native/build.rs). It stays a workspace member
 # and stays in Cargo.lock, but leaves the DEFAULT build set because the
