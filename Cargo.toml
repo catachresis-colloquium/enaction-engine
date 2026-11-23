@@ -8,12 +8,12 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/enaction-version",
     "crates/enaction-time",
     "crates/enaction-trace",
     "crates/enaction-contracts",
     "crates/enaction-accelerator",
     "crates/enaction-accelerator-native",
-    "verification/creusot",
 ]
 # The reusable Creusot gate (proof-gates.yml) checks the estate's gate scripts
 # out at .cicd-suite/ inside this tree and builds a Cargo package there. Cargo
@@ -28,6 +28,7 @@ exclude = [".cicd-suite"]
 # installs the pinned Zig and builds, lints, and tests it explicitly.
 # Revert this once the reusable grows a setup_zig input.
 default-members = [
+    "crates/enaction-version",
     "crates/enaction-time",
     "crates/enaction-trace",
     "crates/enaction-contracts",
@@ -42,6 +43,7 @@ authors = ["Enaction Engine contributors"]
 repository = "https://github.com/metadatastician/enaction-engine"
 
 [workspace.dependencies]
+enaction-version = { path = "crates/enaction-version" }
 enaction-time = { path = "crates/enaction-time" }
 enaction-trace = { path = "crates/enaction-trace" }
 enaction-contracts = { path = "crates/enaction-contracts" }

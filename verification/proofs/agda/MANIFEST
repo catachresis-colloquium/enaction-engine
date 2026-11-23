@@ -1,4 +1,6 @@
 # Agda proof manifest — read by scripts/check-proofs.sh agda
 # Format: <source-root>|<module-relative-to-source-root>|gated|quarantine|<note>
 # Ground-truthed 2026-07-17 with agda (agda --safe).
+verification/proofs/agda|TomSpec.agda|gated| independent mechanisation of the model timeline (ADR-0025); written from the prose alone, ground-truthed 2026-11-17
 verification/proofs/agda|Properties.agda|gated| compiles under the canonical `agda --safe --without-K --cubical-compatible` (PROOF-POLICY §2.1)
+verification/proofs/agda|KeyChain.agda|gated| Agda twin of coq/KeyChain.v (ADR-0029); canonical flags, ground-truthed 2026-11-17

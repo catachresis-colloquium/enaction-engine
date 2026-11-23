@@ -1,0 +1,13 @@
+{
+  "contract": "enaction-policies/1",
+  "status": {
+    "id": "conformance/status/v1",
+    "rejected_ceiling": 1000,
+    "unknown_band": 6000,
+    "believed_floor": 7000,
+    "suspected_floor": 5000
+  },
+  "depth": {
+    "max_order": 2
+  }
+}

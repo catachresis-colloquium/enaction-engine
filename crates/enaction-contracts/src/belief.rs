@@ -141,9 +141,29 @@ pub struct Belief {
     /// The tick from which this belief holds.
     pub valid_from: u64,
     /// Contradiction, made explicit rather than silently overwritten
-    /// (CAC-KERNEL §3 invariant 4).
+    /// (CAC-KERNEL §3 invariant 4). The link names its cause: see
+    /// [`Supersession`] (ADR-0030).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub supersedes: Option<BeliefId>,
+    pub supersedes: Option<Supersession>,
+}
+
+/// A supersession link that names its cause (kernel contract 2.0, ADR-0030).
+///
+/// Both members are required, so a link with no cause has no wire form and
+/// no Rust value: `"supersedes": 1` and `"supersedes": {"belief": 1}` are
+/// refused by the decoder as `BadShape`. What the cause must be (an event of the
+/// package, received by the revising mind, cited by the successor, new, and
+/// in order) is checked by the six `supersession-cause-*` package rules; a
+/// type cannot see the package's events.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Supersession {
+    /// The belief this one replaces.
+    pub belief: BeliefId,
+    /// The event that licensed the overwrite: the contradiction,
+    /// observation or correction the revising mind received. An
+    /// [`EpistemicEvent::event_id`] of the same package.
+    pub because: EventId,
 }
 
 impl Belief {
@@ -437,6 +457,45 @@ mod tests {
             enaction_trace::DEFAULT_MAX_TOM_ORDER,
             "one authority for the depth default"
         );
+    }
+
+    #[test]
+    fn a_supersession_link_without_a_cause_has_no_wire_form() {
+        // Owner ruling D1. The 1.x form (a bare belief id) and a link with
+        // either member missing are refused by the decoder; nothing reaches
+        // the validator.
+        let with = |supersedes: &str| {
+            format!(
+                r#"{{"belief_id":2,"bearer":"sally","proposition":"p","status":"believed",
+                    "confidence":{{"belief":8000,"plausibility":9500}},"source_events":[1],
+                    "valid_from":3,"supersedes":{supersedes}}}"#
+            )
+        };
+        let parsed = serde_json::from_str::<Belief>(&with(r#"{"belief":1,"because":7}"#)).unwrap();
+        assert_eq!(
+            parsed.supersedes,
+            Some(Supersession {
+                belief: BeliefId(1),
+                because: EventId(7)
+            })
+        );
+        assert_eq!(
+            serde_json::to_value(&parsed).unwrap()["supersedes"],
+            serde_json::json!({"belief": 1, "because": 7}),
+            "the link round-trips"
+        );
+        for refused in [
+            "1",
+            r#"{"belief":1}"#,
+            r#"{"because":7}"#,
+            r#"{"belief":1,"because":null}"#,
+            r#"{"belief":1,"because":7,"note":"x"}"#,
+        ] {
+            assert!(
+                serde_json::from_str::<Belief>(&with(refused)).is_err(),
+                "{refused} must be refused"
+            );
+        }
     }
 
     #[test]

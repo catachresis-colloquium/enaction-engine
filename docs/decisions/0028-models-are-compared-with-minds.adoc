@@ -8,6 +8,10 @@ Date: 2026-11-14
 
 Proposed
 
+Amended by ADR-0029 (2026-11-17). Unlinked beliefs of one key, and a
+successor that starts before the belief it supersedes, are now refused at
+load. So `model-counterpart-unique` is defence in depth on a valid package.
+
 Extends ADR-0016 (confidence types) and ADR-0019 (the contract as types and
 validators). It gives a partial answer to one open problem in
 `CAC-KERNEL.adoc` section 8: theory-of-mind depth accounting. It is the
