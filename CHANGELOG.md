@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `.github/workflows/ci-gate.yml`: repin both suite references from the placeholder `a0760cea…` to
+  `d28d73ef10c623b507e98ffddb040268e29b5443`, whose `profiles/ci-gate/` carries this repository's profile.
+
 - Adopt the canonical Enaction Engine project and repository identity.
 - Rename the initial crate to `enaction-time` and its Rust import to
   `enaction_time`.
