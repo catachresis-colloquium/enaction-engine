@@ -77,6 +77,41 @@ estate=$(sed -n 's/^ *:beholding-chora #uuid"\([0-9a-f-]*\)".*/\1/p' "$DEED")
 want_estate=$(profile_c "chora:estate/github.com/$birth_owner")
 [ "$estate" = "$want_estate" ] || fail "deed :beholding-chora is '$estate'; birth estate $birth_owner is $want_estate (B1)"
 
+# 4. Parity while both forms exist. CLADE.a2ml is deprecated (CHORA-SPEC 11.1
+#    rule 5): its identity facts are clauses of the chora deed and its
+#    lifecycle is the (status) clause of STATE.deed (standards
+#    clade-to-repo-deed.adoc section 3; A7 J15). Until the legacy file is
+#    deleted, a fact that differs between the two is drift and fails here.
+#    Delete this block in the commit that deletes CLADE.a2ml.
+STATE="$ROOT/.machine_readable/descriptiles/STATE.deed"
+[ -f "$STATE" ] || fail "no STATE.deed: the (status) clause has no home (A7 J15)"
+# deed_val FILE KEY -> the value of the first ":KEY value" in FILE, unquoted
+deed_val() { sed -n "s/^ *:$2 \\(.*[^)]\\))*\$/\\1/p" "$1" | head -n1 | sed "s/^\"\\(.*\\)\"\$/\\1/"; }
+same() {
+  [ -n "$2" ] || [ "$3" = "empty-ok" ] || fail "parity: CLADE.a2ml has no $1"
+  [ "$2" = "$4" ] || fail "parity: $1 is \"$2\" in CLADE.a2ml and \"$4\" in $5"
+}
+same primary-forge  "$(field primary-forge)"  - "$(deed_val "$DEED" primary-forge)"  "the chora (identity)"
+same primary-owner  "$(field primary-owner)"  - "$(deed_val "$DEED" owner)"          "the chora (identity)"
+same prefixed-name  "$(field prefixed-name)"  - "$(deed_val "$DEED" prefixed-name)"  "the chora (identity)"
+same canonical-name "$(field canonical-name)" - "$(deed_val "$DEED" canonical-name)" "the chora head"
+same canonical-name "$(field canonical-name)" - "$(deed_val "$STATE" canonical-name)" "STATE.deed"
+same github         "$(field github)"         - "$(deed_val "$DEED" github)"         "the chora (forges)"
+same gitlab         "$(field gitlab)"   empty-ok "$(deed_val "$DEED" gitlab)"         "the chora (forges)"
+same bitbucket      "$(field bitbucket)" empty-ok "$(deed_val "$DEED" bitbucket)"     "the chora (forges)"
+same type           "$(field type)"           - "$(deed_val "$DEED" type)"           "the chora (lineage)"
+same parent         "$(field parent)"   empty-ok "$(deed_val "$DEED" parent)"         "the chora (lineage)"
+same born           "$(field born)"           - "$(deed_val "$DEED" born)"           "the chora (lineage)"
+same instantiated-from "$(field instantiated-from)" - "$(deed_val "$DEED" instantiated-from)" "the chora (lineage)"
+same phase          "$(field phase)"          - "$(deed_val "$STATE" phase)"         "STATE.deed (status)"
+same since          "$(field since)"          - "$(deed_val "$STATE" since)"         "STATE.deed (status)"
+state_of=$(sed -n 's/^ *:of-chora #uuid"\([0-9a-f-]*\)".*/\1/p' "$STATE")
+[ "$state_of" = "$uuid" ] || fail "STATE.deed :of-chora is \"$state_of\"; the repo id is $uuid (YD08)"
+# No (clade ...) clause may appear before the registry holds a placement.
+if grep -q "^ *(clade" "$DEED"; then
+  fail "the chora carries a (clade ...) placement, but a placement comes from chora-registry and this repo is not registered (CHORA-SPEC 11.1 rule 4)"
+fi
+
 if [ "${1:-}" = "--self-test" ]; then
   # A planted drift must be refused: one changed character in the preimage.
   planted=$(profile_c "$domain:github.com/${birth}x")
