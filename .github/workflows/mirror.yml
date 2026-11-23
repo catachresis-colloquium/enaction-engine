@@ -14,5 +14,28 @@ permissions:
   contents: read
 jobs:
   mirror:
-    uses: metadatastician/standards/.github/workflows/mirror-reusable.yml@da2c748aad55c1a1dcba00b60fe4a35017bc6540
-    secrets: inherit
+    # Pinned to the standards commit secret-scanner.yml already runs on.
+    # The actions a reusable workflow uses are covered by the lock of the
+    # repository that DEFINES it, read at the pinned commit. At the previous
+    # pin (da2c748, 2026-09-10) that lock recorded each action this workflow
+    # uses with `ref:` equal to its own SHA, a record the runner rejects
+    # (standards docs/GOVERNANCE-STARTUP-REPAIR.adoc lists da2c748 as POISON).
+    # At b8f6051 each record names a reviewed tag that still points at the
+    # locked commit. Re-pin only to a commit whose lock has been checked the
+    # same way; "newest" is not a safe default.
+    uses: metadatastician/standards/.github/workflows/mirror-reusable.yml@b8f60511e76c9015d86990317162dce653c92fe1
+    # The reusable at this pin declares these ten secrets and says callers
+    # must pass them by name, not with `secrets: inherit`, which forwards every
+    # secret this repository can see (standards#1108 section 6b). A secret that
+    # is not configured evaluates to empty and that forge's job does nothing.
+    secrets:
+      GITLAB_SSH_KEY: ${{ secrets.GITLAB_SSH_KEY }}
+      BITBUCKET_SSH_KEY: ${{ secrets.BITBUCKET_SSH_KEY }}
+      CODEBERG_SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
+      SOURCEHUT_SSH_KEY: ${{ secrets.SOURCEHUT_SSH_KEY }}
+      DISROOT_SSH_KEY: ${{ secrets.DISROOT_SSH_KEY }}
+      GITEA_SSH_KEY: ${{ secrets.GITEA_SSH_KEY }}
+      RADICLE_KEY: ${{ secrets.RADICLE_KEY }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_AGE_RECIPIENT: ${{ secrets.R2_AGE_RECIPIENT }}

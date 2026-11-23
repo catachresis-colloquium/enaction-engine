@@ -3,9 +3,15 @@
 //!
 //! ```text
 //! enaction-validate --policies FILE [--mind-trace FILE] < runner-output.json
+//! enaction-validate --version
 //! ```
 //!
-//! * stdin: an `enaction-runner-output/1` envelope.
+//! * `--version`: prints `enaction-validate kernel contract <version>
+//!   (<state>)` and exits 0; for example `kernel contract 2.0 (released)`. The
+//!   state is a fact about the host (ADR-0030): a draft is not for
+//!   publication, and the wire does not carry it. No other argument is read.
+//!
+//! * stdin: an `enaction-runner-output/2` envelope.
 //! * `--policies FILE`: the caller's `enaction-policies/1` document. The
 //!   status and depth policies come from the caller, never from the runner.
 //! * `--mind-trace FILE`: an `enaction-mind-trace/1` document, validated
@@ -31,9 +37,9 @@ use std::process::ExitCode;
 use enaction_contracts::canonical;
 use enaction_contracts::envelope::{Fault, parse_policies, validate_runner_output};
 use enaction_contracts::mind::validate_mind_trace;
+use enaction_contracts::{KERNEL_CONTRACT_STATE, KERNEL_CONTRACT_VERSION};
 
-const USAGE: &str =
-    "usage: enaction-validate --policies FILE [--mind-trace FILE] < runner-output.json";
+const USAGE: &str = "usage: enaction-validate --policies FILE [--mind-trace FILE] < runner-output.json\n       enaction-validate --version";
 
 struct Args {
     policies: String,
@@ -97,7 +103,24 @@ fn refuse(faults: &[Fault]) -> ExitCode {
     ExitCode::from(1)
 }
 
+/// The line `--version` prints: the version and its state together.
+fn version_line() -> String {
+    format!(
+        "enaction-validate kernel contract {KERNEL_CONTRACT_VERSION} ({})",
+        KERNEL_CONTRACT_STATE.as_str()
+    )
+}
+
 fn main() -> ExitCode {
+    if std::env::args().nth(1).as_deref() == Some("--version") {
+        // `--version` is read only as the first argument and alone; anything
+        // after it is an invocation failure, not silently ignored.
+        if std::env::args().len() != 2 {
+            return fail("--version takes no other argument");
+        }
+        println!("{}", version_line());
+        return ExitCode::SUCCESS;
+    }
     let args = match parse_args() {
         Ok(args) => args,
         Err(message) => return fail(&message),

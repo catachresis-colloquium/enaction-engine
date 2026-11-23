@@ -7,6 +7,9 @@
 #   * root shape (allowlist of permitted root entries)
 #   * AsciiDoc-by-default (no .md files under docs/)
 #   * V-lang is banned (no V-lang scaffolding or references; Zig is the FFI default)
+#   * arrival pack: the CLAUDE.md region must match its a2ml sources (verify.sh,
+#     nickel 1.10.0 sha256-pinned); tests/arrival_pack_drift_test.sh proves a
+#     planted drift is refused
 #
 # Each rule is enforced by an executable check script under scripts/. Failures
 # are surfaced as workflow errors so the rule can't silently regress.
@@ -35,5 +38,24 @@ jobs:
         run: bash scripts/check-no-md-in-docs.sh .
       - name: Repo identity (UUIDv8, CHORA-SPEC L1/B1; refuses a planted drift)
         run: sh scripts/check-identity.sh --self-test
+      - name: Contract release gate (ADR-0030; refuses a planted draft, accepts a planted release)
+        run: sh scripts/check-contract-released.sh --self-test
       - name: Estate UUID literals (standards check-uuid-v8.sh, pinned + sha256)
         run: sh scripts/check-uuid-v8-canon.sh
+      - name: Arrival pack - install nickel 1.10.0 (upstream binary, sha256-pinned)
+        run: |
+          set -euo pipefail
+          # sha256 of nickel-x86_64-linux from the tweag/nickel 1.10.0 release.
+          # The release publishes no checksum file, so this digest was computed
+          # from the downloaded binary (two downloads gave the same value).
+          want='871eff55beaf30cf516ac57eaba3f9bcc2f7070543370f9be796aaf2e0d832da'
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -sSfL -o "$RUNNER_TEMP/bin/nickel" \
+            "https://github.com/tweag/nickel/releases/download/1.10.0/nickel-x86_64-linux"
+          echo "$want  $RUNNER_TEMP/bin/nickel" | sha256sum -c -
+          chmod 0755 "$RUNNER_TEMP/bin/nickel"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Arrival pack drift gate (CLAUDE.md region vs a2ml)
+        run: bash .machine_readable/arrival-pack/verify.sh
+      - name: Arrival pack gate refuses a planted drift
+        run: bash tests/arrival_pack_drift_test.sh

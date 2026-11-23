@@ -1,0 +1,132 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Theory-of-mind contract v2 conformance fixtures
+
+These fixtures are the cross-repository currency for the rule that a model
+is compared with a mind, not with the world (CAC-KERNEL §9, "Models are
+compared with minds"; ADR-0028). A reader that shows whether an agent's model of another agent is
+right, such as the UMS explain lens, proves conformance against these bytes.
+No Enaction source is needed to do so: reimplement the rule from CAC-KERNEL
+and derive each `expected.json`.
+
+Every document is an `enaction-runner-output/2` envelope (CAC-KERNEL §9). No
+new contract, document or field is involved.
+
+These are the kernel contract 2.0 form of the cases (ADR-0030). The contract
+is a *draft* (state `draft`; `enaction-validate --version` prints it), so
+these bytes may still change with no further bump, and nothing may be
+published as conforming to them. The 1.x form is `conformance/tom/v1/`: a
+frozen set that a 2.0 host refuses.
+
+== The cases
+
+Two agents, and a third in `second-order`. `guard-0` holds a model of
+`contact-21`: does contact-21 know where guard-0 is (`guard-0 at cell-14`)?
+The second proposition, `contact-21 sees guard-0`, is the cue that
+guard-0's evidence is about. In every accepted case guard-0 really is at
+cell-14, so a reader that compared a model with world truth would get most
+of the cases wrong.
+
+Each model has a *timeline*: its verdict from its `valid_from` to the tick
+where it is superseded (`until`), or to the end of the package.
+
+A supersession link names its cause: `{"belief": 2, "because": 5}` replaces
+belief 2 because of event 5 (ADR-0030). In every accepted case below, the
+cause is the event on which the successor rests. It is an event of the
+scenario, observed by the mind that revises, on the tick the successor
+starts.
+
+* `accepted/true-concealment`: guard-0 thinks contact-21 does not know
+  (belief 1, rejected). contact-21 states no belief about it, which means
+  that it does not hold it. Belief 1 *agrees* from tick 2.
+* `accepted/caught`: contact-21 does not know (1) and guard-0 is right (2).
+  On tick 5 contact-21 comes to know (3 supersedes 1, because of event 3)
+  and guard-0 sees the gaze (4 supersedes 2, because of event 4). Belief 2 *agrees* from tick 2 until tick 5. Belief
+  4 *agrees* from tick 5. Each timeline has one segment.
+* `accepted/false-exposure`: contact-21 knows (1) and guard-0 knows that it
+  knows (2). On tick 6 contact-21 loses track (3, unknown, supersedes 1,
+  because of event 3).
+  guard-0 states its model once and never restates it. Belief 2 *agrees*
+  from tick 2 and *diverges* from tick 6: it is *stale-divergent*.
+* `accepted/false-exposure-restated`: the same, but the producer restates
+  guard-0's model on tick 6 (4 supersedes 2, because of event 4). Belief 2 *agrees* from tick 2
+  until tick 6. Belief 4 *diverges* from tick 6. Neither is stale-divergent,
+  because neither agreed and then diverged.
+* `accepted/false-concealment`: contact-21 knows (1). guard-0 had no cue and
+  thinks that it is hidden (2): belief 2 *diverges* from tick 3.
+* `accepted/no-claim`: contact-21 knows (1). guard-0's model has status
+  unknown (2). It makes no claim: *no-claim* from tick 3.
+* `accepted/second-order`: order 2, under this case's own
+  `policies.json` with `depth.max_order` of 2. contact-22 knows (1).
+  contact-21 thinks it does not (2, *diverges*). guard-0 thinks it does (3,
+  *agrees*). guard-0 thinks contact-21 thinks it does not (4,
+  `holders = ["guard-0", "contact-21"]`). Read outermost first, as the
+  contract reads it, belief 4 is compared with belief 2
+  (`holders = ["contact-21"]`), and *agrees*. Read the other way round, it
+  would be compared with belief 3 (`holders = ["guard-0"]`) and *diverge*.
+  A reader that passes this case reads the path as the contract does.
+* `rejected/nesting-bounded`: guard-0's model of contact-21's model of
+  guard-0, of order 2, under the corpus depth of 1. Refused by the existing
+  `nesting-bounded` rule with path
+  `package.beliefs[belief_id=1].holders`.
+* `rejected/belief-key-chained`: the `false-exposure` story with its link
+  dropped. contact-21 knows (1); on tick 6 it loses track (2, unknown), but
+  2 supersedes nothing. Two own beliefs of one key with no contradiction
+  record are a silent overwrite (CAC-KERNEL §3 invariant 4, ADR-0029),
+  refused with path `package.beliefs[belief_id=2].supersedes`.
+* `rejected/supersession-cause-present`: the `false-exposure` story, but
+  belief 2 replaces belief 1 because of event 9, and the package has no
+  event 9.
+* `rejected/supersession-cause-observed`: the `false-exposure-restated`
+  story, but guard-0's restated model (4 supersedes 2) names event 3 as its
+  cause and cites it. Event 3 was observed by contact-21, not by guard-0.
+* `rejected/supersession-cause-cited`: the `false-exposure` story, but
+  belief 2 rests on event 1 and names event 2 as its cause.
+* `rejected/supersession-cause-new`: belief 2 replaces belief 1 on tick 6
+  and names event 1 as its cause. Belief 1 already rests on event 1.
+* `rejected/supersession-cause-not-earlier`: belief 1 starts on tick 6, on
+  event 2. Belief 2 replaces it from tick 7 and names event 1, on tick 2, as
+  its cause.
+* `rejected/supersession-cause-not-later`: belief 2 replaces belief 1 from
+  tick 4 and names event 2, on tick 6, as its cause.
+
+== Layout
+
+* `policies.json`: the caller's `enaction-policies/1` document, with
+  `depth.max_order` of 1. Its status policy is that of `conformance/mind/v2`.
+  A case uses it unless it has its own.
+* `accepted/second-order/policies.json`: the same status policy, with
+  `depth.max_order` of 2. Under the corpus file, this case is refused as
+  `nesting-bounded`.
+* `accepted/<case>/runner-output.json`: a valid envelope, in canonical bytes.
+  Generated from the contract types by
+  `crates/enaction-contracts/tests/tom.rs`.
+* `accepted/<case>/expected.json`: every model in the package, by belief id
+  in ascending order, with its `timeline` (segments of `from_tick` and
+  `verdict`, where `verdict` is `agrees`, `diverges` or `no-claim`), its
+  `until` when it is superseded, and `stale_divergent`. Written by hand,
+  never generated.
+* `rejected/<rule>/runner-output.json`: refused with exactly that rule.
+* `SHA256SUMS`: SHA-256 of every other file, sorted by path.
+
+== Use
+
+[source,bash]
+----
+cd conformance/tom/v2 && sha256sum -c SHA256SUMS
+enaction-validate --policies policies.json \
+  < accepted/false-exposure/runner-output.json      # exit 0
+enaction-validate --policies policies.json \
+  < rejected/nesting-bounded/runner-output.json     # exit 1, nesting-bounded
+enaction-validate --policies policies.json \
+  < rejected/belief-key-chained/runner-output.json  # exit 1, belief-key-chained
+enaction-validate --policies accepted/second-order/policies.json \
+  < accepted/second-order/runner-output.json        # exit 0
+----
+
+`enaction-validate` validates the envelope. It does not print the timelines;
+`enaction_contracts::tom::model_timelines` and `stale_divergence` derive
+them.
+
+The fixtures are design examples for the four cases of
+`docs/proposals/WEEVIL-SLICE-2-IT-MODELS-YOU.adoc`. They are not output of a
+real host. No host emits models yet.

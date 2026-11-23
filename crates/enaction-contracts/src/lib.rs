@@ -22,7 +22,7 @@
 //!   fault. It computes the package digest itself.
 //! * **Canonical bytes** ([`canonical`]): RFC 8785 JCS over integer-only
 //!   I-JSON (ADR-0024), the bytes every digest and parity check uses.
-//! * **The runner seam** ([`envelope`]): the `enaction-runner-output/1`
+//! * **The runner seam** ([`envelope`]): the `enaction-runner-output/2`
 //!   envelope and the caller's `enaction-policies/1` document, both strict,
 //!   validated by the `enaction-validate` binary.
 //! * **The mind trace** ([`mind`]): `enaction-mind-trace/1`, its named
@@ -62,7 +62,7 @@ pub mod version;
 pub use belief::{
     AffectAnnotation, Belief, BeliefId, BeliefInterval, BeliefStatus, ConativeAnnotation,
     DepthPolicy, EpistemicEvent, EventId, EventKind, Proposition, Provenance, StatusPolicy,
-    Subject,
+    Subject, Supersession,
 };
 pub use enaction_trace::Mass;
 pub use envelope::{
@@ -76,4 +76,6 @@ pub use reduce::{Derived, Diagnostic, EpistemicReduce, ReductionContext, Reducti
 pub use tom::{
     ModelFault, ModelTimeline, ModelVerdict, Segment, model_timelines, stale_divergence,
 };
-pub use version::{ContractVersion, KERNEL_CONTRACT_VERSION, ProfileRef};
+pub use version::{
+    ContractState, ContractVersion, KERNEL_CONTRACT_STATE, KERNEL_CONTRACT_VERSION, ProfileRef,
+};
