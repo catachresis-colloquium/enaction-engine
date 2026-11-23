@@ -1,5 +1,13 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Clade declaration — part of the gv-clade-index registry
+#
+# DEPRECATED (standards CHORA-SPEC 11.1 rule 5). The identity, forges and
+# lineage facts below are clauses of enaction-engine_chora.deed, and [status]
+# is the (status) clause of STATE.deed, under standards
+# 1-formats/deed/mappings/clade-to-repo-deed.adoc. scripts/check-identity.sh
+# fails if the two forms differ. This file stays only until every reader of it
+# reads the deed; change a fact in both places or the gate refuses it.
+#
 # See: https://github.com/hyperpolymath/gv-clade-index
 #
 # Installed by `just init` from build/templates/CLADE.a2ml.in.
@@ -111,7 +119,7 @@ instantiated-from = "rsr-template-repo"
 phase = "incubating"          # a repo created today has not proven anything yet
 since = "2026-07-22"
 present = true
-aliases = ["metadatastician/enaction-engine"]
+aliases = []
 merged-into = ""
 superseded-by = ""
 successors = []

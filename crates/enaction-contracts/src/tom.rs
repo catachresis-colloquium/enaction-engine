@@ -190,9 +190,9 @@ pub fn model_timelines(package: &EpistemicPackage) -> Result<Vec<ModelTimeline>,
     // The earliest tick at which each belief is superseded.
     let mut superseded_from: BTreeMap<BeliefId, u64> = BTreeMap::new();
     for belief in &package.beliefs {
-        if let Some(target) = belief.supersedes {
+        if let Some(link) = belief.supersedes {
             superseded_from
-                .entry(target)
+                .entry(link.belief)
                 .and_modify(|t| *t = (*t).min(belief.valid_from))
                 .or_insert(belief.valid_from);
         }

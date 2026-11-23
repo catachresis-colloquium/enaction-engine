@@ -1,0 +1,74 @@
+{
+  "contract": "enaction-mind-trace/1",
+  "producer": {
+    "kernel": "evil-weevil",
+    "abi": "1.1"
+  },
+  "profile": {
+    "id": "idaptik",
+    "version": "1.0.0"
+  },
+  "vocabulary": {
+    "affect_tokens": [
+      "calm",
+      "wary",
+      "afraid",
+      "angry"
+    ],
+    "candidates": [
+      "advance",
+      "investigate",
+      "engage",
+      "evade",
+      "reload"
+    ],
+    "tells": [
+      "hesitate",
+      "startle",
+      "fixate"
+    ]
+  },
+  "ticks": [
+    {
+      "tick": 40,
+      "agent": "guard-0",
+      "affect": {
+        "token": "calm",
+        "attention": 2000,
+        "caused_by": []
+      },
+      "conation": {
+        "ranking": [
+          "advance",
+          "engage"
+        ],
+        "incumbent": "advance",
+        "selected": "advance"
+      },
+      "tells": []
+    },
+    {
+      "tick": 41,
+      "agent": "guard-0",
+      "affect": {
+        "token": "angry",
+        "attention": 10001,
+        "caused_by": [
+          23
+        ]
+      },
+      "conation": {
+        "ranking": [
+          "engage",
+          "advance"
+        ],
+        "incumbent": "advance",
+        "selected": "engage",
+        "target": "contact-3"
+      },
+      "tells": [
+        "fixate"
+      ]
+    }
+  ]
+}

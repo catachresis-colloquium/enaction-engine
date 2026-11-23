@@ -10,6 +10,26 @@
   :canonical-name "enaction-engine"
   :beholding-chora #uuid"1642c392-8eac-8e3f-b762-2898b9344228"
   :repo-uuid #uuid"aa4cefc5-1955-8821-ab3f-cdae5c79fd69"
+  ; Identity facts, from the deprecated CLADE.a2ml under standards
+  ; 1-formats/deed/mappings/clade-to-repo-deed.adoc section 3. There is no
+  ; (clade ...) clause: a placement is taken from chora-registry, never from a
+  ; legacy file (CHORA-SPEC 11.1 rule 4), and the registry holds no record
+  ; for this repo yet. Lifecycle is in .machine_readable/descriptiles/STATE.deed
+  ; (A7 J15).
+  (identity
+    :primary-forge github
+    :owner "catachresis-colloquium"
+    :prefixed-name "gm-enaction-engine")
+  (forges
+    :github "catachresis-colloquium/enaction-engine"
+    :gitlab ""
+    :bitbucket "")
+  (lineage
+    :type standalone
+    :parent ""
+    :born "2026-07-22"
+    :previous-names ()
+    :instantiated-from "rsr-template-repo")
   (manifest
     :version "0.1.0"
     :last-updated "2026-09-26"

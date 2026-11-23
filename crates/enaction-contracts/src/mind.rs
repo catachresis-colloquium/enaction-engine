@@ -5,7 +5,7 @@
 //! A mind trace records, per agent and tick, the affect token and the
 //! attention it buys, the conative *ranking* and the selected candidate, and
 //! the bodily tells. It is a separate document from
-//! `enaction-runner-output/1`, so that the strict envelope gains no optional
+//! `enaction-runner-output/2`, so that the strict envelope gains no optional
 //! member. It is validated against a paired runner output, whose package
 //! events are the only causes an affect change may cite.
 //!
