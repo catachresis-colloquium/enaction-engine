@@ -54,6 +54,7 @@ is to be confirmed). That change will set the four emitted header strings in
 `--check`, update the headers of the generator sources, and then remove
 `LICENSES/AGPL-3.0-or-later.txt` and the AGPL stanza in
 `.machine_readable/compliance/reuse/dep5`. Until it lands, these 11 files stay
+AGPL-3.0-or-later on purpose.
 
 Crate metadata: `crates/enaction-accelerator-native` textually includes
 `enaction_accelerator.rs` and its build script compiles `enaction_accelerator.zig`,
@@ -61,7 +62,6 @@ so until they are regenerated its `Cargo.toml` declares
 `license = "MPL-2.0 AND AGPL-3.0-or-later"` instead of inheriting the workspace
 value. Return it to `license.workspace = true` when the regeneration lands. (Found
 by Codex's review of this pull request.)
-AGPL-3.0-or-later on purpose.
 
 == Mentions left unchanged
 
