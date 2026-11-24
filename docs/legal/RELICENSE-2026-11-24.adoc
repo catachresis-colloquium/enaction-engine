@@ -89,11 +89,11 @@ Premise out of date, so a notice was added and the decision left unchanged:
   now opens with a note that the premise no longer holds as written. The owner
   should revise them or supersede ADR 0026 with a new record.
 
+Retargeted: `.github/workflows/rhodibot.yml` (the dotfile SPDX canary now flags a
 leftover AGPL-3.0 header and still only reports it), `build/setup.sh` (the
 generated `INSTALL-SECURITY-REPORT.adoc` is prose and now carries `CC-BY-SA-4.0`),
 and `.machine_readable/arrival-pack/generate.sh` (a freshly generated `CLAUDE.md`
 is prose and now starts with `CC-BY-SA-4.0`, matching the checked-in file).
-`CC-BY-SA-4.0`).
 
 == Linter rule
 
