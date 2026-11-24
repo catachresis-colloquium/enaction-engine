@@ -78,7 +78,7 @@ jobs:
             ~/.toolchain/ghc
             ~/.toolchain/bin
             ~/.toolchain/cabal/store
-          key: agda-${{ runner.os }}-${{ runner.arch }}-ghc${{ env.GHC_VERSION }}-cabal${{ env.CABAL_VERSION }}-agda${{ env.AGDA_VERSION }}-idx${{ env.HACKAGE_INDEX_STATE }}-r1
+          key: agda-${{ runner.os }}-${{ runner.arch }}-ghc${{ env.GHC_VERSION }}-cabal${{ env.CABAL_VERSION }}-agda${{ env.AGDA_VERSION }}-idx${{ env.HACKAGE_INDEX_STATE }}-r2
 
       - name: Build GHC, cabal and Agda from source (skipped when restored)
         run: |
@@ -189,7 +189,7 @@ jobs:
           path: |
             ~/.toolchain/opam
             ~/.toolchain/bin
-          key: coq-${{ runner.os }}-${{ runner.arch }}-opam${{ env.OPAM_VERSION }}-ocaml${{ env.OCAML_VERSION }}-coq${{ env.COQ_VERSION }}-repo${{ env.OPAM_REPO_COMMIT }}-r1
+          key: coq-${{ runner.os }}-${{ runner.arch }}-opam${{ env.OPAM_VERSION }}-ocaml${{ env.OCAML_VERSION }}-coq${{ env.COQ_VERSION }}-repo${{ env.OPAM_REPO_COMMIT }}-r2
 
       - name: Build OCaml and Coq with opam (skipped when restored)
         run: |
