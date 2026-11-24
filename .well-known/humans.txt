@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # humanstxt.org
 
 /* TEAM */
@@ -9,6 +9,6 @@ From: United Kingdom
 /* SITE */
 Last update: 2026-07-22
 Standards: RSR (Rhodium Standard Repository)
-License: AGPL-3.0-or-later (code) / CC-BY-SA-4.0 (docs)
+License: MPL-2.0 (code) / CC-BY-SA-4.0 (docs)
 Components: Idris2 ABI, Zig FFI
 Tools: just, Podman, Guix

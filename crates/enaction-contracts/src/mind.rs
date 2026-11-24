@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The mind trace `enaction-mind-trace/1` (CAC-KERNEL §10;
 //! WEEVIL-HOST-ROUTE, "The mind trace contract").
 //!

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Contract and profile versioning (CAC-KERNEL §5–§6, ADR-0009).
 
 use serde::{Deserialize, Serialize};

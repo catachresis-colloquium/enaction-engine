@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Unit-test Cargo directives emitted by the native build script. Compile only
 # build.rs, then substitute Zig so no native library or benchmark is built.
 

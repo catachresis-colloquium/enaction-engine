@@ -1,5 +1,5 @@
 # This workflow is managed by gh actions-lock.
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # This workflow is managed by gh actions-lock.
 # workflow-linter.yml - Validates GitHub workflows against RSR security standards
 # This workflow can be copied to other repos for consistent enforcement
@@ -36,18 +36,18 @@ jobs:
           mkdir -p /tmp/spdx_test
           cat << 'EOF' > /tmp/spdx_test/valid.yml
           # This workflow is managed by gh actions-lock.
-          # SPDX-License-Identifier: AGPL-3.0-or-later
+          # SPDX-License-Identifier: MPL-2.0
           name: Valid
           EOF
           cat << 'EOF' > /tmp/spdx_test/invalid.yml
-          # SPDX-License-Identifier: MPL-2.0
+          # SPDX-License-Identifier: AGPL-3.0-or-later
           name: Invalid
           EOF
           cat << 'EOF' > /tmp/spdx_test/missing.yml
           name: Missing
           EOF
           check_spdx() {
-            awk '/^---[[:space:]]*$/ { next } /^#/ { print; next } { exit }' "$1" | grep -qx '# SPDX-License-Identifier: AGPL-3.0-or-later'
+            awk '/^---[[:space:]]*$/ { next } /^#/ { print; next } { exit }' "$1" | grep -qx '# SPDX-License-Identifier: MPL-2.0'
           }
           if ! check_spdx /tmp/spdx_test/valid.yml; then echo "Test failed: rejected valid header"; exit 1; fi
           if check_spdx /tmp/spdx_test/invalid.yml; then echo "Test failed: accepted invalid header"; exit 1; fi
@@ -60,15 +60,15 @@ jobs:
             [ -f "$file" ] || continue
             # gh actions-lock owns line 1 and places its management marker
             # before the licence. Inspect the complete leading comment block
-            # and enforce this AGPL repository's exact code licence.
+            # and enforce this MPL-2.0 repository's exact code licence (relicensed from AGPL-3.0-or-later, owner-authorised 2026-11-24).
             if ! awk '/^---[[:space:]]*$/ { next } /^#/ { print; next } { exit }' "$file" \
-                 | grep -qx '# SPDX-License-Identifier: AGPL-3.0-or-later'; then
-              echo "ERROR: $file has no AGPL-3.0-or-later SPDX identifier in its header comment block"
+                 | grep -qx '# SPDX-License-Identifier: MPL-2.0'; then
+              echo "ERROR: $file has no MPL-2.0 SPDX identifier in its header comment block"
               failed=1
             fi
           done
           if [ $failed -eq 1 ]; then
-            echo "Add '# SPDX-License-Identifier: AGPL-3.0-or-later' to the leading comment block"
+            echo "Add '# SPDX-License-Identifier: MPL-2.0' to the leading comment block"
             exit 1
           fi
           echo "All workflows have SPDX headers"

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! A deliberately small, game-neutral event seam.
 //!
 //! The crate makes two structural commitments and is otherwise nothing but

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 [package]
 name = "enaction-accelerator-native"
 description = "Audited Rust adapter for the Idris2-defined, pure-Zig Enaction accelerator ABI."

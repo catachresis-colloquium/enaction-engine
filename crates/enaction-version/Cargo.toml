@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 [package]
 name = "enaction-version"
 description = "The two-part contract version and its compatibility rule: the leaf crate that carries Creusot contracts and is proved whole."

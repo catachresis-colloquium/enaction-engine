@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! `enaction-validate`: admit or refuse a runner's output (CAC-KERNEL §9).
 //!
 //! ```text

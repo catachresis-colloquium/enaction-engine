@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Contract tests for the pinned Proven-Tests CI integration and local runner.
 set -euo pipefail
 

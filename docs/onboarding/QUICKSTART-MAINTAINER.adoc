@@ -31,6 +31,6 @@ publication.
   `https://github.com/metadatastician/enaction-engine`.
 * Inspect every occurrence of “affective”; it is permitted only for an actual
   affective concept or subsystem.
-* Preserve AGPL-3.0-or-later for code and CC-BY-SA-4.0 for prose.
+* Preserve MPL-2.0 for code and CC-BY-SA-4.0 for prose.
 * Record whether code has run in IDApTIK, another game, or only repository tests.
 * Reject speculative empty subsystems and unverified complete-engine claims.

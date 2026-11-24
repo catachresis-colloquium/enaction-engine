@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The two-part contract version and its compatibility rule.
 //!
 //! This is the workspace's _proved leaf_: the only crate that depends on

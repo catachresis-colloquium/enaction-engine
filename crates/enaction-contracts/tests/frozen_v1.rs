@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The frozen 1.x vectors (ADR-0030, "Names tell the truth").
 //!
 //! `conformance/tom/v1` and `conformance/mind/v1` hold kernel 1.0 packages

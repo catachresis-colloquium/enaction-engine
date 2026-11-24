@@ -2,7 +2,7 @@
 # Source directory: contractiles
 # Re-generate with: contractile gen-just --dir contractiles
 #
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Local safety override: recheck the non-destructive Dust recipes after regeneration.
 
 # === DUST (Recovery & Rollback) ===
@@ -60,9 +60,9 @@ must-project-ci:
 trust-verify: trust-license-content trust-no-secrets-committed trust-container-images-pinned
     @echo 'All trust verifications passed'
 
-# LICENSE is the canonical AGPL-3.0-or-later text
+# LICENSE is the canonical MPL-2.0 text
 trust-license-content:
-    grep -q 'GNU Affero General Public License Version 3' LICENSE
+    grep -q 'Mozilla Public License Version 2.0' LICENSE
 
 # No .env or credential files in repo
 trust-no-secrets-committed:

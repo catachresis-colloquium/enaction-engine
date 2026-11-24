@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Operation-first accelerator capability and exact reference kernels.
 //!
 //! This crate implements ADR-0020's smallest non-speculative slice: a

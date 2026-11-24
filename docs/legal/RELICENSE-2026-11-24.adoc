@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Relicense record, 2026-11-24
+:toc:
+
+== What changed
+
+Code, configuration and scripts moved from `AGPL-3.0-or-later` to `MPL-2.0`.
+Prose stays `CC-BY-SA-4.0`. The change was authorised by the owner for this one
+change only (a one-off exception to the manual, owner-only rule for licence
+edits). It is not a standing grant.
+
+== Authors checked before editing
+
+`git log` on `main` at the time of the change: 58 commits.
+
+* Jonathan D.A. Jewell: 48 commits.
+* Bots: dependabot[bot] (7), arena-ai-coding-agent[bot] (2),
+  pre-commit-ci[bot] (1).
+* `Co-authored-by` trailers: Claude (38), Claude Opus 5.5 (5), dependabot[bot]
+  (7), coderabbitai[bot] (3), arena-agent (3), Mistral Vibe (2), hyperpolymath
+  (2), Jonathan D.A. Jewell (2), pre-commit-ci[bot] (1), and
+  `CLAUDE <355856132+HoTT-stuff@users.noreply.github.com>` (2, on #138 and #139).
+* No non-owner human author was found, and no "Joshua" appears in authors,
+  trailers or files. The `HoTT-stuff` account name is unverified; it is listed
+  here for the owner to confirm.
+
+== Still AGPL-3.0-or-later, and why
+
+The generated ABI pipeline. Its outputs embed the header text emitted by
+`src/interface/Abi/Generate.idr`, and `SOURCE.sha256` pins the hashes of its
+sources. Changing either side needs the generator re-run (Idris2 and Zig), which
+was not run in this change.
+
+* `abi.ipkg`
+* `src/interface/Abi/Layout.idr`, `Accelerator.idr`, `Generate.idr`
+* `src/interface/generated/abi/enaction_accelerator.{h,jl,rs,zig}`
+* `src/interface/generated/abi/SYMBOLS`, `SOURCE.sha256`
+
+Follow-up: change the four emitted header strings in `Generate.idr` to
+`MPL-2.0`, regenerate with `scripts/generate-accelerator-abi.sh`, update the
+headers of the generator sources, and then remove `LICENSES/AGPL-3.0-or-later.txt`
+and the AGPL stanza in `.machine_readable/compliance/reuse/dep5`.
+
+== Mentions left unchanged
+
+These describe the past or a standard, not this repository's current licence:
+
+* `docs/decisions/` (ADR 0001, ADR 0026) and `docs/proposals/` (the Evil Weevil
+  route and the ultracode plan): their reasoning refers to AGPL versus MPL.
+  Their premise changed with this relicense, so the owner may want a new ADR
+  that supersedes ADR 0026.
+* `docs/RSR_OUTLINE.adoc`, `docs/governance/CRG-AUDIT-TEMPLATE.adoc`,
+  `.machine_readable/ai/PLACEHOLDERS.adoc`: standard or template text.
+* `.machine_readable/compliance/rust/deny.toml`: `MPL-2.0` was added to the
+  allow list; the AGPL entries describe dependency policy and were kept.
+* `.github/workflows/rhodibot.yml` and `.machine_readable/bot_directives/debt.a2ml`:
+  bot policy text about AGPL header forms.
+* `LICENSE` and `LICENSES/AGPL-3.0-or-later.txt`: the second is kept (see above).
+
+== Linter rule
+
+`.github/workflows/workflow-linter.yml` (`lint-workflows`) now requires
+an SPDX identifier line naming `MPL-2.0` in the header comment block of every
+workflow. Its self-test fixtures were flipped: the valid fixture is `MPL-2.0`,
+the invalid fixture is `AGPL-3.0-or-later`.

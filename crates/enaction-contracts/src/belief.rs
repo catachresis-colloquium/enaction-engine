@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The minimum epistemic data model (CAC-KERNEL §3) and the interval-derived
 //! belief status (ADR-0016).
 

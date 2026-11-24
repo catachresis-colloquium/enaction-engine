@@ -1,12 +1,12 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
 # Authoritative source: docs/AI-CONVENTIONS.md
 
 # Read 0-AI-MANIFEST.a2ml in the repo root FIRST for canonical file locations.
 
 # LICENSE
-# All original code: AGPL-3.0-or-later (SPDX header required on every file).
-# Never use AGPL-3.0. Fallback to AGPL-3.0-or-later only when platform requires it.
+# All original code: MPL-2.0 (SPDX header required on every file; prose: CC-BY-SA-4.0).
+# Never use AGPL-3.0 on new files.
 # Copyright: Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
 
 # STATE FILES

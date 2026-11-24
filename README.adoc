@@ -5,7 +5,7 @@
 :toc:
 :toc-placement: preamble
 
-image:https://img.shields.io/badge/Code-AGPL--3.0--or--later-blue.svg[Code licence: AGPL-3.0-or-later,link="https://www.gnu.org/licenses/agpl-3.0"]
+image:https://img.shields.io/badge/Code-MPL--2.0-blue.svg[Code licence: MPL-2.0,link="https://www.mozilla.org/en-US/MPL/2.0/"]
 image:https://img.shields.io/badge/Docs-CC--BY--SA--4.0-blue.svg?logo=creativecommons[Docs licence: CC-BY-SA-4.0,link="https://creativecommons.org/licenses/by-sa/4.0/"]
 
 Enaction Engine is an experimental set of deterministic, type-safe game-engine
@@ -225,8 +225,10 @@ publishes no compliance or readiness badges.
 
 == Licence
 
-Code, configuration, and scripts are link:LICENSE[GNU Affero General Public
-License v3.0 or later] (`AGPL-3.0-or-later`). Prose documentation is
+Code, configuration, and scripts are link:LICENSE[Mozilla Public License
+v2.0] (`MPL-2.0`). Prose documentation is
 `CC-BY-SA-4.0`. Full texts are in `LICENSES/`; per-file SPDX headers remain
-authoritative. Long-term attribution uses Quantum-Safe Provenance as described
+authoritative. The generated ABI pipeline still carries `AGPL-3.0-or-later` headers
+until it is regenerated (see link:docs/legal/RELICENSE-2026-11-24.adoc[the relicense record]).
+Long-term attribution uses Quantum-Safe Provenance as described
 in link:docs/legal/EXHIBIT-B-QUANTUM-SAFE.txt[the provenance exhibit].

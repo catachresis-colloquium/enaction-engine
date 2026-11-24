@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Fail-closed Creusot gate for enaction-version, the proved leaf crate: the only
 # crate that depends on creusot-std, proved as a whole. Tool presence and
 # version are part of the gate.

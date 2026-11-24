@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Accelerator contract-version compatibility.
 //!
 //! The type and its rule live in `enaction-version`, the workspace's proved

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 [package]
 name = "enaction-contracts"
 description = "The estate's ESM/CAC contract as types: versioning, bounded confidence policy, provenance and package validation."

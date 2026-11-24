@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Validate and normalize the pinned scanner wire formats. No scanner failure,
 # malformed report, unknown severity, or JCS failure is converted to an empty
 # findings set.

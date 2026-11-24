@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Historical false positive, one exact finding (no path or rule is widened).
 # Commit a0f8a52 put a UUID beside the word "key" in CLADE.a2ml line 21;
 # gitleaks generic-api-key matches it. It is an identifier, not a credential,

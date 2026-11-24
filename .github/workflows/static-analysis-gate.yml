@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Static Analysis Gate — scanner failures and report/schema drift fail closed.
 # Tool sources are pinned in scripts/build-static-analysis-tools.sh; this gate
 # intentionally records scope and does not treat absent scanner output as clean.

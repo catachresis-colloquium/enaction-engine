@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Drives the built `enaction-validate` binary (WEEVIL-HOST-ROUTE A2).
 //!
 //! Exit 0: valid. Exit 1: a validation fault in the input; stdout is exactly

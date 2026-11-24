@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Package declaration and validation (CAC-KERNEL §6).
 //!
 //! A package is a *compiled artifact*, and that difference from a live trace

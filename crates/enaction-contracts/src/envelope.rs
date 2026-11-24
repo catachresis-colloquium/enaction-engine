@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The runner-output envelope `enaction-runner-output/2` and the caller's
 //! policy document `enaction-policies/1` (CAC-KERNEL §9).
 //!

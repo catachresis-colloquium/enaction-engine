@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Point this clone's git hooks at .githooks/ so the local Dogfood Gate runs
 # on push. Idempotent; safe to re-run.
 set -euo pipefail

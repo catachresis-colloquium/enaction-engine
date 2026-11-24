@@ -5,7 +5,7 @@
 //! 240a5d7fa1d5e4646d8d0970ee7b7581edda1e16. The estate ABI wrapper adds
 //! finite-input, length, aliasing, lane, and failure-atomicity checks before
 //! entering these kernels. Axiom remains the upstream source for this file's
-//! covered implementation; the surrounding ABI and dispatch code is AGPL.
+//! covered implementation; the surrounding ABI and dispatch code is MPL-2.0.
 
 const vector_size = 8;
 const Vector = @Vector(vector_size, f32);

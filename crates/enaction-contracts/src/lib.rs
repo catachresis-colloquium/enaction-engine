@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The estate's ESM/CAC contract, as types.
 //!
 //! The normative prose is `docs/architecture/CAC-KERNEL.adoc` (promoted out of

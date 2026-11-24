@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Models are compared with minds (CAC-KERNEL §9, "Models are compared with
 //! minds"; ADR-0028), against the published fixtures in `conformance/tom/v2/`.
 //!

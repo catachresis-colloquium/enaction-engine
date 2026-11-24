@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Blending and buffer semantics.
 //!
 //! These guard properties that are invisible in a screenshot and obvious in

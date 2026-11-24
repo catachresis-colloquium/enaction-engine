@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Relicense from AGPL-3.0-or-later to MPL-2.0 (code) and CC-BY-SA-4.0 (prose), owner-authorised 2026-11-24 (one-off). SPDX headers, `LICENSE`, `LICENSES/MPL-2.0.txt`, `Cargo.toml`, `CITATION.cff`, the workflow header rule in `lint-workflows`, and the licence-doctrine text in `CLAUDE.md` and `AGENTS.md` were updated. The generated ABI pipeline stays AGPL until regenerated; see `docs/legal/RELICENSE-2026-11-24.adoc`.
+
 - `.github/workflows/ci-gate.yml`: thin caller of the cicd-suite reusable `ci-gate.yml`, publishing the
   `CI/gate` commit status that the Immutable-Tags ruleset requires. Pinned to suite commit
   `a0760cea695a815a96b3944f3d03ee015da856d0` as a placeholder until this repository's profile is on suite main

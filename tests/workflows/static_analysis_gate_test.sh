@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Execute the workflow's actual shell blocks with synthetic reports/tools.
 # The extractor deliberately supports only this workflow's literal run blocks;
 # a missing or reformatted block fails instead of silently testing empty code.

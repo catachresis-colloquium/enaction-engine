@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 #
 # check-variant-drift.sh — verify the shared RSR spine of this variant
 # template stays convergent with its parent at the pinned commit.

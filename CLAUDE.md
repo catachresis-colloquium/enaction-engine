@@ -52,8 +52,10 @@ The descriptive family (working name *descriptiles*) describes what-is; the **co
 
 ## Estate language policy (overridable per-repo via AGENTIC)
 Deny by estate default: **Nix, Node/npm, TypeScript, Python, Go, AGPL**.
-This repository explicitly overrides the licence default: code is deliberately
-**AGPL-3.0-or-later** and prose is **CC-BY-SA-4.0**. (Guix, not Nix.)
+This repository explicitly overrides the licence default: code is **MPL-2.0** and
+prose is **CC-BY-SA-4.0** (relicensed from AGPL-3.0-or-later on 2026-11-24 by the
+owner's one-off, explicit authorisation; licence edits otherwise remain manual and
+owner-only). (Guix, not Nix.)
 
 ---
 

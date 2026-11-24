@@ -14,8 +14,8 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 
 ## License
 
-- SPDX: `AGPL-3.0-or-later` on all new files.
-- Never use AGPL-3.0.
+- SPDX: `MPL-2.0` on all new code files; `CC-BY-SA-4.0` on prose (`.adoc`, `.md`).
+- Never use AGPL-3.0 on new files.
 - Copyright: `Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>`
 
 ## Code Style

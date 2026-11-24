@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Observer noninterference: GAME-DESIGN-SYSTEM invariant 2.
 //!
 //! > For two traces that agree on every event in perspective P's observation

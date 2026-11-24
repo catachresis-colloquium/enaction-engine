@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # This gate verifies a receipt of the official SonarQube Cloud analysis. It
 # does not scan. The official app (app id 12526) analyses the pull request and
 # posts the check "SonarCloud Code Analysis". This job accepts that check only

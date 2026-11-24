@@ -3,60 +3,67 @@ Upstream-Name: Enaction Engine
 Upstream-Contact: Jonathan D.A. Jewell <jonathan.jewell@gmail.com>
 Source: https://github.com/metadatastician/enaction-engine
 
-# Default: all files are AGPL-3.0-or-later
+# Default: all files are MPL-2.0 (relicensed from AGPL-3.0-or-later, owner-authorised 2026-11-24)
 Files: *
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
-License: AGPL-3.0-or-later
+License: MPL-2.0
 
 # Configuration files that cannot carry headers
 Files: .editorconfig .gitignore .gitattributes .tool-versions .mailmap
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
-License: AGPL-3.0-or-later
+License: MPL-2.0
 
 # Machine-readable state files
 Files: .machine_readable/*.a2ml
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
-License: AGPL-3.0-or-later
+License: MPL-2.0
 
 # Bot directives
 Files: .machine_readable/bot_directives/*
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
-License: AGPL-3.0-or-later
+License: MPL-2.0
 
 # Contractiles
 Files: .machine_readable/contractiles/*
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
-License: AGPL-3.0-or-later
+License: MPL-2.0
 
 # GitHub/CI configuration
 Files: .github/* .github/**/*
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
-License: AGPL-3.0-or-later
+License: MPL-2.0
 
 # Generated files
 Files: generated/*
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
-License: AGPL-3.0-or-later
+License: MPL-2.0
 
 # Lockfiles and auto-generated
 Files: *.lock Cargo.lock flake.lock
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
-License: AGPL-3.0-or-later
+License: MPL-2.0
 
 # Devcontainer config (JSON, no comments)
 Files: .devcontainer/*.json
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
-License: AGPL-3.0-or-later
+License: MPL-2.0
 
 # Git-cliff config
 Files: cliff.toml
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
+License: MPL-2.0
+
+# Generated ABI pipeline: still AGPL-3.0-or-later until regenerated with the
+# header emitted by src/interface/Abi/Generate.idr changed (see
+# docs/legal/RELICENSE-2026-11-24.adoc).
+Files: abi.ipkg src/interface/Abi/Layout.idr src/interface/Abi/Accelerator.idr src/interface/Abi/Generate.idr src/interface/generated/abi/enaction_accelerator.h src/interface/generated/abi/enaction_accelerator.jl src/interface/generated/abi/enaction_accelerator.rs src/interface/generated/abi/enaction_accelerator.zig src/interface/generated/abi/SYMBOLS src/interface/generated/abi/SOURCE.sha256
+Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
 License: AGPL-3.0-or-later
 
 # Narrative documentation is CC-BY-SA-4.0 (estate Rule 1).
-# Placed last so it overrides the AGPL-3.0-or-later default for prose (.adoc/.md),
+# Placed last so it overrides the MPL-2.0 default for prose (.adoc/.md),
 # including the GitHub community-health .md files. Machine-readable .a2ml is a
-# different extension and stays AGPL-3.0-or-later per its stanza above.
+# different extension and stays MPL-2.0 per its stanza above.
 Files: *.adoc *.md
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
 License: CC-BY-SA-4.0
