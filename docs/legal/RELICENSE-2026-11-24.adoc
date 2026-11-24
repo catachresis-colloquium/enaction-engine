@@ -26,9 +26,12 @@ were incomplete; this section replaces it. The conclusion did not change.
   `CLAUDE <355856132+HoTT-stuff@users.noreply.github.com>` 2 (on #138 and #139),
   pre-commit-ci[bot] 1.
 * No non-owner human author was found, and no "Joshua" appears in authors,
-  committers, trailers or files. The `HoTT-stuff` account is recorded as the
-  owner's own account, per the owner's ruling of 2026-11-24 relayed through the
-  hub. This repository could not confirm that itself: the account's public
+  committers, trailers or files.
+* HoTT-stuff: the owner confirmed on 2026-11-24 (answer relayed by the
+  coordinator session) that the account `HoTT-stuff` (id 355856132, a co-author
+  trailer on #138 and #139; 55 lines from those two commits survive in the tree)
+  is theirs or an AI identity they control, so those lines are relicensed with
+  the rest. This repository could not confirm that itself: the account's public
   profile was not readable from the sandbox that prepared this change.
 
 == Still AGPL-3.0-or-later, and why
