@@ -10,6 +10,12 @@ link:ULTRACODE-COMPLETION-PLAN.adoc[ULTRACODE-COMPLETION-PLAN]. It does not
 replace that plan. Section <<relation>> lists each step that it keeps, narrows
 or defers. `CAC-KERNEL.adoc` stays normative.
 
+NOTE: Licence premise out of date (2026-11-24). This repository's code is now
+MPL-2.0 (relicensed from AGPL-3.0-or-later, owner-authorised). The section
+"The licence boundary" below, which says Enaction code is AGPL and that no
+Enaction source can enter Evil Weevil, no longer holds as written. This note
+does not change the plan. The owner should revise this proposal.
+
 == Owner rulings, 2026-11-14
 
 The owner gave these rulings through the selector. Each line quotes the

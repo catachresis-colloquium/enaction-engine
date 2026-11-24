@@ -63,21 +63,31 @@ so until they are regenerated its `Cargo.toml` declares
 value. Return it to `license.workspace = true` when the regeneration lands. (Found
 by Codex's review of this pull request.)
 
-== Mentions left unchanged
+== Mentions left unchanged, and notices added
 
 These describe the past or a standard, not this repository's current licence:
 
-* `docs/decisions/` (ADR 0001, ADR 0026) and `docs/proposals/` (the Evil Weevil
-  route and the ultracode plan): their reasoning refers to AGPL versus MPL.
-  Their premise changed with this relicense, so the owner may want a new ADR
-  that supersedes ADR 0026.
+* `docs/decisions/` ADR 0001 and `docs/proposals/ULTRACODE-COMPLETION-PLAN.adoc`:
+  historical record.
 * `docs/RSR_OUTLINE.adoc`, `docs/governance/CRG-AUDIT-TEMPLATE.adoc`,
   `.machine_readable/ai/PLACEHOLDERS.adoc`: standard or template text.
 * `.machine_readable/compliance/rust/deny.toml`: `MPL-2.0` was added to the
   allow list; the AGPL entries describe dependency policy and were kept.
-* `.github/workflows/rhodibot.yml` and `.machine_readable/bot_directives/debt.a2ml`:
-  bot policy text about AGPL header forms.
+* `.machine_readable/bot_directives/debt.a2ml`: a bot policy comment about AGPL.
 * `LICENSE` and `LICENSES/AGPL-3.0-or-later.txt`: the second is kept (see above).
+
+Premise out of date, so a notice was added and the decision left unchanged:
+
+* `docs/decisions/0026-evil-weevil-is-the-first-host.adoc` and
+  `docs/proposals/WEEVIL-HOST-ROUTE.adoc` (both still `Proposed`) say this
+  engine's code is AGPL and that source can never move into the MPL kernel. Each
+  now opens with a note that the premise no longer holds as written. The owner
+  should revise them or supersede ADR 0026 with a new record.
+
+Retargeted: `.github/workflows/rhodibot.yml` (the dotfile SPDX canary now flags a
+leftover AGPL-3.0 header and still only reports it), and `build/setup.sh` (the
+generated `INSTALL-SECURITY-REPORT.adoc` is prose and now carries
+`CC-BY-SA-4.0`).
 
 == Linter rule
 

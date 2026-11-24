@@ -66,15 +66,11 @@ jobs:
             warn "stub README.md alongside README.adoc (would be removed)"
           fi
           # SPDX drift — MANUAL owner-only fix, never auto-edited.
-          # Match the bare/-only forms ONLY: a plain substring grep for
-          # "AGPL-3.0" also matches the COMPLIANT "AGPL-3.0-or-later" and
-          # fired two false positives per run. Flag only if a line mentions
-          # AGPL-3.0 in a non-'-or-later' form. The trailing `grep -q .`
-          # (not `-qv`) keeps the empty-input case implementation-independent:
-          # ugrep exits 0 for `-qv` on empty input where GNU grep exits 1.
+          # Flag any AGPL-3.0 SPDX header (the repository was relicensed to MPL-2.0 on
+          # 2026-11-24). A leftover AGPL header is reported here, never auto-edited.
           for dotfile in .gitignore .gitattributes .editorconfig; do
-            if [ -f "$dotfile" ] && grep -E 'AGPL-3\.0' "$dotfile" 2>/dev/null | grep -v 'AGPL-3\.0-or-later' | grep -q .; then
-              warn "$dotfile carries a non-'-or-later' AGPL-3.0 SPDX header; estate policy is AGPL-3.0-or-later — fix MANUALLY (owner-only, never auto-edited)"
+            if [ -f "$dotfile" ] && grep -qE 'AGPL-3\.0' "$dotfile" 2>/dev/null; then
+              warn "$dotfile carries an AGPL-3.0 SPDX header; this repository is MPL-2.0 since 2026-11-24 — fix MANUALLY (owner-only, never auto-edited)"
             fi
           done
           # would-CREATE: missing required files
