@@ -12,20 +12,24 @@ edits). It is not a standing grant.
 
 == Authors checked before editing
 
-`git log` on `main` at the time of the change: 58 commits.
+`git log` on the full, non-shallow history of the parent commit `ef8eca1`:
+154 commits. A first pass ran on a shallow clone (58 commits) and its counts
+were incomplete; this section replaces it. The conclusion did not change.
 
-* Jonathan D.A. Jewell: 48 commits.
-* Bots: dependabot[bot] (7), arena-ai-coding-agent[bot] (2),
-  pre-commit-ci[bot] (1).
-* `Co-authored-by` trailers: Claude (38), Claude Opus 5.5 (5), dependabot[bot]
-  (7), coderabbitai[bot] (3), arena-agent (3), Mistral Vibe (2), hyperpolymath
-  (2), Jonathan D.A. Jewell (2), pre-commit-ci[bot] (1), and
-  `CLAUDE <355856132+HoTT-stuff@users.noreply.github.com>` (2, on #138 and #139).
+* Authors: Jonathan D.A. Jewell 134, dependabot[bot] 17,
+  arena-ai-coding-agent[bot] 2, pre-commit-ci[bot] 1.
+* Committers: GitHub (web merges) 120, Jonathan D.A. Jewell 34.
+* `Co-authored-by` trailers: Claude 38, Claude Opus 5 21, Claude Fable 5 15,
+  dependabot[bot] 15, Mistral Vibe 14, Claude Opus 4.8 8, coderabbitai[bot] 8
+  (7 plus 1 with a different address), Claude Opus 5.5 5, arena-agent 3,
+  Jonathan D.A. Jewell 3, hyperpolymath 2, codacy-production[bot] 2,
+  `CLAUDE <355856132+HoTT-stuff@users.noreply.github.com>` 2 (on #138 and #139),
+  pre-commit-ci[bot] 1.
 * No non-owner human author was found, and no "Joshua" appears in authors,
-  trailers or files. The `HoTT-stuff` account is recorded as the owner's own
-  account, per the owner's ruling of 2026-11-24 relayed through the hub. This
-  repository could not confirm that itself: the account's public profile was not
-  readable from the sandbox that prepared this change.
+  committers, trailers or files. The `HoTT-stuff` account is recorded as the
+  owner's own account, per the owner's ruling of 2026-11-24 relayed through the
+  hub. This repository could not confirm that itself: the account's public
+  profile was not readable from the sandbox that prepared this change.
 
 == Still AGPL-3.0-or-later, and why
 

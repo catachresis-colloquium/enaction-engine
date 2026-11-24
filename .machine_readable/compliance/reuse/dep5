@@ -64,6 +64,6 @@ License: AGPL-3.0-or-later
 # Placed last so it overrides the MPL-2.0 default for prose (.adoc/.md),
 # including the GitHub community-health .md files. Machine-readable .a2ml is a
 # different extension and stays MPL-2.0 per its stanza above.
-Files: *.adoc *.md
+Files: *.adoc *.md docs/legal/SOURCE-NOTICE.txt docs/legal/EXHIBIT-B-QUANTUM-SAFE.txt
 Copyright: 2026 Jonathan D.A. Jewell (metadatastician) <jonathan.jewell@gmail.com>
 License: CC-BY-SA-4.0

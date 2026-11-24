@@ -20,7 +20,7 @@ validate-rsr:
     for f in .machine_readable/descriptiles/STATE.a2ml .machine_readable/descriptiles/META.a2ml .machine_readable/descriptiles/ECOSYSTEM.a2ml .machine_readable/descriptiles/anchors/ANCHOR.a2ml .machine_readable/policies/MAINTENANCE-AXES.a2ml .machine_readable/policies/MAINTENANCE-CHECKLIST.a2ml .machine_readable/policies/SOFTWARE-DEVELOPMENT-APPROACH.a2ml; do
         [ -f "$f" ] || MISSING="$MISSING $f"
     done
-    for f in docs/legal/SOURCE-NOTICE.txt docs/legal/EXHIBIT-B-QUANTUM-SAFE.txt LICENSES/MPL-2.0.txt LICENSES/CC-BY-SA-4.0.txt; do
+    for f in docs/legal/SOURCE-NOTICE.txt docs/legal/EXHIBIT-B-QUANTUM-SAFE.txt LICENSES/MPL-2.0.txt LICENSES/CC-BY-SA-4.0.txt LICENSES/AGPL-3.0-or-later.txt; do
         [ -f "$f" ] || MISSING="$MISSING $f"
     done
     if [ ! -d "src/interface/abi" ] && [ ! -d "src/interface/Abi" ]; then
