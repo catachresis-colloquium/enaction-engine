@@ -68,6 +68,11 @@ so until they are regenerated its `Cargo.toml` declares
 value. Return it to `license.workspace = true` when the regeneration lands. (Found
 by Codex's review of this pull request.)
 
+Guix metadata: `build/guix.scm` likewise lists both `MPL-2.0` and
+`AGPL-3.0-or-later` in its `license` field until the regeneration lands. The
+file's parentheses balance, but it was not evaluated with `guix` (not installed
+where it was edited).
+
 == Mentions left unchanged, and notices added
 
 These describe the past or a standard, not this repository's current licence:
