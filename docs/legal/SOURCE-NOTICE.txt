@@ -25,7 +25,9 @@ In practice every source file carries the single-line SPDX form instead:
     // SPDX-License-Identifier: MPL-2.0
 
 Generated Application Binary Interface (ABI) outputs under
-src/interface/generated/abi/ and the Idris2 generator sources that emit them
-(abi.ipkg and src/interface/Abi/{Layout,Accelerator,Generate}.idr) still carry
-AGPL-3.0-or-later headers. They are regenerated together, not edited by hand;
-see docs/legal/RELICENSE-2026-11-24.adoc for the follow-up.
+src/interface/generated/abi/ (enaction_accelerator.{h,jl,rs,zig}, SYMBOLS and
+SOURCE.sha256) still carry AGPL-3.0-or-later headers. They are regenerated from
+the Idris2 generator, not edited by hand; the generator sources (abi.ipkg and
+src/interface/Abi/{Layout,Accelerator,Generate}.idr) are MPL-2.0 and emit
+MPL-2.0 headers. Until the regeneration is run, the outputs and SOURCE.sha256 do
+not match the sources; see docs/legal/RELICENSE-2026-11-24.adoc.

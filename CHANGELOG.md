@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Relicense from AGPL-3.0-or-later to MPL-2.0 (code) and CC-BY-SA-4.0 (prose), owner-authorised 2026-11-24 (one-off). SPDX headers, `LICENSE`, `LICENSES/MPL-2.0.txt`, `Cargo.toml`, `CITATION.cff`, the workflow header rule in `lint-workflows`, and the licence-doctrine text in `CLAUDE.md` and `AGENTS.md` were updated. The generated ABI pipeline stays AGPL until regenerated; see `docs/legal/RELICENSE-2026-11-24.adoc`.
 
+- ABI generator sources (`abi.ipkg`, `src/interface/Abi/{Layout,Accelerator,Generate}.idr`) relicensed to MPL-2.0, and `Generate.idr` now emits MPL-2.0 headers; added `build/channels.scm` (pinned Guix commit) and `build/manifest.scm` (Zig 0.16 confirmed, Idris2 not yet). The generated outputs under `src/interface/generated/abi/` still carry AGPL headers until `scripts/generate-accelerator-abi.sh` is run.
+
 - `.github/workflows/ci-gate.yml`: thin caller of the cicd-suite reusable `ci-gate.yml`, publishing the
   `CI/gate` commit status that the Immutable-Tags ruleset requires. Pinned to suite commit
   `a0760cea695a815a96b3944f3d03ee015da856d0` as a placeholder until this repository's profile is on suite main
