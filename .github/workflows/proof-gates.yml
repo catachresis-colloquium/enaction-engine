@@ -53,9 +53,12 @@ jobs:
   agda:
     name: Agda proofs (canonical flags)
     runs-on: ubuntu-24.04
-    # Provisional while the cold build is being measured; replaced by the
-    # measured cold time plus a margin.
-    timeout-minutes: 120
+    # Measured 2026-11-24 from the Actions API (job durations; build step in
+    # brackets). Cold: 18 min (run 44353695037), 14m44s [12m52s] (run
+    # 45372809273, key -r2), 13m39s [12m02s] (run 45375673523, key -r3).
+    # Warm: about 1m55s (main run 45281167920). Timeout = 2.5 x the slowest
+    # cold job (18 min) = 45 min, already a multiple of 5.
+    timeout-minutes: 45
     permissions:
       contents: read
     env:
@@ -165,9 +168,12 @@ jobs:
   coq:
     name: Coq proofs and Print Assumptions
     runs-on: ubuntu-24.04
-    # Provisional while the cold build is being measured; replaced by the
-    # measured cold time plus a margin.
-    timeout-minutes: 90
+    # Measured 2026-11-24 from the Actions API (job durations; build step in
+    # brackets). Cold: 6 min (run 44353695037), 8m22s [7m41s] (run
+    # 45372809273, key -r2), 6m11s [5m35s] (run 45375673523, key -r3).
+    # Warm: about 40 s (main run 45281167920). Timeout = 2.5 x the slowest
+    # cold job (8m22s = 8.37 min) = 20.9 min, rounded up to 25 min.
+    timeout-minutes: 25
     permissions:
       contents: read
     env:
