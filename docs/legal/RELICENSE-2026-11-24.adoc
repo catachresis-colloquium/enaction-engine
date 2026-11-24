@@ -37,10 +37,15 @@ was not run in this change.
 * `src/interface/generated/abi/enaction_accelerator.{h,jl,rs,zig}`
 * `src/interface/generated/abi/SYMBOLS`, `SOURCE.sha256`
 
-Follow-up: change the four emitted header strings in `Generate.idr` to
-`MPL-2.0`, regenerate with `scripts/generate-accelerator-abi.sh`, update the
-headers of the generator sources, and then remove `LICENSES/AGPL-3.0-or-later.txt`
-and the AGPL stanza in `.machine_readable/compliance/reuse/dep5`.
+Follow-up: a separate pull request, not this one, will regenerate these files from
+`Generate.idr` with the pinned toolchain (Zig 0.16.0 from `mise.toml` and
+`.tool-versions`; Idris2 is listed there as 0.7.0 but commented out, so its pin
+is to be confirmed). That change will set the four emitted header strings in
+`Generate.idr` to `MPL-2.0`, run `scripts/generate-accelerator-abi.sh` and its
+`--check`, update the headers of the generator sources, and then remove
+`LICENSES/AGPL-3.0-or-later.txt` and the AGPL stanza in
+`.machine_readable/compliance/reuse/dep5`. Until it lands, these 11 files stay
+AGPL-3.0-or-later on purpose.
 
 == Mentions left unchanged
 
