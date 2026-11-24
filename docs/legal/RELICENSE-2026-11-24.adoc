@@ -22,8 +22,10 @@ edits). It is not a standing grant.
   (2), Jonathan D.A. Jewell (2), pre-commit-ci[bot] (1), and
   `CLAUDE <355856132+HoTT-stuff@users.noreply.github.com>` (2, on #138 and #139).
 * No non-owner human author was found, and no "Joshua" appears in authors,
-  trailers or files. The `HoTT-stuff` account name is unverified; it is listed
-  here for the owner to confirm.
+  trailers or files. The `HoTT-stuff` account is recorded as the owner's own
+  account, per the owner's ruling of 2026-11-24 relayed through the hub. This
+  repository could not confirm that itself: the account's public profile was not
+  readable from the sandbox that prepared this change.
 
 == Still AGPL-3.0-or-later, and why
 
