@@ -30,7 +30,7 @@ else
   # Both live OUTSIDE the markers, so regeneration preserves them.
   {
     echo "<!--"
-    echo "SPDX-License-Identifier: MPL-2.0"
+    echo "SPDX-License-Identifier: CC-BY-SA-4.0"
     echo "SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"
     echo "-->"
     echo "<!-- Hand-authored notes may go ABOVE or BELOW the generated region. -->"
