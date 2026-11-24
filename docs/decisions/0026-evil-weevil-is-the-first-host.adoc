@@ -8,6 +8,12 @@ Date: 2026-11-14
 
 Proposed
 
+NOTE: Licence premise out of date (2026-11-24). This repository's code is now
+MPL-2.0 (relicensed from AGPL-3.0-or-later, owner-authorised). The statements
+below that this engine's code is AGPL, and that source can therefore never move
+into the MPL kernel, no longer hold as written. This note does not change the
+decision. The owner should revise this record or supersede it with a new one.
+
 Applies ADR-0010 (proving grounds), ADR-0013 (two-layer estate) and ADR-0015
 (conformance fixtures are the cross-repository currency). It leaves ADR-0017
 unchanged. The owner selected this route through the selector on 2026-11-14;
