@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: AGPL-3.0-or-later
+-- SPDX-License-Identifier: MPL-2.0
 -- Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 ||| Deterministic declaration renderer for the accelerator ABI.
 |||
@@ -72,7 +72,7 @@ codesC =
 public export
 cHeader : String
 cHeader =
-  "/* SPDX-License-Identifier: AGPL-3.0-or-later */\n" ++
+  "/* SPDX-License-Identifier: MPL-2.0 */\n" ++
   "/* " ++ generatedNotice ++ " */\n" ++
   "#ifndef ENACTION_ACCELERATOR_H\n#define ENACTION_ACCELERATOR_H\n\n" ++
   "#include <stdint.h>\n\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n" ++
@@ -159,7 +159,7 @@ codesZig =
 public export
 zigDeclarations : String
 zigDeclarations =
-  "// SPDX-License-Identifier: AGPL-3.0-or-later\n" ++
+  "// SPDX-License-Identifier: MPL-2.0\n" ++
   "// " ++ generatedNotice ++ "\n\n" ++ codesZig ++ "\n" ++
   "pub const Request = extern struct {\n" ++
   "    abi_major: u16, abi_minor: u16, operation_major: u16, operation_minor: u16,\n" ++
@@ -226,7 +226,7 @@ codesRust =
 public export
 rustDeclarations : String
 rustDeclarations =
-  "// SPDX-License-Identifier: AGPL-3.0-or-later\n" ++
+  "// SPDX-License-Identifier: MPL-2.0\n" ++
   "// " ++ generatedNotice ++ "\n\n" ++ codesRust ++ "\n" ++
   "#[repr(C)]\n#[derive(Clone, Copy, Debug)]\npub struct Request {\n" ++
   "    pub abi_major: u16, pub abi_minor: u16, pub operation_major: u16, pub operation_minor: u16,\n" ++
@@ -254,7 +254,7 @@ rustDeclarations =
 public export
 juliaDeclarations : String
 juliaDeclarations =
-  "# SPDX-License-Identifier: AGPL-3.0-or-later\n" ++
+  "# SPDX-License-Identifier: MPL-2.0\n" ++
   "# " ++ generatedNotice ++ "\n\n" ++
   "module EnactionAcceleratorABI\n\n" ++
   "const ABI_MAJOR = UInt16(" ++ show abiMajor ++ ")\n" ++

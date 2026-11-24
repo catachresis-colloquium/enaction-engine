@@ -36,25 +36,30 @@ were incomplete; this section replaces it. The conclusion did not change.
 
 == Still AGPL-3.0-or-later, and why
 
-The generated ABI pipeline. Its outputs embed the header text emitted by
-`src/interface/Abi/Generate.idr`, and `SOURCE.sha256` pins the hashes of its
-sources. Changing either side needs the generator re-run (Idris2 and Zig), which
-was not run in this change.
+The generated ABI outputs only (the generator sources were relicensed in the
+follow-up pull request, branch `claude/abi-regenerate-mpl2`):
 
-* `abi.ipkg`
-* `src/interface/Abi/Layout.idr`, `Accelerator.idr`, `Generate.idr`
 * `src/interface/generated/abi/enaction_accelerator.{h,jl,rs,zig}`
 * `src/interface/generated/abi/SYMBOLS`, `SOURCE.sha256`
 
-Follow-up: a separate pull request, not this one, will regenerate these files from
-`Generate.idr` with the pinned toolchain (Zig 0.16.0 from `mise.toml` and
-`.tool-versions`; Idris2 is listed there as 0.7.0 but commented out, so its pin
-is to be confirmed). That change will set the four emitted header strings in
-`Generate.idr` to `MPL-2.0`, run `scripts/generate-accelerator-abi.sh` and its
-`--check`, update the headers of the generator sources, and then remove
-`LICENSES/AGPL-3.0-or-later.txt` and the AGPL stanza in
-`.machine_readable/compliance/reuse/dep5`. Until it lands, these 11 files stay
-AGPL-3.0-or-later on purpose.
+They embed the header text emitted by `src/interface/Abi/Generate.idr` (now
+`MPL-2.0`) and `SOURCE.sha256` pins the hashes of the generator sources, which
+the follow-up changed. They must be regenerated, not hand-edited:
+
+[source,sh]
+----
+guix time-machine -C build/channels.scm -- shell -m build/manifest.scm -- \
+  ./scripts/generate-accelerator-abi.sh
+guix time-machine -C build/channels.scm -- shell -m build/manifest.scm -- \
+  ./scripts/generate-accelerator-abi.sh --check
+----
+
+That regeneration was NOT RUN where the follow-up was written (no `guix`
+there), and `build/manifest.scm` has no confirmed Idris2 package yet. Until it
+is run and committed, `generate-accelerator-abi.sh --check` is expected to fail.
+After it passes, remove `LICENSES/AGPL-3.0-or-later.txt`, the AGPL stanza in
+`.machine_readable/compliance/reuse/dep5`, and the AGPL entry in
+`build/just/validate.just`.
 
 == Mentions left unchanged
 
