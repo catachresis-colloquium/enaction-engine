@@ -8,6 +8,11 @@ scratch_dir="$(mktemp -d)"
 trap 'rm -rf "${scratch_dir}"' EXIT
 
 cd "${repo_root}"
+idris2_version="$(idris2 --version 2>&1)"
+case "${idris2_version}" in
+  *0.7.0*) ;;
+  *) echo "generate-accelerator-abi: expected Idris2 0.7.0, got: ${idris2_version}" >&2; exit 1 ;;
+esac
 idris2 --build abi.ipkg
 generator="${repo_root}/build/exec/accelerator-abi-gen"
 

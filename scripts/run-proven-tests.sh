@@ -20,7 +20,11 @@ if [[ "$actual_commit" != "$FRAMEWORK_COMMIT" ]]; then
   exit 1
 fi
 
-export PATH="$HOME/.idris2/bin:$PATH"
+# Prefer an Idris2 already on PATH (e.g. from build/manifest.scm via Guix);
+# otherwise fall back to the installer's ~/.idris2 location (CI).
+if ! command -v idris2 >/dev/null 2>&1; then
+  export PATH="$HOME/.idris2/bin:$PATH"
+fi
 command -v idris2 >/dev/null 2>&1 || {
   echo "run-proven-tests: Idris2 $IDRIS2_VERSION is required" >&2
   exit 1
@@ -31,10 +35,12 @@ if [[ "$version_output" != *"$IDRIS2_VERSION"* ]]; then
   exit 1
 fi
 
-for libdir in "$HOME"/.idris2/idris2-*/lib; do
-  [[ -d "$libdir" ]] || continue
-  export LD_LIBRARY_PATH="$libdir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-done
+if [[ "$(command -v idris2)" == "$HOME/.idris2/"* ]]; then
+  for libdir in "$HOME"/.idris2/idris2-*/lib; do
+    [[ -d "$libdir" ]] || continue
+    export LD_LIBRARY_PATH="$libdir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  done
+fi
 
 printf 'Using proven-tests-and-benches %s\n' "$actual_commit"
 printf '%s\n' "$version_output"

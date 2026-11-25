@@ -370,11 +370,11 @@ state-phase:
 
 # Enter Guix development shell (primary)
 guix-shell:
-    guix shell -D -f guix.scm
+    guix time-machine -C build/channels.scm -- shell -m build/manifest.scm
 
 # Build with Guix
 guix-build:
-    guix build -f guix.scm
+    guix build -f build/guix.scm
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HYBRID AUTOMATION
