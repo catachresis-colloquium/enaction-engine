@@ -6,6 +6,7 @@
 ;; Both channels carry their *introduction*, so `guix pull`/`time-machine`
 ;; authenticates every commit from the pinned one forward (fail closed).
 ;;
+;; The estate pin moves only deliberately, after `guix git authenticate` passes.
 ;; Tested on Guix 1.4.0 only. Idris2 build is not bit-reproducible.
 (list
  (channel
@@ -20,7 +21,7 @@
   (name 'estate)
   (url "https://github.com/hyperpolymath/guix-channel")
   (branch "main")
-  (commit "4b91d37a4bbb4bc8c16de791eb5bd2241fb26f4b")
+  (commit "d4c84bde7a728a4a5bbc6bf865ed45e983d01c6d")
   (introduction
    (make-channel-introduction
     "4b91d37a4bbb4bc8c16de791eb5bd2241fb26f4b"
