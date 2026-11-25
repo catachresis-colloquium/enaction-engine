@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Interest and belief kinetics, extracted from the IDApTIK proving ground.
 //!
 //! Origin: `idaptik-core/src/scenario/actor/belief.rs` — the arithmetic behind

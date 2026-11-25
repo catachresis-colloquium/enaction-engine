@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Safe Rust adapter for the Idris2-defined, pure-Zig accelerator ABI.
 //!
 //! All `unsafe` is confined to the generated calls in this crate. The

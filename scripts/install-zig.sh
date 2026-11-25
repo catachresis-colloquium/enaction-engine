@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Install the pinned Zig toolchain from ziglang.org, verified by SHA-256.
 #
 # This replaces the mlugg/setup-zig action. GitHub refused to start every

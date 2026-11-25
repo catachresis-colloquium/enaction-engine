@@ -1,10 +1,13 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 [package]
 name = "enaction-accelerator-native"
 description = "Audited Rust adapter for the Idris2-defined, pure-Zig Enaction accelerator ABI."
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+# Interim: this crate includes the generated ABI outputs (enaction_accelerator.rs and
+# .zig), which still carry AGPL-3.0-or-later headers until they are regenerated; see
+# docs/legal/RELICENSE-2026-11-24.adoc. Return to `license.workspace = true` then.
+license = "MPL-2.0 AND AGPL-3.0-or-later"
 authors.workspace = true
 repository.workspace = true
 

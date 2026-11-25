@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Every package rule fires on a planted package (completion-plan step 3).
 //!
 //! A rule that no planted package can trip is not a rule. This file plants

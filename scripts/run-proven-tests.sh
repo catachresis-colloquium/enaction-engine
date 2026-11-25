@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Build and run the pinned proven-tests-and-benches suite for the ABI seam.
 set -euo pipefail
 

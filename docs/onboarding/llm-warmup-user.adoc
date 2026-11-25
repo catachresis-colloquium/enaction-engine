@@ -14,7 +14,7 @@ early `enaction-time` Rust timing and interpolation crate.
 
 == Quick Context
 
-* License: AGPL-3.0-or-later
+* License: MPL-2.0
 * Part of hyperpolymath ecosystem
 * See `README.adoc` for implemented scope and current limitations
 * See `EXPLAINME.adoc` for claim-to-evidence status

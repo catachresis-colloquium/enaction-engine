@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Canonical bytes: RFC 8785 JCS over integer-only I-JSON (owner ruling Q1,
 //! arm A; ADR-0024).
 //!

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 #
 # VARIANT.a2ml — provenance contract (ADR-0002 shape; ADR-0003 use).
 # Records what this repo was minted from so the drift gate

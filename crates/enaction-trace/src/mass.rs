@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The kernel confidence type (ADR-0016).
 //!
 //! [`Mass`] is a **justification budget** in units of 1/10,000. It is NOT a

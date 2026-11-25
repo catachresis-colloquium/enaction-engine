@@ -23,7 +23,7 @@ MAINTAINERS.adoc           # maintainer roster
 CONTRIBUTING.md            # Accepted at root OR .github/ — CI (openssf/quality/rhodibot) now checks both; .github/ is the canonical estate location (org-inherited). Allow-listed if present at root.
 SECURITY.md                # Accepted at root OR .github/ — see CONTRIBUTING.md note above; security-policy contractile now accepts the .github/ copy.
 LICENSE
-LICENSES/                  # REUSE licence texts (AGPL-3.0-or-later.txt + CC-BY-SA-4.0.txt) for the dual-licence model (code AGPL-3.0-or-later / docs CC-BY-SA-4.0)
+LICENSES/                  # REUSE licence texts (MPL-2.0.txt + CC-BY-SA-4.0.txt, plus AGPL-3.0-or-later.txt while the generated ABI pipeline still carries it) for the dual-licence model (code MPL-2.0 / docs CC-BY-SA-4.0)
 CHANGELOG.md
 CITATION.cff               # citation metadata (surfaced at root by #96)
 RSR-PHILOSOPHY.adoc        # RSR philosophy statement (root authority file; was drift until 2026-07-07)
@@ -53,7 +53,7 @@ sonar-project.properties   # SonarCloud analysis config; the SonarQube scan acti
 .github/                   # CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, workflows/
 .machine_readable/         # AI manifests, contractiles, custom-format configs
 .well-known/
-build/                     # contractile.just, setup.sh, guix.scm, .guix-channel, Containerfile
+build/                     # contractile.just, setup.sh, guix.scm, .guix-channel, channels.scm, manifest.scm, Containerfile
 ci/                        # .gitlab-ci.yml, .pre-commit-config.yaml (root shims if tools require)
 docs/                      # onboarding/, status/, governance/, ...
 docs-template/             # template-only: scaffolding docs copied into new repos

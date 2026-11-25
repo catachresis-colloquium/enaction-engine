@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The fixed-timestep accumulator.
 //!
 //! This is the half of the crate with no prior service in a real game, so it is

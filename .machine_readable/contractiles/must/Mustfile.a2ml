@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Mustfile — Enaction Engine hard invariants
 
 @abstract:
@@ -150,8 +150,8 @@ canonical identity, licence posture, and honest architecture claims.
 - severity: critical
 
 ### licence-content
-- description: Root licence remains the full GNU AGPL version 3 text
-- run: grep -q 'GNU AFFERO GENERAL PUBLIC LICENSE' LICENSE
+- description: Root licence is the full Mozilla Public License version 2.0 text
+- run: grep -q 'Mozilla Public License Version 2.0' LICENSE
 - severity: critical
 
 ### no-untracked-contractiles

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Unit-test pinned source/build orchestration with local Git, Rust, and binary
 # stubs. No network access, toolchain installation, or scanner build is needed.
 set -euo pipefail

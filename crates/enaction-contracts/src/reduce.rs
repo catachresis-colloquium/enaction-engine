@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The normative reduction contract (CAC-KERNEL §2), as a trait.
 //!
 //! This module holds the *signature* and the replay harness. It deliberately

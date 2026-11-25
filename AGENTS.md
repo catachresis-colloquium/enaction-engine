@@ -22,30 +22,30 @@ engine yet.
 Read `ARCHITECTURE.md` and `docs/decisions/` before proposing anything
 structural.
 
-## `[CRITICAL] agpl-license`
+## `[CRITICAL] licence`
 
-**Code is `AGPL-3.0-or-later`. Prose documentation is `CC-BY-SA-4.0`.**
+**Code is `MPL-2.0`. Prose documentation is `CC-BY-SA-4.0`.**
 
-This repository was minted from the RSR template, which ships **MPL-2.0**, and
-was **deliberately relicensed at mint** so that code can move freely between
-this repo and `metadatastician/IDApTIK` (also AGPL) without relicensing
-friction. That relicensing is intentional and recorded in the initial commit.
+This repository was minted from the RSR template (MPL-2.0), was relicensed to
+AGPL-3.0-or-later at mint, and was **relicensed back to MPL-2.0 (code) and
+CC-BY-SA-4.0 (prose) on 2026-11-24 by the owner's explicit, one-off
+authorisation** (see `docs/legal/RELICENSE-2026-11-24.adoc`). That
+authorisation covered this one change only; it is not a standing grant.
 
 Therefore:
 
-- **Never rewrite this repository's licence headers back to MPL-2.0.** An
-  estate-wide MPL-normalisation sweep has already wrongly flattened two AGPL
-  projects in this estate, each needing manual restoration. If a sweep or tool
-  proposes MPL headers here, **that is the bug** — stop and raise it rather than
-  complying.
-- The root `LICENSE` must remain the **full** AGPL-3.0 text. An SPDX stub makes
-  GitHub report the repository as `NOASSERTION` instead of `AGPL-3.0`.
-- `LICENSES/` holds the full text of every licence in use — currently
-  `AGPL-3.0-or-later.txt` and `CC-BY-SA-4.0.txt`. `MPL-2.0.txt` was removed
-  deliberately because nothing here is MPL any more; do not restore it.
+- **Licence edits remain manual and owner-only.** Do not change any SPDX line,
+  licence text or licence field without a direct owner instruction for that
+  change. If a sweep or tool proposes a different licence here, stop and raise
+  it rather than complying.
+- The root `LICENSE` must remain the **full** MPL-2.0 text. An SPDX stub makes
+  GitHub report the repository as `NOASSERTION` instead of `MPL-2.0`.
+- `LICENSES/` holds the full text of every licence in use: `MPL-2.0.txt`,
+  `CC-BY-SA-4.0.txt`, and `AGPL-3.0-or-later.txt` for as long as the generated
+  ABI pipeline still carries AGPL headers (see the relicense record).
 - Check **bodies, not just SPDX lines**. Header/body mismatches have bitten this
-  estate in both directions. `docs/legal/SOURCE-NOTICE.txt` exists precisely
-  because the template's MPL "Exhibit A" has no AGPL equivalent.
+  estate in both directions. `docs/legal/SOURCE-NOTICE.txt` carries the MPL-2.0
+  "Exhibit A" notice.
 
 ## Design invariants
 

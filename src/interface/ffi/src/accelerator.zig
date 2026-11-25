@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 // hypatia: allow code_safety/zig_ptr_cast -- intentional test fixture aliasing check
 //! Pure-Zig implementation of the Idris2-defined accelerator ABI.
 //!

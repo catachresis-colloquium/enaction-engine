@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Synthetic advisory matmul measurement, shared by two existing-crate examples.
 //! No new kernel, public contract, native layout, or simulation dependency.
 

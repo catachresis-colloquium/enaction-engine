@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Behavioural compatibility matrix for the IDApTIK extraction boundary.
 //!
 //! These are the cases IDApTIK already pins in `idaptik-core::interp` and its

@@ -1,0 +1,108 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Relicense record, 2026-11-24
+:toc:
+
+== What changed
+
+Code, configuration and scripts moved from `AGPL-3.0-or-later` to `MPL-2.0`.
+Prose stays `CC-BY-SA-4.0`. The change was authorised by the owner for this one
+change only (a one-off exception to the manual, owner-only rule for licence
+edits). It is not a standing grant.
+
+== Authors checked before editing
+
+`git log` on the full, non-shallow history of the parent commit `ef8eca1`:
+154 commits. A first pass ran on a shallow clone (58 commits) and its counts
+were incomplete; this section replaces it. The conclusion did not change.
+
+* Authors: Jonathan D.A. Jewell 134, dependabot[bot] 17,
+  arena-ai-coding-agent[bot] 2, pre-commit-ci[bot] 1.
+* Committers: GitHub (web merges) 120, Jonathan D.A. Jewell 34.
+* `Co-authored-by` trailers: Claude 38, Claude Opus 5 21, Claude Fable 5 15,
+  dependabot[bot] 15, Mistral Vibe 14, Claude Opus 4.8 8, coderabbitai[bot] 8
+  (7 plus 1 with a different address), Claude Opus 5.5 5, arena-agent 3,
+  Jonathan D.A. Jewell 3, hyperpolymath 2, codacy-production[bot] 2,
+  `CLAUDE <355856132+HoTT-stuff@users.noreply.github.com>` 2 (on #138 and #139),
+  pre-commit-ci[bot] 1.
+* No non-owner human author was found, and no "Joshua" appears in authors,
+  committers, trailers or files.
+* HoTT-stuff: the owner confirmed on 2026-11-24 (answer relayed by the
+  coordinator session) that the account `HoTT-stuff` (id 355856132, a co-author
+  trailer on #138 and #139; 55 lines from those two commits survive in the tree)
+  is theirs or an AI identity they control, so those lines are relicensed with
+  the rest. This repository could not confirm that itself: the account's public
+  profile was not readable from the sandbox that prepared this change.
+
+== Still AGPL-3.0-or-later, and why
+
+The generated ABI outputs only (the generator sources were relicensed in the
+follow-up pull request, branch `claude/abi-regenerate-mpl2`):
+
+* `src/interface/generated/abi/enaction_accelerator.{h,jl,rs,zig}`
+* `src/interface/generated/abi/SYMBOLS`, `SOURCE.sha256`
+
+They embed the header text emitted by `src/interface/Abi/Generate.idr` (now
+`MPL-2.0`) and `SOURCE.sha256` pins the hashes of the generator sources, which
+the follow-up changed. They must be regenerated, not hand-edited:
+
+[source,sh]
+----
+guix time-machine -C build/channels.scm -- shell -m build/manifest.scm -- \
+  ./scripts/generate-accelerator-abi.sh
+guix time-machine -C build/channels.scm -- shell -m build/manifest.scm -- \
+  ./scripts/generate-accelerator-abi.sh --check
+----
+
+That regeneration was NOT RUN where the follow-up was written (no `guix`
+there), and `build/manifest.scm` has no confirmed Idris2 package yet. Until it
+is run and committed, `generate-accelerator-abi.sh --check` is expected to fail.
+After it passes, remove `LICENSES/AGPL-3.0-or-later.txt`, the AGPL stanza in
+`.machine_readable/compliance/reuse/dep5`, and the AGPL entry in
+`build/just/validate.just`.
+
+Crate metadata: `crates/enaction-accelerator-native` textually includes
+`enaction_accelerator.rs` and its build script compiles `enaction_accelerator.zig`,
+so until they are regenerated its `Cargo.toml` declares
+`license = "MPL-2.0 AND AGPL-3.0-or-later"` instead of inheriting the workspace
+value. Return it to `license.workspace = true` when the regeneration lands. (Found
+by Codex's review of this pull request.)
+
+Guix metadata: `build/guix.scm` likewise lists both `MPL-2.0` and
+`AGPL-3.0-or-later` in its `license` field until the regeneration lands. The
+file's parentheses balance, but it was not evaluated with `guix` (not installed
+where it was edited).
+
+== Mentions left unchanged, and notices added
+
+These describe the past or a standard, not this repository's current licence:
+
+* `docs/decisions/` ADR 0001 and `docs/proposals/ULTRACODE-COMPLETION-PLAN.adoc`:
+  historical record.
+* `docs/RSR_OUTLINE.adoc`, `docs/governance/CRG-AUDIT-TEMPLATE.adoc`,
+  `.machine_readable/ai/PLACEHOLDERS.adoc`: standard or template text.
+* `.machine_readable/compliance/rust/deny.toml`: `MPL-2.0` was added to the
+  allow list; the AGPL entries describe dependency policy and were kept.
+* `.machine_readable/bot_directives/debt.a2ml`: a bot policy comment about AGPL.
+* `LICENSE` and `LICENSES/AGPL-3.0-or-later.txt`: the second is kept (see above).
+
+Premise out of date, so a notice was added and the decision left unchanged:
+
+* `docs/decisions/0026-evil-weevil-is-the-first-host.adoc` and
+  `docs/proposals/WEEVIL-HOST-ROUTE.adoc` (both still `Proposed`) say this
+  engine's code is AGPL and that source can never move into the MPL kernel. Each
+  now opens with a note that the premise no longer holds as written. The owner
+  should revise them or supersede ADR 0026 with a new record.
+
+Retargeted: `.github/workflows/rhodibot.yml` (the dotfile SPDX canary now flags a
+leftover AGPL-3.0 header and still only reports it), `build/setup.sh` (the
+generated `INSTALL-SECURITY-REPORT.adoc` is prose and now carries `CC-BY-SA-4.0`),
+and `.machine_readable/arrival-pack/generate.sh` (a freshly generated `CLAUDE.md`
+is prose and now starts with `CC-BY-SA-4.0`, matching the checked-in file).
+
+== Linter rule
+
+`.github/workflows/workflow-linter.yml` (`lint-workflows`) now requires
+an SPDX identifier line naming `MPL-2.0` in the header comment block of every
+workflow. Its self-test fixtures were flipped: the valid fixture is `MPL-2.0`,
+the invalid fixture is `AGPL-3.0-or-later`.

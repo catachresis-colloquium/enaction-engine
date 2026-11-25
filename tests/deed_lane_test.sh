@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # deed_lane_test.sh -- prove the deed lane refuses what it must refuse.
@@ -74,7 +74,7 @@ LEDGER=.machine_readable/a2ml-legacy-allow.txt
 VICTIM=$(git -C "$T" ls-files '*.a2ml' | LC_ALL=C sort | head -n 1)
 [ -n "$VICTIM" ] || { echo "ERROR: no tracked .a2ml file to plant against" >&2; exit 2; }
 
-SPDX='SPDX-License-Identifier: AGPL-3.0-or-later'
+SPDX='SPDX-License-Identifier: MPL-2.0'
 failures=0
 OUT="$WORK/out.txt"
 

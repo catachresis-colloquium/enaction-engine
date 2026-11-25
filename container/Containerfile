@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Enaction Engine Container Image
 #
 # Multi-stage build template for Chainguard Wolfi base images.
@@ -87,7 +87,7 @@ LABEL org.opencontainers.image.title="Enaction Engine" \
       org.opencontainers.image.url="https://github.com/metadatastician/enaction-engine" \
       org.opencontainers.image.source="https://github.com/metadatastician/enaction-engine" \
       org.opencontainers.image.vendor="metadatastician" \
-      org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.licenses="MPL-2.0" \
       org.opencontainers.image.authors="Jonathan D.A. Jewell <jonathan.jewell@gmail.com>" \
       dev.cerrotorre.manifest="container/stapeln/manifest.toml" \
       dev.cerrotorre.gatekeeper="container/stapeln/.gatekeeper.yaml" \

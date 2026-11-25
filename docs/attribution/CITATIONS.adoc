@@ -12,7 +12,7 @@
   title = {Enaction Engine},
   year = {2026},
   url = {https://github.com/metadatastician/enaction-engine},
-  license = {AGPL-3.0-or-later}
+  license = {MPL-2.0}
 }
 ----
 

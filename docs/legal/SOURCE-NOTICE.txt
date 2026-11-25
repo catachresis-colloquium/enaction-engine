@@ -1,46 +1,33 @@
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: CC-BY-SA-4.0
 
 ================================================================================
 SOURCE FILE LICENCE NOTICE
-GNU Affero General Public License, version 3 or later
+Mozilla Public License, version 2.0
 ================================================================================
 
-This replaces the RSR template's EXHIBIT-A-ETHICAL-USE.txt. "Exhibit A" is an
-MPL-2.0 construct with no AGPL equivalent, so carrying it over would have left
-an MPL notice sitting under an AGPL header — the header/body mismatch that has
-repeatedly caused licence confusion across this estate. The text below is the
-notice recommended by the AGPL itself.
+Code, configuration and scripts in this repository are licensed under the
+Mozilla Public License, version 2.0 (MPL-2.0). Prose documentation is
+CC-BY-SA-4.0. The full text of both licences lives in LICENSES/, and the root
+LICENSE is the complete MPL-2.0 text.
+
+The notice below is MPL-2.0's own "Exhibit A" Source Code Form notice.
 
 --------------------------------------------------------------------------------
 
-    Enaction Engine — a deterministic simulation runtime.
-    Copyright (C) 2026 Jonathan D.A. Jewell
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 --------------------------------------------------------------------------------
 
 In practice every source file carries the single-line SPDX form instead:
 
-    // SPDX-License-Identifier: AGPL-3.0-or-later
+    // SPDX-License-Identifier: MPL-2.0
 
-Prose documentation is CC-BY-SA-4.0. The full text of both licences lives in
-LICENSES/, and the root LICENSE is the complete AGPL-3.0 text — a stub there
-makes GitHub report the repository as "NOASSERTION" rather than AGPL-3.0.
-
-Note the network clause: AGPL §13 requires that users interacting with a
-modified version *over a network* be offered its source. That is deliberate for
-an engine, and is the practical difference from the MPL the template ships.
-
-================================================================================
+Generated Application Binary Interface (ABI) outputs under
+src/interface/generated/abi/ (enaction_accelerator.{h,jl,rs,zig}, SYMBOLS and
+SOURCE.sha256) still carry AGPL-3.0-or-later headers. They are regenerated from
+the Idris2 generator, not edited by hand; the generator sources (abi.ipkg and
+src/interface/Abi/{Layout,Accelerator,Generate}.idr) are MPL-2.0 and emit
+MPL-2.0 headers. Until the regeneration is run, the outputs and SOURCE.sha256 do
+not match the sources; see docs/legal/RELICENSE-2026-11-24.adoc.

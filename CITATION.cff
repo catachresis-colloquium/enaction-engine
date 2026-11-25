@@ -9,7 +9,7 @@ version: 0.1.0
 date-released: "2026-07-22"
 url: "https://github.com/metadatastician/enaction-engine"
 repository-code: "https://github.com/metadatastician/enaction-engine"
-license: AGPL-3.0-or-later
+license: MPL-2.0
 keywords:
   - "game-engine"
   - "deterministic-simulation"

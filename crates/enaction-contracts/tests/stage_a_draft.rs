@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The move from stage A to stage B inside the 2.0 draft (ADR-0030, "Limits",
 //! second bullet).
 //!

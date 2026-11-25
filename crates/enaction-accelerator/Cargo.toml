@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 [package]
 name = "enaction-accelerator"
 description = "Operation-first accelerator capability, deterministic planning, and exact reference kernels for Enaction Engine."

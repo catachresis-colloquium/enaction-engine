@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! `enaction-mind-trace/1` (WEEVIL-HOST-ROUTE, "The mind trace contract")
 //! against the published fixtures in `conformance/mind/v2/`.
 //!

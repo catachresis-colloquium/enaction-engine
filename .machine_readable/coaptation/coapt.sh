@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # coapt.sh — the Coaptation RUNNER (the controller of the cybernetic loop).
@@ -48,7 +48,7 @@ case "$MODE" in
       # coaptation logic does not embed or drift from repository identity.
       repo_name="$(grep -oP '^canonical-name = "\K[^"]+' "$ROOT/.machine_readable/descriptiles/CLADE.a2ml" | head -1)"
       {
-        echo "# SPDX-License-Identifier: AGPL-3.0-or-later"
+        echo "# SPDX-License-Identifier: MPL-2.0"
         echo "# reanchor-basis — assembled by \`coapt --reanchor\`. This is the BASIS (the"
         echo "# \"carnage\") for an anchor-drop, NOT the drop. The drop is a human authority"
         echo "# act: a dated, named, hashed event authored by someone with the right and the"

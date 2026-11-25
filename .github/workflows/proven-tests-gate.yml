@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 name: Proven Tests and Benches
 
 # The framework source is fetched by immutable commit. Checkout uses one

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Unit tests of runner orchestration. Stub external tools in a disposable tree;
 # these tests do not claim to compile Idris2 or execute the real ABI suite.
 set -euo pipefail

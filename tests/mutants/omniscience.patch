@@ -1,4 +1,4 @@
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: MPL-2.0
 
 Planted mutant: OMNISCIENCE. Restores the observer leak that ADR-0022
 (Proposed) closed: a perspective with no delta reads the ground trope's

@@ -1,4 +1,4 @@
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: CC-BY-SA-4.0
 
 ================================================================================
 QUANTUM-SAFE PROVENANCE SPECIFICATION
@@ -11,7 +11,7 @@ Rhodium Standard Repository (RSR) — Exhibit B
    quantum-safe provenance of contributions in an RSR-compliant repository.
    It is a standalone, licence-agnostic specification: it imposes no licence
    terms of its own and may be referenced by software under any licence
-   (this repository is AGPL-3.0-or-later for code, CC-BY-SA-4.0 for prose).
+   (this repository is MPL-2.0 for code, CC-BY-SA-4.0 for prose).
 
 2. APPROVED ALGORITHMS
 

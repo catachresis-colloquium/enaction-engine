@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! Double-buffered state and the blending applied to it.
 
 /// A value that can be blended across a step boundary.

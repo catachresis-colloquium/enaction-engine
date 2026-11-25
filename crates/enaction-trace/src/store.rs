@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 //! The belief store: a Global Baseline plus per-perspective Deltas (C2).
 //!
 //! Chronicles doc 20's rule, generalised: *belief is baseline plus own
