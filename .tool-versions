@@ -5,7 +5,7 @@
 # gleam 1.8.0
 # elixir 1.18.0
 # erlang 27.2
-# idris2 0.7.0
+# idris2 0.7.0  (provided via Guix: build/channels.scm + build/manifest.scm; CI uses its own installer)
 rust nightly
 # Pinned: build.zig uses the 0.15+ addLibrary API; CI installs the same
 # version in rust-ci.yml's accelerator job. Keep the three in lockstep.
